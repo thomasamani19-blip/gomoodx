@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import PageHeader from '@/components/shared/page-header';
 import { genererImageIA, type GenererImageIAOutput } from '@/ai/flows/generer-image-ia';
+import { genererAudioTTS, type GenererAudioTTSOutput } from '@/ai/flows/generer-audio-tts';
 import { Loader2, Wand2, Image as ImageIcon, Video, Mic } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -56,7 +57,7 @@ function ImageGeneratorTab() {
             <CardContent className="pt-0 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="prompt">Description de l'image (Prompt)</Label>
-                <Textarea name="prompt" id="prompt" placeholder="Ex: une femme élégante dans un jardin secret au crépuscule..." rows={4} />
+                <Textarea name="prompt" id="prompt-image" placeholder="Ex: une femme élégante dans un jardin secret au crépuscule..." rows={4} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="style">Style artistique</Label>
@@ -90,6 +91,100 @@ function ImageGeneratorTab() {
                 <div className="flex flex-col items-center justify-center h-full text-center">
                     <ImageIcon className="h-12 w-12 text-muted-foreground" />
                     <p className="mt-4 text-sm text-muted-foreground">L'image générée apparaîtra ici.</p>
+                </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function AudioGeneratorTab() {
+  const [result, setResult] = useState<GenererAudioTTSOutput | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsLoading(true);
+    setResult(null);
+
+    const formData = new FormData(event.currentTarget);
+    const input = {
+      texte: formData.get('texte') as string,
+    };
+
+     if (!input.texte) {
+      toast({
+        title: 'Champ requis',
+        description: 'Veuillez entrer un texte à convertir.',
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await genererAudioTTS(input);
+      setResult(response);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: 'Erreur',
+        description: "Une erreur est survenue lors de la génération de l'audio.",
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="grid md:grid-cols-2 gap-8">
+      <div>
+        <form onSubmit={handleSubmit}>
+          <Card>
+             <CardHeader>
+              <CardTitle>Générateur Audio (Text-to-Speech)</CardTitle>
+              <CardDescription>Transformez un texte en message audio avec une voix naturelle.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="texte">Texte à convertir</Label>
+                <Textarea name="texte" id="texte-audio" placeholder="Écrivez ici le texte que vous souhaitez entendre..." rows={6} />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mic className="mr-2 h-4 w-4" />}
+                Générer l'Audio
+              </Button>
+            </CardFooter>
+          </Card>
+        </form>
+      </div>
+      <div>
+        <Card className="min-h-[400px] flex items-center justify-center">
+          <CardContent className="pt-6 w-full">
+            {isLoading && (
+              <div className="flex flex-col items-center justify-center h-full">
+                <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+                <p className="mt-4 text-sm text-muted-foreground">Génération audio en cours...</p>
+              </div>
+            )}
+            {result?.audioUrl && (
+              <div className="flex flex-col items-center justify-center h-full w-full">
+                <p className="text-sm font-medium mb-4">Audio généré avec succès !</p>
+                <audio controls src={result.audioUrl} className="w-full">
+                  Votre navigateur ne supporte pas l'élément audio.
+                </audio>
+              </div>
+            )}
+            {!isLoading && !result && (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                    <Mic className="h-12 w-12 text-muted-foreground" />
+                    <p className="mt-4 text-sm text-muted-foreground">L'audio généré apparaîtra ici.</p>
                 </div>
             )}
           </CardContent>
@@ -142,11 +237,7 @@ export default function StudioIAPage() {
             />
           </TabsContent>
           <TabsContent value="audio" className="mt-6">
-             <PlaceholderTab 
-              title="Générateur Audio (Text-to-Speech)"
-              description="Transformez vos textes en messages audio avec une voix naturelle."
-              icon={Mic}
-            />
+             <AudioGeneratorTab />
           </TabsContent>
         </Tabs>
     </div>
