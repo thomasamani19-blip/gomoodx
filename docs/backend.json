@@ -1,0 +1,288 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "Represents a user in the system.",
+      "type": "object",
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": ["client", "escorte", "partenaire", "administrateur"],
+          "description": "The role of the user."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "pseudo": {
+          "type": "string",
+          "description": "The user's nickname."
+        },
+        "abonnement": {
+          "type": "string",
+          "description": "Subscription status or type."
+        },
+        "portefeuille": {
+          "type": "number",
+          "description": "User's wallet balance."
+        },
+        "stats": {
+          "type": "object",
+          "description": "User statistics."
+        }
+      },
+      "required": ["role", "email"]
+    },
+    "service": {
+      "title": "Service",
+      "description": "A service offered by a creator.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number"
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "creator_id": {
+          "type": "string"
+        }
+      },
+      "required": ["title", "price", "creator_id"]
+    },
+    "creator": {
+      "title": "Creator",
+      "description": "An escort or content creator.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "bio": {
+          "type": "string"
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "required": ["name"]
+    },
+    "product": {
+      "title": "Product",
+      "description": "A product sold in the shop.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number"
+        },
+        "image": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": ["name", "price"]
+    },
+    "liveSession": {
+      "title": "Live Session",
+      "description": "A live streaming session.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "price_per_minute": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["scheduled", "live", "ended"]
+        }
+      },
+      "required": ["title", "price_per_minute", "status"]
+    },
+    "blogArticle": {
+      "title": "Blog Article",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "image": {
+          "type": "string",
+          "format": "uri"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["title", "content"]
+    },
+    "partner": {
+      "title": "Partner",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "required": ["name", "type"]
+    },
+    "transaction": {
+      "title": "Transaction",
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "type": {
+          "type": "string"
+        },
+        "date": {
+            "type": "string",
+            "format": "date-time"
+        }
+      },
+      "required": ["amount", "type", "date"]
+    },
+    "wallet": {
+      "title": "Wallet",
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "number"
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "$ref": "#/entities/transaction"
+          }
+        }
+      },
+      "required": ["balance"]
+    },
+    "message": {
+      "title": "Message",
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": ["content", "timestamp"]
+    }
+  },
+  "auth": {
+    "providers": ["anonymous", "google.com", "password"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/user"
+      },
+      "description": "Stores user profile information."
+    },
+    "/services": {
+      "schema": {
+        "$ref": "#/entities/service"
+      },
+      "description": "Collection of all services offered."
+    },
+    "/creators/{creatorId}": {
+        "schema": {
+            "$ref": "#/entities/creator"
+        },
+        "description": "Stores creator-specific public information."
+    },
+    "/creators/{creatorId}/premiumContent": {
+        "schema": {
+            "type": "object",
+            "properties": {}
+        },
+        "description": "Sub-collection for a creator's premium content."
+    },
+    "/products": {
+      "schema": {
+        "$ref": "#/entities/product"
+      },
+      "description": "Collection of all products."
+    },
+    "/liveSessions": {
+      "schema": {
+        "$ref": "#/entities/liveSession"
+      },
+      "description": "Collection of all live sessions."
+    },
+    "/blogArticles": {
+      "schema": {
+        "$ref": "#/entities/blogArticle"
+      },
+      "description": "Collection of all blog articles."
+    },
+    "/partners/{partnerId}": {
+      "schema": {
+        "$ref": "#/entities/partner"
+      },
+      "description": "Stores partner information."
+    },
+    "/users/{userId}/transactions": {
+        "schema": {
+            "$ref": "#/entities/transaction"
+        },
+        "description": "A user's transaction history."
+    },
+    "/users/{userId}/wallet": {
+        "schema": {
+            "$ref": "#/entities/wallet"
+        },
+        "description": "A user's wallet document."
+    },
+    "/messages/{messageId}": {
+        "schema": {
+            "$ref": "#/entities/message"
+        },
+        "description": "Stores individual chat messages."
+    }
+  }
+}

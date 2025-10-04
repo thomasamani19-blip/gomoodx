@@ -4,6 +4,7 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { Toaster } from '@/components/ui/toaster';
 import { Playfair_Display, PT_Sans } from 'next/font/google';
 import { cn } from '@/lib/utils';
+import { FirebaseClientProvider } from '@/firebase';
 
 const fontPlayfair = Playfair_Display({
   subsets: ['latin'],
@@ -34,10 +35,12 @@ export default function RootLayout({
           fontPlayfair.variable,
           fontPtSans.variable
       )}>
-        <AuthProvider>
-          {children}
-          <Toaster />
-        </AuthProvider>
+        <FirebaseClientProvider>
+            <AuthProvider>
+                {children}
+                <Toaster />
+            </AuthProvider>
+        </FirebaseClientProvider>
       </body>
     </html>
   );
