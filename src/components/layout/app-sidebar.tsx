@@ -30,7 +30,8 @@ import {
   ImageIcon,
   BarChart3,
   Search,
-  HeartHandshake
+  HeartHandshake,
+  Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -56,6 +57,7 @@ const navConfig: Record<UserRole, { title: string; href: string; icon: React.Ele
     { title: 'Générer Bio', href: '/outils-ia/generer-bio', icon: PenSquare },
     { title: 'Idées de Contenu', href: '/outils-ia/idees-contenu', icon: ImageIcon },
     { title: 'Posts Réseaux', href: '/outils-ia/posts-sociaux', icon: Bot },
+    { title: 'Studio IA', href: '/outils-ia/studio', icon: Sparkles },
     // { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
   ],
   partenaire: [
