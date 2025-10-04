@@ -27,7 +27,7 @@ const sections = [
   {
     title: 'Nouveautés Boutique',
     items: PlaceHolderImages.filter(img => img.id.startsWith('product')),
-    link: '/boutique',
+    link: '/shop',
   },
   {
     title: 'En Direct Maintenant',

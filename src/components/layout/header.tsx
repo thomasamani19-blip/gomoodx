@@ -10,7 +10,8 @@ import { useRouter } from 'next/navigation';
 
 const navItems = [
   { label: 'Découvrir', href: '/#creators' },
-  { label: 'Boutique', href: '/boutique' },
+  { label: 'Services', href: '/services' },
+  { label: 'Shop', href: '/shop' },
   { label: 'Live', href: '/live' },
   { label: 'Blog', href: '/blog' },
 ];

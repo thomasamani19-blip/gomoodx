@@ -30,6 +30,7 @@ import {
   ImageIcon,
   BarChart3,
   Search,
+  HeartHandshake
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -40,9 +41,11 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const navConfig: Record<UserRole, { title: string; href: string; icon: React.ElementType }[]> = {
   client: [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+    { title: 'Services', href: '/services', icon: HeartHandshake },
     { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
-    { title: 'Boutique', href: '/boutique', icon: ShoppingBag },
+    { title: 'Shop', href: '/shop', icon: ShoppingBag },
     { title: 'Live', href: '/live', icon: Clapperboard },
+    { title: 'Blog', href: '/blog', icon: BookOpen },
     { title: 'Recherche', href: '/recherche', icon: Search },
     { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
   ],
