@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import PageHeader from '@/components/shared/page-header';
@@ -98,7 +98,7 @@ export default function PostsSociauxPage() {
                     <div className="space-y-6">
                         {result.suggestions.map((suggestion, index) => (
                             <div key={index} className="p-4 border rounded-lg bg-muted/50">
-                                <p className="text-sm">{suggestion}</p>
+                                <p className="text-sm whitespace-pre-wrap">{suggestion}</p>
                             </div>
                         ))}
                     </div>
