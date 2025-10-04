@@ -2,6 +2,20 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/hooks/use-auth';
 import { Toaster } from '@/components/ui/toaster';
+import { Playfair_Display, PT_Sans } from 'next/font/google';
+import { cn } from '@/lib/utils';
+
+const fontPlayfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-playfair',
+  weight: ['400', '700'],
+});
+
+const fontPtSans = PT_Sans({
+  subsets: ['latin'],
+  variable: '--font-pt-sans',
+  weight: ['400', '700'],
+});
 
 export const metadata: Metadata = {
   title: 'Élixir Sensuel',
@@ -15,12 +29,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
-      </head>
-      <body className="font-body antialiased">
+      <body className={cn(
+          "min-h-screen bg-background font-body antialiased",
+          fontPlayfair.variable,
+          fontPtSans.variable
+      )}>
         <AuthProvider>
           {children}
           <Toaster />
