@@ -63,7 +63,7 @@ export default function Home() {
               Explorez un univers de désirs, de rencontres et de contenus exclusifs.
             </p>
             <Button asChild size="lg" className="mt-8 bg-primary hover:bg-primary/90 text-primary-foreground">
-              <Link href="/dashboard">Rejoignez-nous</Link>
+              <Link href="/connexion">Rejoignez-nous</Link>
             </Button>
           </div>
         </section>
