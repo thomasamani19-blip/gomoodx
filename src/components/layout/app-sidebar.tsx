@@ -11,7 +11,7 @@ import {
   SidebarTrigger,
   useSidebar
 } from '@/components/ui/sidebar';
-import { Logo } from '../logo';
+import { GoMoodXLogo } from '../GoMoodXLogo';
 import { useAuth } from '@/hooks/use-auth';
 import type { UserRole } from '@/lib/types';
 import {
@@ -99,7 +99,7 @@ export function AppSidebar() {
   const sidebarContent = (
     <>
       <SidebarHeader className='flex items-center justify-between'>
-        <Logo />
+        <GoMoodXLogo />
         <SidebarTrigger className={cn(isMobile ? "hidden" : "flex")} />
       </SidebarHeader>
       <SidebarContent>

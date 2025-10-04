@@ -18,7 +18,7 @@ const fontPtSans = PT_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Élixir Sensuel',
+  title: 'GoMoodX',
   description: 'La plateforme exclusive pour créateurs et membres.',
 };
 

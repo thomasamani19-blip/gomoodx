@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { Logo } from '@/components/logo';
+import { GoMoodXLogo } from '@/components/GoMoodXLogo';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 
@@ -31,7 +31,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
-        <Logo className="mr-8" />
+        <GoMoodXLogo className="mr-8" />
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
           {navItems.map(item => (
             <Link

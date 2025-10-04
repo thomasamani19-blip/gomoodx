@@ -61,7 +61,7 @@ export default function Home() {
           )}
           <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-center text-white p-4">
             <h1 className="font-headline text-5xl md:text-7xl font-bold drop-shadow-lg">
-              Élixir Sensuel
+              GoMoodX
             </h1>
             <p className="mt-4 max-w-2xl text-lg md:text-xl drop-shadow-md">
               Explorez un univers de désirs, de rencontres et de contenus exclusifs.

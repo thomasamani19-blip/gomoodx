@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Logo } from "@/components/logo"
+import { GoMoodXLogo } from "@/components/GoMoodXLogo"
 import Link from "next/link"
 
 export default function InscriptionPage() {
@@ -17,9 +17,9 @@ export default function InscriptionPage() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <Logo className="justify-center mb-2"/>
+          <GoMoodXLogo className="justify-center mb-2"/>
           <CardTitle className="font-headline text-2xl">Créer un compte</CardTitle>
-          <CardDescription>Rejoignez la communauté Élixir Sensuel</CardDescription>
+          <CardDescription>Rejoignez la communauté GoMoodX</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">

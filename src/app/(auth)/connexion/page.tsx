@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Logo } from "@/components/logo"
+import { GoMoodXLogo } from "@/components/GoMoodXLogo"
 import Link from "next/link"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
@@ -30,7 +30,7 @@ export default function ConnexionPage() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <Logo className="justify-center mb-2"/>
+          <GoMoodXLogo className="justify-center mb-2"/>
           <CardTitle className="font-headline text-2xl">Connexion</CardTitle>
           <CardDescription>Accédez à votre espace personnel</CardDescription>
         </CardHeader>
