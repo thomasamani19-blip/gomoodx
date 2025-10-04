@@ -60,6 +60,7 @@ export default function RecherchePage() {
     if (initialQuery) {
         performSearch(initialQuery, 'fr', 'fr');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {

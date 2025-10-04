@@ -46,8 +46,9 @@ const traduireTexte = ai.defineTool(
     outputSchema: z.string().describe("Le texte traduit."),
   },
   async input => {
+    // This is a mock implementation. In a real scenario, you'd use a translation API.
     const {text} = await ai.generate({
-      prompt: `Translate the following text from {{langueSource}} to {{langueCible}}: {{texte}}`,
+      prompt: `Translate the following text from ${input.langueSource} to ${input.langueCible}: "${input.texte}"`,
     });
     return text!;
   }
@@ -66,47 +67,63 @@ const rechercherProfilsEtContenu = ai.defineTool(
   async input => {
     // TODO: Implémenter la logique de recherche ici (simulée pour le prototype)
     // Remplacez ceci par une recherche réelle dans votre base de données
-    const resultatsSimules: ResultatRechercheSchema[] = [
+    console.log(`Recherche pour: ${input.query} en langue: ${input.langue}`);
+    const resultatsSimules: z.infer<typeof RechercheMultilingueOutputSchema> = [
       {
         type: 'profil',
-        titre: 'Escorte de luxe - Paris',
-        description: 'Services exclusifs à Paris et en Île-de-France.',
-        url: 'https://example.com/profil1',
+        titre: 'Profil de Luxe - Paris',
+        description: 'Découvrez des expériences exclusives à Paris.',
+        url: '/creators/1',
       },
       {
         type: 'contenu',
-        titre: 'Nouvelle vidéo érotique',
-        description: 'Découvrez ma dernière vidéo, disponible en exclusivité.',
-        url: 'https://example.com/contenu1',
+        titre: 'Vidéo exclusive: "Nuit à Paris"',
+        description: 'Une vidéo artistique explorant la beauté de la nuit parisienne.',
+        url: '/shop/1',
+      },
+      {
+        type: 'profil',
+        titre: 'Companion for Events - NYC',
+        description: 'High-class companion for your events in New York City.',
+        url: '/creators/2',
       },
     ];
 
-    return resultatsSimules;
+    return resultatsSimules.filter(r => r.titre.toLowerCase().includes(input.query.toLowerCase()) || r.description.toLowerCase().includes(input.query.toLowerCase()));
   }
 );
-
-const rechercheMultilinguePrompt = ai.definePrompt({
-  name: 'rechercheMultilinguePrompt',
-  tools: [traduireTexte, rechercherProfilsEtContenu],
-  input: {schema: RechercheMultilingueInputSchema},
-  output: {schema: RechercheMultilingueOutputSchema},
-  prompt: `Vous êtes un assistant de recherche multilingue. L'utilisateur a effectué une recherche dans la langue {{langueSource}} avec le terme "{{query}}".
-
-    1. Utilisez l'outil rechercherProfilsEtContenu pour trouver des profils et du contenu pertinents dans la langue source.
-    2. Pour chaque résultat de recherche, utilisez l'outil traduireTexte pour traduire le titre et la description dans la langue cible {{langueCible}}.
-    3. Retournez un tableau JSON contenant les résultats traduits.
-  `,
-});
 
 const rechercheMultilingueFlow = ai.defineFlow(
   {
     name: 'rechercheMultilingueFlow',
     inputSchema: RechercheMultilingueInputSchema,
     outputSchema: RechercheMultilingueOutputSchema,
+    tools: [rechercherProfilsEtContenu, traduireTexte],
   },
-  async input => {
-    const {output} = await rechercheMultilinguePrompt(input);
-    return output!;
+  async (input) => {
+    // 1. Rechercher le contenu dans la langue source
+    const searchResults = await rechercherProfilsEtContenu({ query: input.query, langue: input.langueSource });
+
+    if (input.langueSource === input.langueCible) {
+      return searchResults;
+    }
+
+    // 2. Traduire les résultats si la langue cible est différente
+    const translatedResults: z.infer<typeof RechercheMultilingueOutputSchema> = [];
+
+    for (const result of searchResults) {
+        const [translatedTitle, translatedDescription] = await Promise.all([
+            traduireTexte({ texte: result.titre, langueSource: input.langueSource, langueCible: input.langueCible }),
+            traduireTexte({ texte: result.description, langueSource: input.langueSource, langueCible: input.langueCible })
+        ]);
+
+        translatedResults.push({
+            ...result,
+            titre: translatedTitle,
+            description: translatedDescription,
+        });
+    }
+
+    return translatedResults;
   }
 );
-
