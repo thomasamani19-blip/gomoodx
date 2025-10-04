@@ -44,7 +44,7 @@ const navConfig: Record<UserRole, { title: string; href: string; icon: React.Ele
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
     { title: 'Services', href: '/services', icon: HeartHandshake },
     { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
-    { title: 'Shop', href: '/shop', icon: ShoppingBag },
+    { title: 'Boutique', href: '/boutique', icon: ShoppingBag },
     { title: 'Live', href: '/live', icon: Clapperboard },
     { title: 'Blog', href: '/blog', icon: BookOpen },
     { title: 'Recherche', href: '/recherche', icon: Search },
