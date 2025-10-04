@@ -1,3 +1,118 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-main",
+      "description": "Élégance et séduction",
+      "imageUrl": "https://images.unsplash.com/photo-1644083589147-55edf02a5b09?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Ym91ZG9pciUyMHNlbnN1YWx8ZW58MHx8fHwxNzU5NjAxODMzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "boudoir sensual"
+    },
+    {
+      "id": "service-1",
+      "description": "Dîner romantique",
+      "imageUrl": "https://images.unsplash.com/photo-1728970381320-b40a223e46d5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8bHV4dXJ5JTIwbGlmZXN0eWxlfGVufDB8fHx8MTc1OTU5OTI4MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "luxury lifestyle"
+    },
+    {
+      "id": "service-2",
+      "description": "Voyage exotique",
+      "imageUrl": "https://images.unsplash.com/photo-1529175283207-194a414b9ffa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxkaW5uZXIlMjBkYXRlfGVufDB8fHx8MTc1OTU3MTI2MXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "dinner date"
+    },
+    {
+      "id": "service-3",
+      "description": "Soirée privée",
+      "imageUrl": "https://images.unsplash.com/photo-1544843776-7c98a52e08a4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzcGElMjB3ZWxsbmVzc3xlbnwwfHx8fDE3NTk1OTY5ODJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "spa wellness"
+    },
+    {
+      "id": "service-4",
+      "description": "Accompagnement événementiel",
+      "imageUrl": "https://images.unsplash.com/photo-1516997121675-4c2d1684aa3e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxnYWxhJTIwZXZlbnR8ZW58MHx8fHwxNzU5NTEyMDcwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "gala event"
+    },
+    {
+      "id": "creator-1",
+      "description": "Isabelle",
+      "imageUrl": "https://images.unsplash.com/photo-1615538785945-6625ccdb4b25?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwb3J0cmFpdCUyMHdvbWFufGVufDB8fHx8MTc1OTU4MDg4NHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "portrait woman"
+    },
+    {
+      "id": "creator-2",
+      "description": "Chloé",
+      "imageUrl": "https://images.unsplash.com/photo-1627577279497-4b24bf1021b6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxmYXNoaW9uJTIwbW9kZWx8ZW58MHx8fHwxNzU5NTg4NTg2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fashion model"
+    },
+    {
+      "id": "creator-3",
+      "description": "Sofia",
+      "imageUrl": "https://images.unsplash.com/photo-1723291875355-cc9be3c07a76?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxzZW5zdWFsJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzU5NjAxODMzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "sensual portrait"
+    },
+    {
+      "id": "creator-4",
+      "description": "Amira",
+      "imageUrl": "https://images.unsplash.com/photo-1525134479668-1bee5c7c6845?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx3b21hbiUyMHNtaWxlfGVufDB8fHx8MTc1OTU3MjE2OXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman smile"
+    },
+    {
+      "id": "product-1",
+      "description": "Lingerie fine",
+      "imageUrl": "https://images.unsplash.com/photo-1574539602047-548bf9557352?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxsaW5nZXJpZXxlbnwwfHx8fDE3NTk2MDE4MzN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "lingerie"
+    },
+    {
+      "id": "product-2",
+      "description": "Parfum envoûtant",
+      "imageUrl": "https://images.unsplash.com/photo-1615160460366-2c9a41771b51?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxwZXJmdW1lJTIwYm90dGxlfGVufDB8fHx8MTc1OTUzNDI0N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "perfume bottle"
+    },
+    {
+      "id": "product-3",
+      "description": "Talons hauts",
+      "imageUrl": "https://images.unsplash.com/photo-1573100925118-870b8efc799d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxoaWdoJTIwaGVlbHN8ZW58MHx8fHwxNzU5NTY0MzA3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "high heels"
+    },
+    {
+      "id": "product-4",
+      "description": "Vidéo exclusive",
+      "imageUrl": "https://images.unsplash.com/photo-1558522191-55f74eface28?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx2aWRlbyUyMHBsYXl8ZW58MHx8fHwxNzU5NTk5NzgxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "video play"
+    },
+    {
+      "id": "live-1",
+      "description": "Conversation intime",
+      "imageUrl": "https://images.unsplash.com/photo-1525134479668-1bee5c7c6845?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHx3b21hbiUyMHNtaWxpbmd8ZW58MHx8fHwxNzU5NTQ4MjA5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman smiling"
+    },
+    {
+      "id": "live-2",
+      "description": "Session Q&A",
+      "imageUrl": "https://images.unsplash.com/photo-1646065139132-0b8183681d32?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx3ZWJjYW0lMjB2aWV3fGVufDB8fHx8MTc1OTYwMTgzM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "webcam view"
+    },
+    {
+      "id": "live-3",
+      "description": "Performance live",
+      "imageUrl": "https://images.unsplash.com/photo-1636936789434-207626d12dd1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxkYW5jaW5nJTIwd29tYW58ZW58MHx8fHwxNzU5NjAxODMzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "dancing woman"
+    },
+    {
+      "id": "blog-1",
+      "description": "L'art de la séduction",
+      "imageUrl": "https://images.unsplash.com/photo-1588338949261-659fc6fed20b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx3cml0aW5nJTIwZGlhcnl8ZW58MHx8fHwxNzU5NjAxODMzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "writing diary"
+    },
+    {
+      "id": "blog-2",
+      "description": "Confidences d'une nuit",
+      "imageUrl": "https://images.unsplash.com/photo-1708474660686-7a00a0ffe4ac?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxjaXR5JTIwbmlnaHR8ZW58MHx8fHwxNzU5NTM1MjYxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "city night"
+    },
+    {
+      "id": "blog-3",
+      "description": "Explorer ses fantasmes",
+      "imageUrl": "https://images.unsplash.com/photo-1604871000636-074fa5117945?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxhYnN0cmFjdCUyMGFydHxlbnwwfHx8fDE3NTk1ODM0OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract art"
+    }
+  ]
 }
