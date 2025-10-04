@@ -51,7 +51,8 @@ export type Message = {
     id: string;
     content: string;
     timestamp: string;
-    sender: string; // 'me' or participant's name/ID
+    senderId: string; 
+    senderName: string;
 };
 
 export type Conversation = {

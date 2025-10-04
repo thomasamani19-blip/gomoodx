@@ -39,15 +39,15 @@ const mockConversations: Conversation[] = [
 
 const mockMessages: { [key: string]: Message[] } = {
   'conv-1': [
-    { id: 'msg-1-1', content: 'Hey ! Comment ça va ?', timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(), sender: 'Isabelle' },
-    { id: 'msg-1-2', content: 'Très bien et toi ? Prête pour ce soir ?', timestamp: new Date(Date.now() - 1000 * 60 * 8).toISOString(), sender: 'me' },
-    { id: 'msg-1-3', content: 'On se voit ce soir ?', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), sender: 'Isabelle' },
+    { id: 'msg-1-1', content: 'Hey ! Comment ça va ?', timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(), senderId: 'user-isabelle', senderName: 'Isabelle' },
+    { id: 'msg-1-2', content: 'Très bien et toi ? Prête pour ce soir ?', timestamp: new Date(Date.now() - 1000 * 60 * 8).toISOString(), senderId: 'current-user-id' , senderName: 'me'},
+    { id: 'msg-1-3', content: 'On se voit ce soir ?', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), senderId: 'user-isabelle', senderName: 'Isabelle' },
   ],
   'conv-2': [
-    { id: 'msg-2-1', content: 'J\'ai adoré notre dernière discussion !', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), sender: 'Chloé' },
+    { id: 'msg-2-1', content: 'J\'ai adoré notre dernière discussion !', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), senderId: 'user-chloe', senderName: 'Chloé' },
   ],
   'conv-3': [
-      { id: 'msg-3-1', content: 'Tu es libre demain ?', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), sender: 'Sofia' },
+      { id: 'msg-3-1', content: 'Tu es libre demain ?', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), senderId: 'user-sofia', senderName: 'Sofia' },
   ]
 };
 
@@ -111,8 +111,8 @@ export default function MessageriePage() {
                     <ScrollArea className="flex-1 p-6">
                         <div className="space-y-6">
                             {messages.map(msg => (
-                                <div key={msg.id} className={cn("flex items-end gap-2", msg.sender === 'me' ? 'justify-end' : '')}>
-                                    {msg.sender !== 'me' && (
+                                <div key={msg.id} className={cn("flex items-end gap-2", msg.senderId === 'current-user-id' ? 'justify-end' : '')}>
+                                    {msg.senderId !== 'current-user-id' && (
                                         <Avatar className="h-8 w-8">
                                             <AvatarImage src={selectedConversation.participantAvatar} />
                                             <AvatarFallback>{selectedConversation.participantName.charAt(0)}</AvatarFallback>
@@ -120,11 +120,11 @@ export default function MessageriePage() {
                                     )}
                                     <div className={cn(
                                         "rounded-lg px-4 py-2 max-w-sm",
-                                        msg.sender === 'me' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                                        msg.senderId === 'current-user-id' ? 'bg-primary text-primary-foreground' : 'bg-muted'
                                     )}>
                                         <p>{msg.content}</p>
                                     </div>
-                                     {msg.sender === 'me' && user?.avatar && (
+                                     {msg.senderId === 'current-user-id' && user?.avatar && (
                                         <Avatar className="h-8 w-8">
                                             <AvatarImage src={user.avatar} />
                                             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>

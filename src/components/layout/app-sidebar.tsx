@@ -48,7 +48,7 @@ const navConfig: Record<UserRole, { title: string; href: string; icon: React.Ele
     { title: 'Live', href: '/live', icon: Clapperboard },
     { title: 'Blog', href: '/blog', icon: BookOpen },
     { title: 'Recherche', href: '/recherche', icon: Search },
-    // { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
+    { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
   ],
   escorte: [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
@@ -59,7 +59,7 @@ const navConfig: Record<UserRole, { title: string; href: string; icon: React.Ele
     { title: 'Idées de Contenu', href: '/outils-ia/idees-contenu', icon: ImageIcon },
     { title: 'Posts Réseaux', href: '/outils-ia/posts-sociaux', icon: Bot },
     { title: 'Studio IA', href: '/outils-ia/studio', icon: Sparkles },
-    // { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
+    { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
   ],
   partenaire: [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
