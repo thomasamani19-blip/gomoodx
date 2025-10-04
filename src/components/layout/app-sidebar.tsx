@@ -54,6 +54,7 @@ const navConfig: Record<UserRole, { title: string; href: string; icon: React.Ele
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
     // { title: 'Statistiques', href: '/statistiques', icon: BarChart3 },
     { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
+    { title: 'Recherche', href: '/recherche', icon: Search },
     { title: 'Générer Bio', href: '/outils-ia/generer-bio', icon: PenSquare },
     { title: 'Idées de Contenu', href: '/outils-ia/idees-contenu', icon: ImageIcon },
     { title: 'Posts Réseaux', href: '/outils-ia/posts-sociaux', icon: Bot },
