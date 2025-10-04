@@ -46,3 +46,18 @@ export type LiveSession = {
     creatorName: string;
     creatorId: string;
 }
+
+export type Message = {
+    id: string;
+    content: string;
+    timestamp: string;
+    sender: string; // 'me' or participant's name/ID
+};
+
+export type Conversation = {
+    id: string;
+    participantName: string;
+    participantAvatar: string;
+    lastMessage: string;
+    lastMessageTimestamp: string;
+};
