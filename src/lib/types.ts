@@ -35,3 +35,14 @@ export type BlogArticle = {
     imageHint: string;
     date: string;
 }
+
+export type LiveSession = {
+    id: string;
+    title: string;
+    price_per_minute: number;
+    status: 'scheduled' | 'live' | 'ended';
+    imageUrl: string;
+    imageHint: string;
+    creatorName: string;
+    creatorId: string;
+}
