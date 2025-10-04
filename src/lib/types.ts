@@ -26,3 +26,12 @@ export type Service = {
     imageUrl: string;
     imageHint: string;
 }
+
+export type BlogArticle = {
+    id: string;
+    title: string;
+    content: string;
+    imageUrl: string;
+    imageHint: string;
+    date: string;
+}
