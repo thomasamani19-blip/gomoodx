@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import PageHeader from '@/components/shared/page-header';
 import { genererImageIA, type GenererImageIAOutput } from '@/ai/flows/generer-image-ia';
 import { genererAudioTTS, type GenererAudioTTSOutput } from '@/ai/flows/generer-audio-tts';
+import { genererVideoIA, type GenererVideoIAOutput } from '@/ai/flows/generer-video-ia';
 import { Loader2, Wand2, Image as ImageIcon, Video, Mic } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -56,7 +57,7 @@ function ImageGeneratorTab() {
             </CardHeader>
             <CardContent className="pt-0 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="prompt">Description de l'image (Prompt)</Label>
+                <Label htmlFor="prompt-image">Description de l'image (Prompt)</Label>
                 <Textarea name="prompt" id="prompt-image" placeholder="Ex: une femme élégante dans un jardin secret au crépuscule..." rows={4} />
               </div>
               <div className="space-y-2">
@@ -151,7 +152,7 @@ function AudioGeneratorTab() {
             </CardHeader>
             <CardContent className="pt-0 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="texte">Texte à convertir</Label>
+                <Label htmlFor="texte-audio">Texte à convertir</Label>
                 <Textarea name="texte" id="texte-audio" placeholder="Écrivez ici le texte que vous souhaitez entendre..." rows={6} />
               </div>
             </CardContent>
@@ -194,22 +195,98 @@ function AudioGeneratorTab() {
   );
 }
 
+function VideoGeneratorTab() {
+    const [result, setResult] = useState<GenererVideoIAOutput | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const { toast } = useToast();
 
-function PlaceholderTab({ title, description, icon: Icon }: { title: string, description: string, icon: React.ElementType }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col items-center justify-center text-center h-64">
-        <Icon className="h-12 w-12 text-muted-foreground" />
-        <p className="mt-4 text-sm text-muted-foreground">
-          Cette fonctionnalité est en cours de développement et sera bientôt disponible.
-        </p>
-      </CardContent>
-    </Card>
-  )
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setIsLoading(true);
+        setResult(null);
+
+        const formData = new FormData(event.currentTarget);
+        const input = {
+            prompt: formData.get('prompt') as string,
+        };
+
+        if (!input.prompt) {
+            toast({
+                title: 'Champ requis',
+                description: 'Veuillez décrire la vidéo à générer.',
+                variant: 'destructive',
+            });
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const response = await genererVideoIA(input);
+            setResult(response);
+        } catch (error) {
+            console.error(error);
+            toast({
+                title: 'Erreur de Génération Vidéo',
+                description: "La génération a échoué. Cela peut être dû à une forte demande. Veuillez réessayer dans quelques instants.",
+                variant: 'destructive',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="grid md:grid-cols-2 gap-8">
+            <div>
+                <form onSubmit={handleSubmit}>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Générateur de Vidéo (BETA)</CardTitle>
+                            <CardDescription>Créez de courtes vidéos à partir d'une description textuelle. Cette fonctionnalité est expérimentale.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-0 space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="prompt-video">Description de la vidéo (Prompt)</Label>
+                                <Textarea name="prompt" id="prompt-video" placeholder="Ex: un dragon majestueux volant au-dessus d'une forêt mystique..." rows={4} />
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Button type="submit" disabled={isLoading}>
+                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Video className="mr-2 h-4 w-4" />}
+                                Générer la Vidéo
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </form>
+            </div>
+            <div>
+                <Card className="min-h-[400px] flex items-center justify-center">
+                    <CardContent className="pt-6 w-full h-full">
+                        {isLoading && (
+                            <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                                <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+                                <p className="mt-4 text-sm text-muted-foreground">Génération de la vidéo en cours...</p>
+                                <p className="mt-2 text-xs text-muted-foreground/80">Cette opération peut prendre jusqu'à une minute. Merci de votre patience.</p>
+                            </div>
+                        )}
+                        {result?.videoUrl && (
+                            <div className="relative aspect-video w-full h-full">
+                                <video controls autoPlay loop muted src={result.videoUrl} className="rounded-md object-contain w-full h-full">
+                                    Votre navigateur ne supporte pas la lecture de vidéos.
+                                </video>
+                            </div>
+                        )}
+                        {!isLoading && !result && (
+                            <div className="flex flex-col items-center justify-center h-full text-center">
+                                <Video className="h-12 w-12 text-muted-foreground" />
+                                <p className="mt-4 text-sm text-muted-foreground">La vidéo générée apparaîtra ici.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    );
 }
 
 
@@ -230,11 +307,7 @@ export default function StudioIAPage() {
             <ImageGeneratorTab />
           </TabsContent>
           <TabsContent value="video" className="mt-6">
-            <PlaceholderTab 
-              title="Générateur de Vidéo"
-              description="Créez de courtes vidéos promotionnelles à partir de texte ou d'images."
-              icon={Video}
-            />
+            <VideoGeneratorTab />
           </TabsContent>
           <TabsContent value="audio" className="mt-6">
              <AudioGeneratorTab />
