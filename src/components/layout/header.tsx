@@ -9,7 +9,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 
 const navItems = [
-  { label: 'Découvrir', href: '/#creators' },
   { label: 'Services', href: '/services' },
   { label: 'Shop', href: '/shop' },
   { label: 'Live', href: '/live' },

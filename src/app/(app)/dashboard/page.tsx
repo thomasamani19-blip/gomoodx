@@ -53,7 +53,7 @@ export default function DashboardPage() {
     <div>
       <PageHeader
         title={`Bienvenue, ${user?.name || '...'}`}
-        description="Voici un aperçu de votre activité sur Élixir Sensuel."
+        description="Voici un aperçu de votre activité sur GoMoodX."
       />
       {renderDashboard()}
     </div>

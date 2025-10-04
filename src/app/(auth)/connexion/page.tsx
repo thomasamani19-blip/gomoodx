@@ -32,7 +32,7 @@ export default function ConnexionPage() {
         <CardHeader className="text-center">
           <GoMoodXLogo className="justify-center mb-2"/>
           <CardTitle className="font-headline text-2xl">Connexion</CardTitle>
-          <CardDescription>Accédez à votre espace personnel</CardDescription>
+          <CardDescription>Accédez à votre espace GoMoodX</CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="grid gap-4">
