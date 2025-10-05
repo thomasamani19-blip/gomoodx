@@ -6,10 +6,10 @@ import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Send } from 'lucide-react';
+import { MessageSquare, Search, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Conversation, Message, User } from '@/lib/types';
+import type { Message, User } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore } from '@/firebase';
 import { addDoc, collection, serverTimestamp, query, where, orderBy, or } from 'firebase/firestore';
@@ -31,12 +31,12 @@ export default function MessageriePage() {
         return [user.id, selectedContact.id].sort().join('_');
     }, [user, selectedContact]);
 
-    const messagesQuery = useMemo(() => {
-        if (!conversationId) return null;
-        return query(collection(firestore, 'messages'), where('conversationId', '==', conversationId), orderBy('timestamp', 'asc'));
-    }, [firestore, conversationId]);
-
-    const { data: messages, loading: messagesLoading } = useCollection<Message>(messagesQuery?.path);
+    const { data: messages, loading: messagesLoading } = useCollection<Message>(
+        'messages',
+        {
+            constraints: conversationId ? [where('conversationId', '==', conversationId), orderBy('timestamp', 'asc')] : undefined
+        }
+    );
 
     const handleSelectContact = (contact: User) => {
         setSelectedContact(contact);

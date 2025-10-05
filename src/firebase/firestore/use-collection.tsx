@@ -29,6 +29,7 @@ function useMemoizedQuery(
 ) {
   return useMemo(() => {
     const { constraints } = options ?? {};
+    if (!path) return null;
     const ref = collection(firestore, path);
     return constraints ? query(ref, ...constraints) : ref;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -36,7 +37,7 @@ function useMemoizedQuery(
 }
 
 export const useCollection = <T extends DocumentData>(
-  path: string,
+  path: string | null,
   options?: UseCollectionOptions
 ) => {
   const firestore = useFirestore();
@@ -44,13 +45,19 @@ export const useCollection = <T extends DocumentData>(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const query = useMemoizedQuery(firestore, path, options);
+  const queryObj = useMemoizedQuery(firestore, path, options);
 
   useEffect(() => {
-    const { listen = false } = options ?? {};
+    if (!queryObj) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
+
+    const { listen = true } = options ?? {};
 
     const unsubscribe = onSnapshot(
-      query,
+      queryObj,
       (snapshot) => {
         const docs = snapshot.docs.map((doc) => ({
           id: doc.id,
@@ -61,7 +68,7 @@ export const useCollection = <T extends DocumentData>(
       },
       (err) => {
         const permissionError = new FirestorePermissionError({
-          path: (query as Query).path,
+          path: (queryObj as Query).path,
           operation: 'list',
         });
         errorEmitter.emit('permission-error', permissionError);
@@ -71,7 +78,7 @@ export const useCollection = <T extends DocumentData>(
     );
 
     return () => unsubscribe();
-  }, [query, options]);
+  }, [queryObj, options]);
 
   return { data, loading, error };
 };
