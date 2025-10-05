@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import Link from 'next/link';
 
 
 export function AppHeader() {
@@ -34,7 +35,7 @@ export function AppHeader() {
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
                 {user?.avatar && <AvatarImage src={user.avatar} alt={user.nom} />}
-                <AvatarFallback>{user?.nom?.charAt(0) ?? 'U'}</AvatarFallback>
+                <AvatarFallback>{user?.nom?.charAt(0)?.toUpperCase() ?? 'U'}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
@@ -46,9 +47,11 @@ export function AppHeader() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <UserIcon className="mr-2 h-4 w-4" />
-              <span>Profil</span>
+            <DropdownMenuItem asChild>
+              <Link href="/profil">
+                <UserIcon className="mr-2 h-4 w-4" />
+                <span>Profil</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem>
               <Settings className="mr-2 h-4 w-4" />

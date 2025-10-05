@@ -1,5 +1,14 @@
 export type UserRole = 'client' | 'escorte' | 'partenaire' | 'administrateur';
 
+export type User = {
+    id: string;
+    nom: string;
+    email: string;
+    pseudo?: string;
+    role: UserRole;
+    avatar?: string;
+};
+
 
 export type Creator = {
     id: string;
