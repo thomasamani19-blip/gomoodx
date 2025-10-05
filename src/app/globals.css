@@ -8,64 +8,65 @@ body {
 
 @layer base {
   :root {
-    --background: 240 10% 3.9%;
+    --background: 0 0% 8%; /* Dark background */
     --foreground: 0 0% 98%;
-    --card: 240 5.9% 10%;
+    
+    --card: 0 0% 12%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
+    
+    --popover: 0 0% 8%;
     --popover-foreground: 0 0% 98%;
-    --primary: 333 91% 64%; /* Rose Néon */
-    --primary-foreground: 333 30% 98%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 187 82% 55%; /* Cyan Vibrant */
-    --accent-foreground: 187 90% 5%;
+
+    --primary: 45 100% 51%; /* Gold */
+    --primary-foreground: 45 100% 5%;
+
+    --secondary: 333 91% 64%; /* Neon Pink */
+    --secondary-foreground: 333 30% 98%;
+    
+    --muted: 0 0% 15.9%;
+    --muted-foreground: 0 0% 64.9%;
+
+    --accent: 45 100% 65%; /* Brighter Gold for accents */
+    --accent-foreground: 45 100% 10%;
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 333 91% 64%;
+
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 45 100% 51%;
+
     --radius: 0.5rem;
-    --sidebar-background: 240 10% 3.9%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 333 91% 64%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 333 91% 64%;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
+    --background: 0 0% 8%;
     --foreground: 0 0% 98%;
-    --card: 240 5.9% 10%;
+    
+    --card: 0 0% 12%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
+    
+    --popover: 0 0% 8%;
     --popover-foreground: 0 0% 98%;
-    --primary: 333 91% 64%; /* Rose Néon */
-    --primary-foreground: 333 30% 98%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 187 82% 55%; /* Cyan Vibrant */
-    --accent-foreground: 187 90% 5%;
+
+    --primary: 45 100% 51%; /* Gold */
+    --primary-foreground: 45 100% 5%;
+
+    --secondary: 333 91% 64%; /* Neon Pink */
+    --secondary-foreground: 333 30% 98%;
+    
+    --muted: 0 0% 15.9%;
+    --muted-foreground: 0 0% 64.9%;
+
+    --accent: 45 100% 65%; /* Brighter Gold for accents */
+    --accent-foreground: 45 100% 10%;
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 333 91% 64%;
-    --sidebar-background: 240 10% 3.9%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 333 91% 64%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 333 91% 64%;
+
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 45 100% 51%;
   }
 }
 

@@ -10,8 +10,10 @@ import { useRouter } from 'next/navigation';
 import { ThemeSwitcher } from '../theme-switcher';
 
 const navItems = [
-  { label: 'Services', href: '/services' },
-  { label: 'Boutique', href: '/boutique' },
+  { label: 'Accueil', href: '/' },
+  { label: 'Annonces', href: '/annonces' }, // Updated from Services
+  { label: 'Produits', href: '/boutique' }, // Updated from Boutique
+  { label: 'Créateurs', href: '/creators' },
   { label: 'Live', href: '/live' },
   { label: 'Blog', href: '/blog' },
 ];
@@ -30,7 +32,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
         <GoMoodXLogo className="mr-8" />
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
@@ -46,14 +48,14 @@ export function Header() {
         </nav>
         <div className="flex flex-1 items-center justify-end gap-4">
           <form onSubmit={handleSearch} className="relative hidden w-full max-w-xs sm:block">
-            <Input type="search" name="search" placeholder="Rechercher..." className="pl-10" />
+            <Input type="search" name="search" placeholder="Rechercher..." className="pl-10 bg-black/20 border-primary/20 focus:bg-black/30" />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           </form>
 
           <ThemeSwitcher />
 
           {user ? (
-             <Button asChild>
+             <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
                 <Link href="/dashboard">Tableau de bord</Link>
              </Button>
           ) : (
@@ -61,8 +63,8 @@ export function Header() {
               <Button variant="ghost" asChild>
                 <Link href="/connexion">Connexion</Link>
               </Button>
-              <Button asChild>
-                <Link href="/inscription">Inscription</Link>
+              <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Link href="/inscription">S'inscrire</Link>
               </Button>
             </div>
           )}
