@@ -1,3 +1,5 @@
+'use client';
+
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -11,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { GoMoodXLogo } from "@/components/GoMoodXLogo"
 import Link from "next/link"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function InscriptionPage() {
   return (
@@ -22,6 +25,29 @@ export default function InscriptionPage() {
           <CardDescription>Rejoignez la communauté GoMoodX</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
+           <div className="grid gap-2">
+             <Label>Je suis un(e)...</Label>
+             <RadioGroup defaultValue="client" className="grid grid-cols-2 gap-4">
+                <div>
+                    <RadioGroupItem value="client" id="client" className="peer sr-only" />
+                    <Label
+                    htmlFor="client"
+                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                    >
+                    Client
+                    </Label>
+                </div>
+                <div>
+                    <RadioGroupItem value="creator" id="creator" className="peer sr-only" />
+                    <Label
+                    htmlFor="creator"
+                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                    >
+                    Créateur
+                    </Label>
+                </div>
+            </RadioGroup>
+          </div>
           <div className="grid gap-2">
             <Label htmlFor="name">Nom</Label>
             <Input id="name" placeholder="Votre nom" required />

@@ -5,6 +5,10 @@
       "description": "Represents a user in the system.",
       "type": "object",
       "properties": {
+        "nom": {
+          "type": "string",
+          "description": "The user's full name."
+        },
         "role": {
           "type": "string",
           "enum": ["client", "escorte", "partenaire", "administrateur"],
@@ -32,7 +36,7 @@
           "description": "User statistics."
         }
       },
-      "required": ["role", "email"]
+      "required": ["role", "email", "nom"]
     },
     "service": {
       "title": "Service",
