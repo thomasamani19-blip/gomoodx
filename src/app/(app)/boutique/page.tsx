@@ -23,10 +23,11 @@ export default function BoutiquePage() {
           {Array.from({ length: 8 }).map((_, i) => (
             <Card key={i}>
               <CardContent className="p-0">
-                <Skeleton className="w-full h-48" />
+                <Skeleton className="w-full aspect-video" />
                 <div className="p-4">
                   <Skeleton className="h-6 w-3/4 mb-2" />
-                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-4 w-full mb-1" />
+                   <Skeleton className="h-4 w-1/2" />
                 </div>
               </CardContent>
             </Card>
@@ -34,7 +35,7 @@ export default function BoutiquePage() {
         </div>
       )}
 
-      {!loading && products && (
+      {!loading && products && products.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {products.map((product) => (
             <Card key={product.id} className="overflow-hidden group">
