@@ -8,23 +8,23 @@ import ClientDashboard from '@/components/dashboard/client-dashboard';
 import PartenaireDashboard from '@/components/dashboard/partenaire-dashboard';
 import AdminDashboard from '@/components/dashboard/admin-dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
-import PageHeader from '@/components/shared/page-header';
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (user === null) {
+    if (!loading && !user) {
       router.push('/connexion');
     }
-  }, [user, router]);
+  }, [user, loading, router]);
 
   const renderDashboard = () => {
-    if (!user) {
+    if (loading || !user) {
       return (
         <div>
           <Skeleton className="h-8 w-1/4 mb-4" />
+           <Skeleton className="h-4 w-1/3 mb-8" />
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Skeleton className="h-32" />
             <Skeleton className="h-32" />
@@ -37,24 +37,21 @@ export default function DashboardPage() {
 
     switch (user.role) {
       case 'escorte':
-        return <EscorteDashboard />;
+        return <EscorteDashboard user={user} />;
       case 'client':
-        return <ClientDashboard />;
+        return <ClientDashboard user={user} />;
       case 'partenaire':
-        return <PartenaireDashboard />;
+        return <PartenaireDashboard user={user} />;
       case 'administrateur':
-        return <AdminDashboard />;
+        return <AdminDashboard user={user} />;
       default:
-        return <p>Rôle non reconnu.</p>;
+        // This case should ideally not be reached if roles are handled correctly
+        return <p>Rôle non reconnu. Veuillez contacter le support.</p>;
     }
   };
 
   return (
     <div>
-      <PageHeader
-        title={`Bienvenue, ${user?.name || '...'}`}
-        description="Voici un aperçu de votre activité sur GoMoodX."
-      />
       {renderDashboard()}
     </div>
   );

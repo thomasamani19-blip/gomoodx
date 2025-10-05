@@ -2,6 +2,8 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { BarChart, LineChart, PieChart, Sparkles } from "lucide-react";
 import Link from 'next/link';
+import type { User } from "@/lib/types";
+import PageHeader from "../shared/page-header";
 
 const stats = [
   { title: "Revenus (30j)", value: "4,250 €", change: "+15.2%", icon: LineChart },
@@ -16,9 +18,13 @@ const aiTools = [
     { title: "Studio IA Créatif", description: "Générez images, vidéos et voix par IA.", href: "/outils-ia/studio", icon: Sparkles },
 ]
 
-export default function EscorteDashboard() {
+export default function EscorteDashboard({ user }: { user: User }) {
   return (
     <div className="space-y-8">
+        <PageHeader
+            title={`Bienvenue, ${user?.nom || '...'}`}
+            description="Voici un aperçu de votre activité sur GoMoodX."
+        />
       <div className="grid gap-4 md:grid-cols-3">
         {stats.map((stat) => (
           <Card key={stat.title}>

@@ -1,8 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { User } from "@/lib/types";
+import PageHeader from "../shared/page-header";
 
-export default function PartenaireDashboard() {
+export default function PartenaireDashboard({ user }: { user: User }) {
   return (
     <div>
+        <PageHeader
+            title={`Tableau de bord de ${user?.nom || 'Partenaire'}`}
+            description="Gérez les informations de votre établissement."
+        />
       <Card>
         <CardHeader>
           <CardTitle>Statistiques de l'Établissement</CardTitle>
