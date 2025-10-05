@@ -7,14 +7,10 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { CreatorCarousel } from '@/components/features/creators/creator-carousel';
 import { ProductCarousel } from '@/components/features/products/product-carousel';
+import { AnnonceCarousel } from '@/components/features/annonces/annonce-carousel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Gift, Heart, Users } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-
-// Placeholder component until AnnonceCarousel is created
-const AnnonceCarousel = () => (
-    <p className="text-center text-muted-foreground">Le carrousel des annonces apparaîtra ici.</p>
-);
 
 const TestimonialCard = ({ quote, author, role }: { quote: string, author: string, role: string }) => (
     <Card className="bg-card/50 border-primary/20">
