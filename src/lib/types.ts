@@ -64,7 +64,7 @@ export type Conversation = {
 };
 
 export type Transaction = {
-    id: string;
+    id?: string; // id can be optional as it's assigned by Firestore
     type: 'deposit' | 'purchase' | 'credit' | 'debit';
     amount: number;
     date: string;

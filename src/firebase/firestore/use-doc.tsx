@@ -31,35 +31,15 @@ export const useDoc = <T extends DocumentData>(path: string | null) => {
       return;
     }
 
+    setLoading(true);
     const unsubscribe = onSnapshot(
       docRef,
       (snapshot) => {
         if (snapshot.exists()) {
           setData({ id: snapshot.id, ...snapshot.data() } as T);
         } else {
-          // In a real app, you might want to handle this case differently.
-          // For the prototype, we can inject mock data if the doc doesn't exist.
-          if (docRef.path.startsWith('users/escorte-uid/wallet')) {
-             setData({
-              id: 'main',
-              balance: 150.75,
-              history: [
-                { id: 'tx1', type: 'deposit', amount: 200, date: new Date(Date.now() - 86400000 * 2).toISOString(), description: "Dépôt initial" },
-                { id: 'tx2', type: 'purchase', amount: 49.25, date: new Date(Date.now() - 86400000).toISOString(), description: "Achat de contenu" },
-              ]
-            } as T);
-          } else if (docRef.path.startsWith('users/')) {
-             setData({
-                id: docRef.id,
-                name: 'Marie Dubois',
-                email: 'marie.dubois@example.com',
-                role: 'escorte',
-                avatar: 'https://picsum.photos/seed/avatar1/100/100'
-             } as T)
-          }
-          else {
+            // Document does not exist
             setData(null);
-          }
         }
         setLoading(false);
       },

@@ -13,11 +13,12 @@ import { fr } from 'date-fns/locale';
 import { ArrowDownCircle, ArrowUpCircle, PlusCircle } from 'lucide-react';
 
 export default function PortefeuillePage() {
-  const { user } = useAuth();
-  // NOTE: In a real app with full Firebase setup, we'd get the user from `useAuth` which would contain the firebase user.
-  // For this prototype, we'll hardcode a UID for the wallet path.
-  const userId = 'escorte-uid'; // This would be dynamic, e.g., user.uid
-  const { data: wallet, loading } = useDoc<Wallet>(userId ? `users/${userId}/wallet/main` : null);
+  const { user, loading: authLoading } = useAuth();
+  
+  const walletPath = user ? `users/${user.id}/wallet/main` : null;
+  const { data: wallet, loading: walletLoading } = useDoc<Wallet>(walletPath);
+
+  const loading = authLoading || walletLoading;
 
   const getTransactionIcon = (type: string) => {
     switch (type) {

@@ -2,14 +2,21 @@
 
 import type { UserRole } from '@/lib/types';
 import { createContext, useContext, ReactNode, useMemo } from 'react';
-import { useUser as useFirebaseUserHook } from '@/firebase';
+import { useUser as useFirebaseUserHook, useAuth as useFirebaseAuthHook } from '@/firebase';
 import type { User as FirebaseUser } from 'firebase/auth';
+import { 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, 
+    signOut 
+} from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 
 export interface User {
-  name: string;
+  nom: string;
   email: string;
   role: UserRole;
-  avatar: string;
+  avatar?: string;
 }
 
 export interface UserWithId extends User {
@@ -20,38 +27,48 @@ interface AuthContextType {
   user: UserWithId | null;
   firebaseUser: FirebaseUser | null;
   loading: boolean;
-  login: (role: UserRole) => void;
+  login: (email: string, pass: string) => Promise<void>;
+  signup: (email: string, pass: string, name: string, role: UserRole) => Promise<void>;
   logout: () => void;
-  setUserRole: (role: UserRole) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { user, firebaseUser, loading, manualSetUserRole } = useFirebaseUserHook();
+  const { user, firebaseUser, loading, error } = useFirebaseUserHook();
+  const auth = useFirebaseAuthHook();
+  const firestore = useFirestore();
   
-  const login = (role: UserRole) => {
-    console.warn("login() is a mock function. Use Firebase SDK to sign in.");
-    manualSetUserRole(role);
+  const login = async (email: string, pass: string) => {
+    await signInWithEmailAndPassword(auth, email, pass);
   };
 
-  const logout = () => {
-    console.log("Signing out... (mock)");
-    manualSetUserRole('client');
-  };
-  
-  const setUserRole = (role: UserRole) => {
-    manualSetUserRole(role);
+  const signup = async (email: string, pass: string, name: string, role: UserRole) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+    const firebaseUser = userCredential.user;
+
+    // Create user document in Firestore
+    const userRef = doc(firestore, 'users', firebaseUser.uid);
+    await setDoc(userRef, {
+        nom: name,
+        email: email,
+        role: role,
+        // Add other default fields if needed
+    });
   }
+
+  const logout = () => {
+    signOut(auth);
+  };
 
   const value = useMemo(() => ({ 
       user: user as UserWithId | null, 
       firebaseUser,
       loading, 
       login, 
+      signup,
       logout, 
-      setUserRole 
-    }), [user, firebaseUser, loading, manualSetUserRole]);
+    }), [user, firebaseUser, loading, auth, firestore]);
 
   return (
     <AuthContext.Provider value={value}>

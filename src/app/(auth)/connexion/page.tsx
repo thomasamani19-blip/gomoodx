@@ -14,16 +14,35 @@ import { GoMoodXLogo } from "@/components/GoMoodXLogo"
 import Link from "next/link"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 export default function ConnexionPage() {
   const { login } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // In a real app, you'd verify credentials. Here we just log in as 'escorte'.
-    login('escorte');
-    router.push('/dashboard');
+    setIsLoading(true);
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    try {
+      await login(email, password);
+      router.push('/dashboard');
+    } catch (error: any) {
+       toast({
+        title: "Erreur de connexion",
+        description: error.message || "Impossible de se connecter. Veuillez vérifier vos identifiants.",
+        variant: "destructive",
+      });
+    } finally {
+        setIsLoading(false);
+    }
   }
   
   return (
@@ -38,15 +57,18 @@ export default function ConnexionPage() {
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="nom@exemple.com" required />
+              <Input id="email" name="email" type="email" placeholder="nom@exemple.com" required />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Mot de passe</Label>
-              <Input id="password" type="password" required />
+              <Input id="password" name="password" type="password" required />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button className="w-full" type="submit">Se connecter</Button>
+            <Button className="w-full" type="submit" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Se connecter
+            </Button>
             <p className="text-xs text-center text-muted-foreground">
               Pas encore de compte ?{" "}
               <Link href="/inscription" className="underline hover:text-primary">
