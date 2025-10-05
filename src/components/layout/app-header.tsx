@@ -16,6 +16,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import Link from 'next/link';
+import { ThemeSwitcher } from '../theme-switcher';
 
 
 export function AppHeader() {
@@ -30,6 +31,7 @@ export function AppHeader() {
         <div className="ml-auto flex-1 sm:flex-initial">
           {/* Espace réservé si besoin d'autres actions */}
         </div>
+        <ThemeSwitcher />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">

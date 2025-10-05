@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Playfair_Display, PT_Sans } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase';
+import { ThemeProvider } from 'next-themes';
 
 const fontPlayfair = Playfair_Display({
   subsets: ['latin'],
@@ -29,18 +30,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
+    <html lang="fr" suppressHydrationWarning>
       <body className={cn(
           "min-h-screen bg-background font-body antialiased",
           fontPlayfair.variable,
           fontPtSans.variable
       )}>
-        <FirebaseClientProvider>
-            <AuthProvider>
-                {children}
-                <Toaster />
-            </AuthProvider>
-        </FirebaseClientProvider>
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+        >
+            <FirebaseClientProvider>
+                <AuthProvider>
+                    {children}
+                    <Toaster />
+                </AuthProvider>
+            </FirebaseClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

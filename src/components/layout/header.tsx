@@ -7,6 +7,7 @@ import { Search } from 'lucide-react';
 import { GoMoodXLogo } from '@/components/GoMoodXLogo';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
+import { ThemeSwitcher } from '../theme-switcher';
 
 const navItems = [
   { label: 'Services', href: '/services' },
@@ -48,6 +49,8 @@ export function Header() {
             <Input type="search" name="search" placeholder="Rechercher..." className="pl-10" />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           </form>
+
+          <ThemeSwitcher />
 
           {user ? (
              <Button asChild>
