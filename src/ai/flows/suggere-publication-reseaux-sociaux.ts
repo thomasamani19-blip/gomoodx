@@ -39,7 +39,7 @@ const suggerePublicationReseauxSociauxFlow = ai.defineFlow(
           schema: SuggestionPublicationReseauxSociauxOutputSchema,
         }
       });
-      return llmResponse.output() ?? { suggestions: [] };
+      return llmResponse.output ?? { suggestions: [] };
   }
 );
 

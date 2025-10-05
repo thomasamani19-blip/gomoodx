@@ -48,7 +48,7 @@ Attentes des clients: ${input.attentesClients}
       }
     });
 
-    return llmResponse.output() ?? { bio: "" };
+    return llmResponse.output ?? { bio: "" };
   }
 );
 

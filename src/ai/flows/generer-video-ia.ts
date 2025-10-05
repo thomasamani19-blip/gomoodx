@@ -10,7 +10,11 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit/zod';
 import { googleAI } from '@genkit-ai/google-genai';
-import { media } from 'genkit/ai';
+import { media as genkitMedia } from 'genkit/ai';
+import * as fs from 'fs';
+import { Readable } from 'stream';
+import type { MediaPart } from 'genkit';
+
 
 export const GenererVideoIAInputSchema = z.object({
   prompt: z.string().describe('Une description détaillée de la vidéo à générer.'),
@@ -35,6 +39,24 @@ async function streamToBase64(stream: NodeJS.ReadableStream): Promise<string> {
     });
 }
 
+async function downloadVideo(video: MediaPart, path: string) {
+    const fetch = (await import('node-fetch')).default;
+    // Add API key before fetching the video.
+    const videoDownloadResponse = await fetch(
+      `${video.media!.url}&key=${process.env.GEMINI_API_KEY}`
+    );
+    if (
+      !videoDownloadResponse ||
+      videoDownloadResponse.status !== 200 ||
+      !videoDownloadResponse.body
+    ) {
+      throw new Error('Failed to fetch video');
+    }
+  
+    Readable.from(videoDownloadResponse.body).pipe(fs.createWriteStream(path));
+}
+
+
 const genererVideoIAFlow = ai.defineFlow(
   {
     name: 'genererVideoIAFlow',
@@ -43,27 +65,24 @@ const genererVideoIAFlow = ai.defineFlow(
   },
   async (input) => {
 
-    const promptParts = [
+    const promptParts: (string | MediaPart)[] = [
         { text: input.prompt }
     ];
     
     if (input.imagesBase64 && input.imagesBase64.length > 0) {
       input.imagesBase64.forEach(imageBase64 => {
-        promptParts.push(media({ url: imageBase64 }));
+        promptParts.push(genkitMedia({ url: imageBase64 }));
       });
     }
 
-    let result = await ai.experimental.generate({
-        model: googleAI.model('veo-2'),
+    let { operation } = await ai.generate({
+        model: googleAI.model('veo-2.0-generate-001'),
         prompt: promptParts,
         config: {
-          // @ts-ignore
-          duration: `${input.dureeSecondes}s`,
+          durationSeconds: input.dureeSecondes,
           aspectRatio: input.format,
         },
     });
-
-    let operation = await result.operation();
 
     if (!operation) {
         throw new Error('Le modèle n\'a pas retourné d\'opération de longue durée.');
@@ -73,18 +92,19 @@ const genererVideoIAFlow = ai.defineFlow(
     while (!operation.done) {
         // Attendre 5 secondes avant de vérifier à nouveau
         await new Promise((resolve) => setTimeout(resolve, 5000));
-        operation = await ai.getOperation(operation.name);
+        operation = await ai.checkOperation(operation);
     }
 
     if (operation.error) {
         throw new Error(`Échec de la génération de la vidéo : ${operation.error.message}`);
     }
     
-    const videoPart = operation.result?.response?.candidates[0].message.parts.find(p => !!p.media);
+    const videoPart = operation.output?.message?.content.find(p => !!p.media);
+    
     if (!videoPart || !videoPart.media?.url) {
         throw new Error('Aucune vidéo n\'a été trouvée dans le résultat de l\'opération.');
     }
-
+    
     // Récupérer le contenu de la vidéo depuis l'URL signée
     const fetch = (await import('node-fetch')).default;
     const apiKey = process.env.GEMINI_API_KEY;
@@ -92,7 +112,7 @@ const genererVideoIAFlow = ai.defineFlow(
         throw new Error("La clé d'API GEMINI_API_KEY est manquante.");
     }
     
-    const videoResponse = await fetch(videoPart.media.url);
+    const videoResponse = await fetch(`${videoPart.media.url}&key=${apiKey}`);
 
     if (!videoResponse.ok || !videoResponse.body) {
         throw new Error(`Échec du téléchargement de la vidéo: ${videoResponse.statusText}`);

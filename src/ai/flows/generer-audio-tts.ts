@@ -15,7 +15,7 @@ import wav from 'wav';
 
 export const GenererAudioTTSInputSchema = z.object({
   texte: z.string().describe('Le texte à convertir en audio.'),
-  voix: z.string().describe('La voix à utiliser pour la génération.').optional().default('echo'),
+  voix: z.string().describe('La voix à utiliser pour la génération.').optional().default('Algenib'),
 });
 export type GenererAudioTTSInput = z.infer<typeof GenererAudioTTSInputSchema>;
 
@@ -59,18 +59,22 @@ const genererAudioTTSFlow = ai.defineFlow(
   },
   async (input) => {
     const { media } = await ai.generate({
-      model: googleAI.model('text-to-speech-1'),
+      model: googleAI.model('gemini-2.5-flash-preview-tts'),
       prompt: input.texte,
       config: {
-        // @ts-ignore
-        voice: input.voix
+        responseModalities: ['AUDIO'],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: input.voix },
+          },
+        },
       }
     });
     
-    const audioUrl = media.url;
-    if (!audioUrl) {
+    if (!media) {
       throw new Error("La génération audio a échoué.");
     }
+    const audioUrl = media.url;
 
     const audioBuffer = Buffer.from(
       audioUrl.substring(audioUrl.indexOf(',') + 1),

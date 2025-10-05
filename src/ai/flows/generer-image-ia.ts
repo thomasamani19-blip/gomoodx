@@ -34,7 +34,7 @@ const genererImageIAFlow = ai.defineFlow(
     const fullPrompt = `${input.prompt}, style: ${input.style || 'photorealistic'}`;
 
     const { media } = await ai.generate({
-      model: googleAI.model('imagen-2'),
+      model: googleAI.model('imagen-4.0-fast-generate-001'),
       prompt: fullPrompt,
     });
 

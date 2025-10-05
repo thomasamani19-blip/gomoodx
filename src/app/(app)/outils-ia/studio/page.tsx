@@ -232,6 +232,8 @@ function VideoGeneratorTab() {
         const input = {
             prompt: formData.get('prompt') as string,
             imagesBase64: images,
+            dureeSecondes: 5,
+            format: '16:9' as '16:9' | '9:16'
         };
 
         if (!input.prompt) {

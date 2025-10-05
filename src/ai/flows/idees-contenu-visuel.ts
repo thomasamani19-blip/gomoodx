@@ -52,7 +52,7 @@ const ideesContenuVisuelFlow = ai.defineFlow(
           schema: IdeesContenuVisuelOutputSchema,
         }
       });
-      return llmResponse.output() ?? { idees: [] };
+      return llmResponse.output ?? { idees: [] };
   }
 );
 

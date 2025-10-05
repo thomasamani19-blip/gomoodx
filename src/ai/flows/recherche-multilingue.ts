@@ -89,7 +89,7 @@ const rechercheMultilingueFlow = ai.defineFlow(
             }
         });
         
-        const output = llmResponse.output();
+        const output = llmResponse.output;
         if (!output) {
             // Si l'IA ne peut pas directement formater, on fait le travail manuellement
             const toolResults = llmResponse.toolRequests();
