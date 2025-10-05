@@ -7,21 +7,18 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, Settings, User as UserIcon, Palette } from 'lucide-react';
-import { useAuth, User } from '@/hooks/use-auth';
-import type { UserRole } from '@/lib/types';
+import { LogOut, Settings, User as UserIcon } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 
 export function AppHeader() {
-  const { user, logout, setUserRole } = useAuth();
+  const { user, logout } = useAuth();
   const isMobile = useIsMobile();
 
   return (
@@ -30,39 +27,21 @@ export function AppHeader() {
       
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
         <div className="ml-auto flex-1 sm:flex-initial">
-          {/* Role switcher for demo purposes */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Palette className="h-4 w-4" />
-                <span className="hidden sm:inline">Changer de rôle (Démo)</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Choisir un rôle</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuRadioGroup value={user?.role} onValueChange={(value) => setUserRole(value as UserRole)}>
-                <DropdownMenuRadioItem value="client">Client</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="escorte">Escorte</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="partenaire">Partenaire</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="administrateur">Admin</DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Espace réservé si besoin d'autres actions */}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
-                {user?.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-                <AvatarFallback>{user?.name?.charAt(0) ?? 'U'}</AvatarFallback>
+                {user?.avatar && <AvatarImage src={user.avatar} alt={user.nom} />}
+                <AvatarFallback>{user?.nom?.charAt(0) ?? 'U'}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.name}</p>
+                <p className="text-sm font-medium leading-none">{user?.nom}</p>
                 <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
               </div>
             </DropdownMenuLabel>

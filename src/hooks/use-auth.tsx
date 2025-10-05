@@ -13,18 +13,16 @@ import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 
 export interface User {
+  id: string;
   nom: string;
   email: string;
   role: UserRole;
   avatar?: string;
 }
 
-export interface UserWithId extends User {
-    id: string;
-}
 
 interface AuthContextType {
-  user: UserWithId | null;
+  user: User | null;
   firebaseUser: FirebaseUser | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
@@ -35,7 +33,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { user, firebaseUser, loading, error } = useFirebaseUserHook();
+  const { user, firebaseUser, loading } = useFirebaseUserHook();
   const auth = useFirebaseAuthHook();
   const firestore = useFirestore();
   
@@ -53,7 +51,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nom: name,
         email: email,
         role: role,
-        // Add other default fields if needed
     });
   }
 
@@ -62,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo(() => ({ 
-      user: user as UserWithId | null, 
+      user: user as User | null, 
       firebaseUser,
       loading, 
       login, 
