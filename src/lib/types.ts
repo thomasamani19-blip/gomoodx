@@ -90,3 +90,23 @@ export type MonthlyRevenue = {
     month: string;
     revenue: number;
 };
+
+export type CreatorStats = {
+    id: string;
+    monthlyRevenue: {
+        value: number;
+        change: number;
+    };
+    newSubscribers: {
+        value: number;
+        change: number;
+    };
+    profileViews: {
+        value: number;
+        change: number;
+    };
+    engagementRate: {
+        value: number;
+        change: number;
+    };
+};

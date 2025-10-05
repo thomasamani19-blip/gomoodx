@@ -1,11 +1,14 @@
 'use client';
-import { AreaChart, BarChart, FileSearch, LineChart, TrendingUp, Users } from 'lucide-react';
-import { Area, Bar, CartesianGrid, Legend, Line, Tooltip, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { AreaChart, BarChart, FileSearch, TrendingUp, Users } from 'lucide-react';
+import { Area, Bar, CartesianGrid, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import PageHeader from '@/components/shared/page-header';
-import type { MonthlyRevenue } from '@/lib/types';
+import type { CreatorStats, MonthlyRevenue } from '@/lib/types';
+import { useAuth } from '@/hooks/use-auth';
+import { useDoc } from '@/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const chartData: MonthlyRevenue[] = [
@@ -48,52 +51,79 @@ const profileViewsData = [
     { date: '07/06', views: 220 },
 ];
 
+const StatCard = ({ title, value, change, icon: Icon, loading }: { title: string, value: string, change: string, icon: React.ElementType, loading: boolean}) => {
+    if (loading) {
+        return (
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-8 w-1/2 mb-1" />
+                    <Skeleton className="h-3 w-1/3" />
+                </CardContent>
+            </Card>
+        );
+    }
+
+    const changeIsPositive = change.startsWith('+');
+
+    return (
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{value}</div>
+                <p className={`text-xs text-muted-foreground ${changeIsPositive ? 'text-green-600' : 'text-red-600'}`}>{change}</p>
+            </CardContent>
+        </Card>
+    );
+};
+
+
 const StatsPage = () => {
+    const { user, loading: authLoading } = useAuth();
+    const statsPath = user ? `/creators/${user.id}/stats/main` : null;
+    const { data: stats, loading: statsLoading } = useDoc<CreatorStats>(statsPath);
+
+    const loading = authLoading || statsLoading;
+
   return (
     <div>
       <PageHeader title="Statistiques" description="Analysez vos performances et suivez votre croissance." />
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Revenus (30j)</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">4,250 €</div>
-            <p className="text-xs text-muted-foreground">+15.2% depuis le mois dernier</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Nouveaux Abonnés</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+78</div>
-            <p className="text-xs text-muted-foreground">+32 depuis le mois dernier</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vues de Profil (7j)</CardTitle>
-            <FileSearch className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">12,345</div>
-            <p className="text-xs text-muted-foreground">+8.1% depuis la semaine dernière</p>
-          </CardContent>
-        </Card>
-         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taux d'Engagement</CardTitle>
-            <BarChart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">12.5%</div>
-            <p className="text-xs text-muted-foreground">Stable cette semaine</p>
-          </CardContent>
-        </Card>
+        <StatCard
+            title="Revenus (30j)"
+            value={stats?.monthlyRevenue?.value ? `${stats.monthlyRevenue.value.toLocaleString('fr-FR')} €` : 'N/A'}
+            change={stats?.monthlyRevenue?.change ? `${stats.monthlyRevenue.change > 0 ? '+' : ''}${stats.monthlyRevenue.change.toFixed(1)}%` : '-'}
+            icon={TrendingUp}
+            loading={loading}
+        />
+        <StatCard
+            title="Nouveaux Abonnés"
+            value={stats?.newSubscribers?.value ? `+${stats.newSubscribers.value}` : 'N/A'}
+            change={stats?.newSubscribers?.change ? `${stats.newSubscribers.change > 0 ? '+' : ''}${stats.newSubscribers.change} depuis hier` : '-'}
+            icon={Users}
+            loading={loading}
+        />
+        <StatCard
+            title="Vues de Profil (7j)"
+            value={stats?.profileViews?.value ? stats.profileViews.value.toLocaleString('fr-FR') : 'N/A'}
+            change={stats?.profileViews?.change ? `${stats.profileViews.change > 0 ? '+' : ''}${stats.profileViews.change.toFixed(1)}%` : '-'}
+            icon={FileSearch}
+            loading={loading}
+        />
+         <StatCard
+            title="Taux d'Engagement"
+            value={stats?.engagementRate?.value ? `${stats.engagementRate.value.toFixed(1)}%` : 'N/A'}
+            change={stats?.engagementRate?.change ? `${stats.engagementRate.change > 0 ? '+' : ''}${stats.engagementRate.change.toFixed(1)}%` : '-'}
+            icon={BarChart}
+            loading={loading}
+        />
       </div>
 
       <div className="grid gap-8 md:grid-cols-2">

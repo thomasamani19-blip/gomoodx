@@ -186,7 +186,7 @@
           "format": "date-time"
         },
         "description": {
-            "type": "string"
+          "type": "string"
         }
       },
       "required": ["amount", "type", "date"]
@@ -227,6 +227,41 @@
         }
       },
       "required": ["conversationId", "content", "timestamp", "senderId", "receiverId"]
+    },
+    "creatorStats": {
+      "title": "Creator Statistics",
+      "description": "Represents the performance statistics for a creator.",
+      "type": "object",
+      "properties": {
+        "monthlyRevenue": {
+          "type": "object",
+          "properties": {
+            "value": { "type": "number" },
+            "change": { "type": "number" }
+          }
+        },
+        "newSubscribers": {
+          "type": "object",
+          "properties": {
+            "value": { "type": "number" },
+            "change": { "type": "number" }
+          }
+        },
+        "profileViews": {
+          "type": "object",
+          "properties": {
+            "value": { "type": "number" },
+            "change": { "type": "number" }
+          }
+        },
+        "engagementRate": {
+          "type": "object",
+          "properties": {
+            "value": { "type": "number" },
+            "change": { "type": "number" }
+          }
+        }
+      }
     }
   },
   "auth": {
@@ -246,17 +281,23 @@
       "description": "Collection of all services offered."
     },
     "/creators/{creatorId}": {
-        "schema": {
-            "$ref": "#/entities/creator"
-        },
-        "description": "Stores creator-specific public information."
+      "schema": {
+        "$ref": "#/entities/creator"
+      },
+      "description": "Stores creator-specific public information."
     },
     "/creators/{creatorId}/premiumContent": {
-        "schema": {
-            "type": "object",
-            "properties": {}
-        },
-        "description": "Sub-collection for a creator's premium content."
+      "schema": {
+        "type": "object",
+        "properties": {}
+      },
+      "description": "Sub-collection for a creator's premium content."
+    },
+    "/creators/{creatorId}/stats/{statId}": {
+      "schema": {
+        "$ref": "#/entities/creatorStats"
+      },
+      "description": "Stores time-series or aggregated stats for a creator."
     },
     "/products": {
       "schema": {
@@ -283,22 +324,22 @@
       "description": "Stores partner information."
     },
     "/users/{userId}/transactions": {
-        "schema": {
-            "$ref": "#/entities/transaction"
-        },
-        "description": "A user's transaction history."
+      "schema": {
+        "$ref": "#/entities/transaction"
+      },
+      "description": "A user's transaction history."
     },
     "/users/{userId}/wallet": {
-        "schema": {
-            "$ref": "#/entities/wallet"
-        },
-        "description": "A user's wallet document."
+      "schema": {
+        "$ref": "#/entities/wallet"
+      },
+      "description": "A user's wallet document."
     },
     "/messages": {
-        "schema": {
-            "$ref": "#/entities/message"
-        },
-        "description": "Stores all chat messages."
+      "schema": {
+        "$ref": "#/entities/message"
+      },
+      "description": "Stores all chat messages."
     }
   }
 }
