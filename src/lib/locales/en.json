@@ -1,0 +1,33 @@
+{
+  "header": {
+    "nav": {
+      "services": "Services",
+      "blog": "Blog",
+      "shop": "Shop",
+      "live": "Live",
+      "login": "Login"
+    }
+  },
+  "hero": {
+    "title": "Sensual Elixir",
+    "subtitle": "Explore a universe of desires, encounters, and exclusive content.",
+    "cta": "Join the Experience"
+  },
+  "footer": {
+    "links": {
+      "cgu": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "contact": "Contact"
+    }
+  },
+  "messages": {
+    "validation": {
+      "required": "This field is required.",
+      "email": "Please enter a valid email address."
+    },
+    "errors": {
+      "paymentFailed": "Payment failed. Please try again.",
+      "unauthorized": "Unauthorized action."
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "header": {
+    "nav": {
+      "services": "Services",
+      "blog": "Blog",
+      "shop": "Boutique",
+      "live": "Live",
+      "login": "Connexion"
+    }
+  },
+  "hero": {
+    "title": "Élixir Sensuel",
+    "subtitle": "Explorez un univers de désirs, de rencontres et de contenus exclusifs.",
+    "cta": "Rejoignez l'Expérience"
+  },
+  "footer": {
+    "links": {
+      "cgu": "Conditions d'Utilisation",
+      "privacy": "Politique de Confidentialité",
+      "contact": "Contact"
+    }
+  },
+  "messages": {
+    "validation": {
+      "required": "Ce champ est requis.",
+      "email": "Veuillez entrer une adresse e-mail valide."
+    },
+    "errors": {
+      "paymentFailed": "Le paiement a échoué. Veuillez réessayer.",
+      "unauthorized": "Action non autorisée."
+    }
+  }
+}

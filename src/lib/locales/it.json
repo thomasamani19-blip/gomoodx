@@ -1,0 +1,23 @@
+{
+  "header": {
+    "nav": {
+      "services": "Servizi",
+      "blog": "Blog",
+      "shop": "Negozio",
+      "live": "Dal Vivo",
+      "login": "Accesso"
+    }
+  },
+  "hero": {
+    "title": "Elisir Sensuale",
+    "subtitle": "Esplora un universo di desideri, incontri e contenuti esclusivi.",
+    "cta": "Unisciti all'Esperienza"
+  },
+  "footer": {
+    "links": {
+      "cgu": "Termini di Servizio",
+      "privacy": "Politica sulla Privacy",
+      "contact": "Contatto"
+    }
+  }
+}

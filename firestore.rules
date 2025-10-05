@@ -1,230 +1,73 @@
-/**
- * @file Firestore Security Rules
- * @description This ruleset enforces a strict user-ownership model for user profiles and related data,
- * allows public read access to certain collections like services, products, live sessions, blog articles, and partners,
- * and restricts access to creator-specific data and statistics to the respective creator.
- *
- * Data Structure:
- * - /users/{userId}: User profile information, accessible only to the user.
- * - /services: Public collection of services.
- * - /creators/{creatorId}: Creator profiles, accessible to everyone.
- * - /creators/{creatorId}/premiumContent: Premium content of a creator, only accessible to the creator.
- * - /creators/{creatorId}/stats/{statId}: Creator stats, accessible only to the creator.
- * - /products: Public collection of products.
- * - /liveSessions: Public collection of live sessions.
- * - /blogArticles: Public collection of blog articles.
- * - /partners/{partnerId}: Partner information, accessible to everyone.
- * - /users/{userId}/transactions: User's transaction history, accessible only to the user.
- * - /users/{userId}/wallet: User's wallet, accessible only to the user.
- * - /messages: Chat messages, access controlled by sender and receiver IDs.
- *
- * Key Security Decisions:
- * - User listing is disallowed.
- * - Public read access is granted to collections like services, products, liveSessions, blogArticles and partners.
- * - Write access to user-owned data is strictly enforced.
- * - Creator-specific data is only accessible to the creator.
- *
- * Denormalization for Authorization:
- *  - The `service` entity requires the `creator_id` field to be present for authorization of the owner.
- *  - The `message` entity requires both `senderId` and `receiverId` to correctly authorize messages.
- *
- * Structural Segregation:
- *  - Public content (services, products, articles) is stored in top-level collections for public read access.
- *  - Private user data (profiles, transactions, wallet) is stored under the /users/{userId} path.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Manages access to user profile information.
-     * @path /users/{userId}
-     * @allow (create) User with ID 'user123' can create their own profile.
-     * @deny (create) User with ID 'user123' cannot create a profile for 'user456'.
-     * @allow (get) User with ID 'user123' can read their own profile.
-     * @deny (get) User with ID 'user123' cannot read the profile of 'user456'.
-     * @allow (update) User with ID 'user123' can update their own profile.
-     * @deny (update) User with ID 'user123' cannot update the profile of 'user456'.
-     * @allow (delete) User with ID 'user123' can delete their own profile.
-     * @deny (delete) User with ID 'user123' cannot delete the profile of 'user456'.
-     * @principle Enforces document ownership for writes and restricts access to a user's own data.
-     */
+    // users : lecture propre ou admin
     match /users/{userId} {
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      allow read: if request.auth != null && (
+        request.auth.uid == userId ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
+      );
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if false;
     }
 
-    /**
-     * @description Manages access to the services collection.
-     * @path /services
-     * @allow (get, list) Any user can read the list of services.
-     * @deny (create, update, delete) Only the owner can modify services.
-     * @principle Public read access with owner-only writes.
-     */
-    match /services {
-      allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.creator_id == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.creator_id == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.creator_id == request.auth.uid;
+    // public read for services / products / blog
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["creator","admin"]
+      );
     }
 
-    /**
-     * @description Manages access to creator profile information.
-     * @path /creators/{creatorId}
-     * @allow (get, list) Any user can read creator profile information.
-     * @deny (create, update, delete) Only the creator can modify their profile.
-     * @principle Public read access with owner-only writes.
-     */
-    match /creators/{creatorId} {
-      allow get, list: if true;
-      allow create: if false; // Assuming creators are created through a backend process
-      allow update: if isSignedIn() && request.auth.uid == creatorId;
-      allow delete: if isSignedIn() && request.auth.uid == creatorId;
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["creator","partner","admin"]
+      );
     }
 
-    /**
-     * @description Manages access to premium content for a specific creator.
-     * @path /creators/{creatorId}/premiumContent
-     * @allow (get, list) Only the creator can read their own premium content.
-     * @deny (create, update, delete) Only the creator can modify their premium content.
-     * @principle Restricts access to creator-specific content to the creator.
-     */
-    match /creators/{creatorId}/premiumContent/{documentId} {
-      allow get, list: if isSignedIn() && request.auth.uid == creatorId;
-      allow create: if isSignedIn() && request.auth.uid == creatorId;
-      allow update: if isSignedIn() && request.auth.uid == creatorId;
-      allow delete: if isSignedIn() && request.auth.uid == creatorId;
+    match /blogArticles/{articleId} {
+      allow read: if true;
+      allow write: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["creator","admin"]
+      );
     }
 
-    /**
-     * @description Manages access to creator statistics.
-     * @path /creators/{creatorId}/stats/{statId}
-     * @allow (get, list) Only the creator can read their own statistics.
-     * @deny (create, update, delete) Only the creator can modify their statistics.
-     * @principle Restricts access to creator-specific statistics to the creator.
-     */
-    match /creators/{creatorId}/stats/{statId} {
-      allow get: if isSignedIn() && request.auth.uid == creatorId;
-      allow list: if isSignedIn() && request.auth.uid == creatorId;
-      allow create: if isSignedIn() && request.auth.uid == creatorId;
-      allow update: if isSignedIn() && request.auth.uid == creatorId;
-      allow delete: if isSignedIn() && request.auth.uid == creatorId;
+    match /liveSessions/{sessionId} {
+      allow read: if true;
+      allow write: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["creator","admin"]
+      );
     }
 
-    /**
-     * @description Manages access to the products collection.
-     * @path /products
-     * @allow (get, list) Any user can read the list of products.
-     * @deny (create, update, delete) Only authorized users can modify products.
-     * @principle Public read access with restricted writes.
-     */
-    match /products {
-      allow get, list: if true;
-      allow create: if false; // Assuming products are created through a backend process
-      allow update: if false; // Assuming products are updated through a backend process
-      allow delete: if false; // Assuming products are deleted through a backend process
+    match /messages/{messageId} {
+      allow read, create: if request.auth != null && (
+        request.auth.uid == resource.data.fromId || request.auth.uid == resource.data.toId
+      );
+      allow update, delete: if false;
+    }
+    
+    match /wallet/{walletId}/transactions/{transactionId} {
+      allow read, create: if request.auth != null && request.auth.uid == walletId;
+      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }
 
-    /**
-     * @description Manages access to the liveSessions collection.
-     * @path /liveSessions
-     * @allow (get, list) Any user can read the list of live sessions.
-     * @deny (create, update, delete) Only authorized users can modify live sessions.
-     * @principle Public read access with restricted writes.
-     */
-    match /liveSessions {
-      allow get, list: if true;
-      allow create: if false; // Assuming live sessions are created through a backend process
-      allow update: if false; // Assuming live sessions are updated through a backend process
-      allow delete: if false; // Assuming live sessions are deleted through a backend process
-    }
-
-    /**
-     * @description Manages access to the blogArticles collection.
-     * @path /blogArticles
-     * @allow (get, list) Any user can read the list of blog articles.
-     * @deny (create, update, delete) Only authorized users can modify blog articles.
-     * @principle Public read access with restricted writes.
-     */
-    match /blogArticles {
-      allow get, list: if true;
-      allow create: if false; // Assuming blog articles are created through a backend process
-      allow update: if false; // Assuming blog articles are updated through a backend process
-      allow delete: if false; // Assuming blog articles are deleted through a backend process
-    }
-
-    /**
-     * @description Manages access to partner information.
-     * @path /partners/{partnerId}
-     * @allow (get, list) Any user can read partner information.
-     * @deny (create, update, delete) Only authorized users can modify partner information.
-     * @principle Public read access with restricted writes.
-     */
     match /partners/{partnerId} {
-      allow get, list: if true;
-      allow create: if false; // Assuming partners are created through a backend process
-      allow update: if false; // Assuming partners are updated through a backend process
-      allow delete: if false; // Assuming partners are deleted through a backend process
+      allow read: if true;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }
 
-    /**
-     * @description Manages access to a user's transaction history.
-     * @path /users/{userId}/transactions
-     * @allow (get, list) Only the user can read their own transaction history.
-     * @deny (create, update, delete) Only the user can modify their transaction history.
-     * @principle Restricts access to a user's own transaction data.
-     */
-    match /users/{userId}/transactions/{transactionId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+    match /aiTasks/{taskId} {
+      allow create: if request.auth != null;
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin");
+      allow update, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }
 
-    /**
-     * @description Manages access to a user's wallet.
-     * @path /users/{userId}/wallet
-     * @allow (get) Only the user can read their own wallet.
-     * @deny (create, update, delete) Only the user can modify their own wallet.
-     * @principle Restricts access to a user's own wallet data.
-     */
-    match /users/{userId}/wallet {
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+    // deny all by default
+    match /{document=**} {
+      allow read, write: if false;
     }
-
-    /**
-     * @description Manages access to messages.
-     * @path /messages
-     * @allow (create) Any signed-in user can create a message.
-     * @deny (get, list, update, delete) Only participants can access messages.
-     */
-     match /messages/{messageId} {
-        allow create: if isSignedIn() && request.resource.data.senderId == request.auth.uid;
-        allow get: if isSignedIn() && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
-        allow list: if isSignedIn();
-        allow update: if false;
-        allow delete: if false;
-     }
-
   }
 }
