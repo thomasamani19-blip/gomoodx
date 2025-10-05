@@ -52,7 +52,7 @@ const navConfig: Record<UserRole, { title: string; href: string; icon: React.Ele
   ],
   escorte: [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    // { title: 'Statistiques', href: '/statistiques', icon: BarChart3 },
+    { title: 'Statistiques', href: '/statistiques', icon: BarChart3 },
     { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
     { title: 'Recherche', href: '/recherche', icon: Search },
     { title: 'Générer Bio', href: '/outils-ia/generer-bio', icon: PenSquare },

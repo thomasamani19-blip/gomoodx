@@ -75,4 +75,9 @@ export type Wallet = {
     id: string;
     balance: number;
     history: Transaction[];
-}
+};
+
+export type MonthlyRevenue = {
+    month: string;
+    revenue: number;
+};
