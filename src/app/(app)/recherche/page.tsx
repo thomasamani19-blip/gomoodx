@@ -122,7 +122,7 @@ export default function RecherchePage() {
                            <CardHeader>
                                <CardTitle className="flex items-center gap-2">
                                   <span className={`capitalize text-xs font-medium px-2 py-0.5 rounded-full ${item.type === 'profil' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>{item.type}</span>
-                                  <Link href={item.url} className="hover:underline" target="_blank">{item.titre}</Link>
+                                  <Link href={item.url} className="hover:underline">{item.titre}</Link>
                                 </CardTitle>
                            </CardHeader>
                            <CardContent>
