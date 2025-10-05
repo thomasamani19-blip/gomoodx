@@ -12,16 +12,6 @@ import { CreatorCarousel } from '@/components/features/creators/creator-carousel
 import { ProductCarousel } from '@/components/features/products/product-carousel';
 import { ServiceCarousel } from '@/components/features/services/service-carousel';
 
-// This is a mock of what could be a "sections" collection in Firestore
-// to dynamically build the homepage.
-const MOCK_SECTIONS = [
-    { id: 'services', title: 'Services Populaires', link: '/services', type: 'service' },
-    { id: 'creators', title: 'Créateurs en Tendance', link: '/creators', type: 'creator' },
-    { id: 'products', title: 'Nouveautés Boutique', link: '/shop', type: 'product' },
-    // { id: 'live', title: 'En Direct Maintenant', link: '/live', type: 'live' },
-    // { id: 'blog', title: 'Derniers Articles', link: '/blog', type: 'blog' },
-]
-
 export default function Home() {
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-main');
   const { data: sections, loading } = useCollection<{id: string; title: string; link: string; type: string;}>('sections');
@@ -69,7 +59,7 @@ export default function Home() {
         </section>
 
         <div className="space-y-16 py-16">
-          {(sections ?? MOCK_SECTIONS).map(section => (
+          {sections && sections.map(section => (
             <section key={section.id} className="container mx-auto px-4">
               <h2 className="font-headline text-3xl md:text-4xl font-bold mb-8 text-center">
                 {section.title}
