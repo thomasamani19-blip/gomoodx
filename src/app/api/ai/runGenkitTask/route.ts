@@ -2,8 +2,11 @@
 import { NextResponse } from 'next/server';
 // import { firestore } from '@/lib/firebase';
 // import { collection, doc, setDoc, Timestamp } from 'firebase/firestore';
-// import { genkit } from '@/lib/genkit';
-// import { generateBioFlow, generateImageFlow } from './flows';
+import {run} from 'genkit/flow';
+import {
+    genererBioEscorteFlow,
+    ideesContenuVisuelFlow,
+  } from '@/ai/flows';
 
 export async function POST(request: Request) {
   try {
@@ -22,29 +25,26 @@ export async function POST(request: Request) {
     // await setDoc(doc(firestore, 'aiTasks', taskId), { ... });
 
     // 2. Trigger the correct Genkit flow based on `type`.
-    // let output;
-    // switch (type) {
-    //   case 'bio':
-    //     output = await generateBioFlow.run(input);
-    //     break;
-    //   case 'image':
-    //     output = await generateImageFlow.run(input);
-    //     // Save output to storage and get URL
-    //     break;
-    //   default:
-    //     throw new Error('Unsupported AI task type');
-    // }
+    let output;
+    switch (type) {
+       case 'bio':
+         output = await run(genererBioEscorteFlow, input);
+         break;
+       case 'ideas':
+         output = await run(ideesContenuVisuelFlow, input);
+         break;
+      // case 'image':
+      //   output = await generateImageFlow.run(input);
+      //   // Save output to storage and get URL
+      //   break;
+      default:
+        throw new Error('Unsupported AI task type');
+    }
     
     // 3. Update the task document with the result and "done" status.
     // await updateDoc(doc(firestore, 'aiTasks', taskId), { output, status: 'done', outputUrl: ... });
 
-    const mockOutput = {
-        taskId: "mock_task_123",
-        status: "done",
-        result: `Mock AI result for type: ${type}`
-    };
-
-    return NextResponse.json(mockOutput);
+    return NextResponse.json(output);
 
   } catch (error) {
     console.error('Error running AI task:', error);

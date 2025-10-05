@@ -1,4 +1,3 @@
-// Utiliser server side rendering
 'use server';
 
 /**
@@ -10,9 +9,9 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'genkit/zod';
 
-const IdeesContenuVisuelInputSchema = z.object({
+export const IdeesContenuVisuelInputSchema = z.object({
   theme: z.string().describe("Le thème général du contenu recherché (par exemple, 'voyage', 'mode', 'fitness', 'sexy')."),
   tendances: z.string().describe("Les tendances actuelles sur les réseaux sociaux et plateformes de contenu.").optional(),
   typeDeContenu: z.enum(["image", "video", "les deux"]).describe("Le type de contenu visuel souhaité (image, vidéo, ou les deux).").optional(),
@@ -22,41 +21,11 @@ const IdeesContenuVisuelInputSchema = z.object({
 });
 export type IdeesContenuVisuelInput = z.infer<typeof IdeesContenuVisuelInputSchema>;
 
-const IdeesContenuVisuelOutputSchema = z.object({
+export const IdeesContenuVisuelOutputSchema = z.object({
   idees: z.array(z.string()).describe("Une liste d'idées de contenu visuel (images et vidéos) originales et tendances, adaptées au thème, aux tendances, au style et aux objectifs spécifiés."),
 });
 export type IdeesContenuVisuelOutput = z.infer<typeof IdeesContenuVisuelOutputSchema>;
 
-export async function ideesContenuVisuel(input: IdeesContenuVisuelInput): Promise<IdeesContenuVisuelOutput> {
-  return ideesContenuVisuelFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'ideesContenuVisuelPrompt',
-  input: {schema: IdeesContenuVisuelInputSchema},
-  output: {schema: IdeesContenuVisuelOutputSchema},
-  prompt: `Tu es un expert en création de contenu visuel tendance pour les escortes. Ton rôle est de proposer des idées originales et engageantes qui correspondent à leur style et à leurs objectifs.
-
-  Génère une liste d'idées de contenu visuel (images et vidéos) originales et tendances, en tenant compte des informations suivantes :
-
-  - Thème: {{{theme}}}
-  - Tendances actuelles: {{{tendances}}}
-  - Type de contenu: {{{typeDeContenu}}}
-  - Style: {{{style}}}
-  - Objectifs: {{{objectifs}}}
-  - Public cible: {{{publicCible}}}
-
-  Assure-toi que les idées proposées sont adaptées au public cible de l'escorte et qu'elles sont réalisables avec des moyens simples et efficaces.  Les idées doivent être en français.
-
-  Format de sortie:
-  [
-    "idée 1",
-    "idée 2",
-    "idée 3",
-    ...
-  ]
-  `,
-});
 
 const ideesContenuVisuelFlow = ai.defineFlow(
   {
@@ -65,7 +34,31 @@ const ideesContenuVisuelFlow = ai.defineFlow(
     outputSchema: IdeesContenuVisuelOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    const llmResponse = await ai.generate({
+        prompt: `Tu es un expert en création de contenu visuel tendance pour les escortes. Ton rôle est de proposer des idées originales et engageantes qui correspondent à leur style et à leurs objectifs.
+
+        Génère une liste d'idées de contenu visuel (images et vidéos) originales et tendances, en tenant compte des informations suivantes :
+      
+        - Thème: ${input.theme}
+        - Tendances actuelles: ${input.tendances}
+        - Type de contenu: ${input.typeDeContenu}
+        - Style: ${input.style}
+        - Objectifs: ${input.objectifs}
+        - Public cible: ${input.publicCible}
+      
+        Assure-toi que les idées proposées sont adaptées au public cible de l'escorte et qu'elles sont réalisables avec des moyens simples et efficaces.  Les idées doivent être en français.`,
+        model: 'googleai/gemini-1.5-flash',
+        output: {
+          schema: IdeesContenuVisuelOutputSchema,
+        }
+      });
+      return llmResponse.output() ?? { idees: [] };
   }
 );
+
+export async function ideesContenuVisuel(
+    input: IdeesContenuVisuelInput
+  ): Promise<IdeesContenuVisuelOutput> {
+    return ideesContenuVisuelFlow(input);
+  }
+  

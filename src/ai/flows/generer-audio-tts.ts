@@ -9,26 +9,20 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
-import wav from 'wav';
 import { googleAI } from '@genkit-ai/google-genai';
+import { z } from 'genkit/zod';
+import wav from 'wav';
 
-const GenererAudioTTSInputSchema = z.object({
+export const GenererAudioTTSInputSchema = z.object({
   texte: z.string().describe('Le texte à convertir en audio.'),
-  voix: z.string().describe('La voix à utiliser pour la génération.').optional().default('Algenib'),
+  voix: z.string().describe('La voix à utiliser pour la génération.').optional().default('echo'),
 });
 export type GenererAudioTTSInput = z.infer<typeof GenererAudioTTSInputSchema>;
 
-const GenererAudioTTSOutputSchema = z.object({
+export const GenererAudioTTSOutputSchema = z.object({
   audioUrl: z.string().describe("L'URL de l'audio généré, encodé en Base64 data URI."),
 });
 export type GenererAudioTTSOutput = z.infer<typeof GenererAudioTTSOutputSchema>;
-
-
-export async function genererAudioTTS(input: GenererAudioTTSInput): Promise<GenererAudioTTSOutput> {
-    return genererAudioTTSFlow(input);
-}
-
 
 async function toWav(
   pcmData: Buffer,
@@ -65,24 +59,21 @@ const genererAudioTTSFlow = ai.defineFlow(
   },
   async (input) => {
     const { media } = await ai.generate({
-      model: googleAI.model('gemini-2.5-flash-preview-tts'),
-      config: {
-        responseModalities: ['AUDIO'],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: input.voix },
-          },
-        },
-      },
+      model: googleAI.model('text-to-speech-1'),
       prompt: input.texte,
+      config: {
+        // @ts-ignore
+        voice: input.voix
+      }
     });
     
-    if (!media?.url) {
+    const audioUrl = media.url;
+    if (!audioUrl) {
       throw new Error("La génération audio a échoué.");
     }
 
     const audioBuffer = Buffer.from(
-      media.url.substring(media.url.indexOf(',') + 1),
+      audioUrl.substring(audioUrl.indexOf(',') + 1),
       'base64'
     );
 
@@ -93,3 +84,10 @@ const genererAudioTTSFlow = ai.defineFlow(
     };
   }
 );
+
+
+export async function genererAudioTTS(
+  input: GenererAudioTTSInput
+): Promise<GenererAudioTTSOutput> {
+  return genererAudioTTSFlow(input);
+}

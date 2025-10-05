@@ -1,4 +1,3 @@
-// Utilise server pour l'exécution côté serveur.
 'use server';
 
 /**
@@ -10,9 +9,9 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'genkit/zod';
 
-const GenererBioEscorteInputSchema = z.object({
+export const GenererBioEscorteInputSchema = z.object({
   typeDeService: z.string().describe("Le type de service offert par l'escorte (e.g., rencontres, massages, etc.)."),
   personnalite: z.string().describe("La personnalité de l'escorte (e.g., charmante, aventureuse, douce)."),
   gouts: z.string().describe("Les goûts et préférences de l'escorte (e.g., voyages, gastronomie, art)."),
@@ -20,31 +19,11 @@ const GenererBioEscorteInputSchema = z.object({
 });
 export type GenererBioEscorteInput = z.infer<typeof GenererBioEscorteInputSchema>;
 
-const GenererBioEscorteOutputSchema = z.object({
+export const GenererBioEscorteOutputSchema = z.object({
   bio: z.string().describe("Une bio attrayante et unique pour l'escorte."),
 });
 export type GenererBioEscorteOutput = z.infer<typeof GenererBioEscorteOutputSchema>;
 
-export async function genererBioEscorte(input: GenererBioEscorteInput): Promise<GenererBioEscorteOutput> {
-  return genererBioEscorteFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'genererBioEscortePrompt',
-  input: {schema: GenererBioEscorteInputSchema},
-  output: {schema: GenererBioEscorteOutputSchema},
-  prompt: `Tu es un expert en rédaction de bios pour les escortes. Ton objectif est de créer une bio qui soit à la fois attrayante, unique et qui reflète la personnalité et les services offerts par l'escorte.
-
-Utilise les informations suivantes pour rédiger la bio:
-
-Type de service: {{{typeDeService}}}
-Personnalité: {{{personnalite}}}
-Goûts: {{{gouts}}}
-Attentes des clients: {{{attentesClients}}}
-
-Bio:
-`,
-});
 
 const genererBioEscorteFlow = ai.defineFlow(
   {
@@ -53,7 +32,28 @@ const genererBioEscorteFlow = ai.defineFlow(
     outputSchema: GenererBioEscorteOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    const llmResponse = await ai.generate({
+      prompt: `Tu es un expert en rédaction de bios pour les escortes. Ton objectif est de créer une bio qui soit à la fois attrayante, unique et qui reflète la personnalité et les services offerts par l'escorte.
+
+Utilise les informations suivantes pour rédiger la bio:
+
+Type de service: ${input.typeDeService}
+Personnalité: ${input.personnalite}
+Goûts: ${input.gouts}
+Attentes des clients: ${input.attentesClients}
+`,
+      model: 'googleai/gemini-1.5-flash',
+      output: {
+        schema: GenererBioEscorteOutputSchema,
+      }
+    });
+
+    return llmResponse.output() ?? { bio: "" };
   }
 );
+
+export async function genererBioEscorte(
+  input: GenererBioEscorteInput
+): Promise<GenererBioEscorteOutput> {
+  return genererBioEscorteFlow(input);
+}

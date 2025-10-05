@@ -8,11 +8,11 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'genkit/zod';
 import { googleAI } from '@genkit-ai/google-genai';
-import { MediaPart } from 'genkit';
+import { media } from 'genkit/ai';
 
-const GenererVideoIAInputSchema = z.object({
+export const GenererVideoIAInputSchema = z.object({
   prompt: z.string().describe('Une description détaillée de la vidéo à générer.'),
   dureeSecondes: z.number().optional().default(5).describe('Durée de la vidéo en secondes (entre 5 et 8).'),
   format: z.enum(['16:9', '9:16']).optional().default('16:9').describe('Format de la vidéo.'),
@@ -20,14 +20,10 @@ const GenererVideoIAInputSchema = z.object({
 });
 export type GenererVideoIAInput = z.infer<typeof GenererVideoIAInputSchema>;
 
-const GenererVideoIAOutputSchema = z.object({
+export const GenererVideoIAOutputSchema = z.object({
   videoUrl: z.string().describe("L'URL de la vidéo générée, encodée en Base64 data URI."),
 });
 export type GenererVideoIAOutput = z.infer<typeof GenererVideoIAOutputSchema>;
-
-export async function genererVideoIA(input: GenererVideoIAInput): Promise<GenererVideoIAOutput> {
-  return genererVideoIAFlow(input);
-}
 
 // Fonction pour convertir un flux de données en Base64
 async function streamToBase64(stream: NodeJS.ReadableStream): Promise<string> {
@@ -47,22 +43,27 @@ const genererVideoIAFlow = ai.defineFlow(
   },
   async (input) => {
 
-    const promptParts: (string | MediaPart)[] = [{ text: input.prompt }];
+    const promptParts = [
+        { text: input.prompt }
+    ];
     
     if (input.imagesBase64 && input.imagesBase64.length > 0) {
       input.imagesBase64.forEach(imageBase64 => {
-        promptParts.push({ media: { url: imageBase64 } });
+        promptParts.push(media({ url: imageBase64 }));
       });
     }
 
-    let { operation } = await ai.generate({
-        model: googleAI.model('veo-2.0-generate-001'),
+    let result = await ai.experimental.generate({
+        model: googleAI.model('veo-2'),
         prompt: promptParts,
         config: {
-          durationSeconds: input.dureeSecondes,
+          // @ts-ignore
+          duration: `${input.dureeSecondes}s`,
           aspectRatio: input.format,
         },
     });
+
+    let operation = await result.operation();
 
     if (!operation) {
         throw new Error('Le modèle n\'a pas retourné d\'opération de longue durée.');
@@ -72,15 +73,14 @@ const genererVideoIAFlow = ai.defineFlow(
     while (!operation.done) {
         // Attendre 5 secondes avant de vérifier à nouveau
         await new Promise((resolve) => setTimeout(resolve, 5000));
-        operation = await ai.checkOperation(operation);
+        operation = await ai.getOperation(operation.name);
     }
 
     if (operation.error) {
         throw new Error(`Échec de la génération de la vidéo : ${operation.error.message}`);
     }
-
-    const videoPart = operation.output?.message?.content.find((p) => !!p.media && p.media?.contentType === 'video/mp4');
     
+    const videoPart = operation.result?.response?.candidates[0].message.parts.find(p => !!p.media);
     if (!videoPart || !videoPart.media?.url) {
         throw new Error('Aucune vidéo n\'a été trouvée dans le résultat de l\'opération.');
     }
@@ -91,8 +91,8 @@ const genererVideoIAFlow = ai.defineFlow(
     if (!apiKey) {
         throw new Error("La clé d'API GEMINI_API_KEY est manquante.");
     }
-
-    const videoResponse = await fetch(`${videoPart.media.url}&key=${apiKey}`);
+    
+    const videoResponse = await fetch(videoPart.media.url);
 
     if (!videoResponse.ok || !videoResponse.body) {
         throw new Error(`Échec du téléchargement de la vidéo: ${videoResponse.statusText}`);
@@ -104,3 +104,10 @@ const genererVideoIAFlow = ai.defineFlow(
     return { videoUrl: videoDataUrl };
   }
 );
+
+
+export async function genererVideoIA(
+  input: GenererVideoIAInput
+): Promise<GenererVideoIAOutput> {
+  return genererVideoIAFlow(input);
+}

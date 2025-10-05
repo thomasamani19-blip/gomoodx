@@ -24,7 +24,8 @@
     "react": "^18",
     "react-dom": "^18",
     "tailwind-merge": "^2.4.0",
-    "three": "^0.167.0"
+    "three": "^0.167.0",
+    "wav": "^1.0.2"
   },
   "devDependencies": {
     "@types/node": "^20",

@@ -9,22 +9,20 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
+import { z } from 'genkit/zod';
 
-const GenererImageIAInputSchema = z.object({
+export const GenererImageIAInputSchema = z.object({
   prompt: z.string().describe('Une description détaillée de l’image à générer.'),
   style: z.string().describe("Le style de l'image (ex: photoréaliste, artistique, fantastique).").optional(),
 });
 export type GenererImageIAInput = z.infer<typeof GenererImageIAInputSchema>;
 
-const GenererImageIAOutputSchema = z.object({
+export const GenererImageIAOutputSchema = z.object({
   imageUrl: z.string().describe("L'URL de l'image générée, encodée en Base64 data URI."),
 });
 export type GenererImageIAOutput = z.infer<typeof GenererImageIAOutputSchema>;
 
-export async function genererImageIA(input: GenererImageIAInput): Promise<GenererImageIAOutput> {
-  return genererImageIAFlow(input);
-}
 
 const genererImageIAFlow = ai.defineFlow(
   {
@@ -36,14 +34,22 @@ const genererImageIAFlow = ai.defineFlow(
     const fullPrompt = `${input.prompt}, style: ${input.style || 'photorealistic'}`;
 
     const { media } = await ai.generate({
-      model: 'googleai/imagen-4.0-fast-generate-001',
+      model: googleAI.model('imagen-2'),
       prompt: fullPrompt,
     });
 
-    if (!media.url) {
+    const imageUrl = media.url;
+    if (!imageUrl) {
       throw new Error("La génération d'image a échoué.");
     }
 
-    return { imageUrl: media.url };
+    return { imageUrl };
   }
 );
+
+export async function genererImageIA(
+    input: GenererImageIAInput
+  ): Promise<GenererImageIAOutput> {
+    return genererImageIAFlow(input);
+  }
+  

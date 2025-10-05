@@ -2,10 +2,10 @@
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/idees-contenu-visuel.ts';
-import '@/ai/flows/recherche-multilingue.ts';
-import '@/ai/flows/suggere-publication-reseaux-sociaux.ts';
-import '@/ai/flows/generer-bio-escorte.ts';
-import '@/ai/flows/generer-image-ia.ts';
-import '@/ai/flows/generer-audio-tts.ts';
-import '@/ai/flows/generer-video-ia.ts';
+import '@/ai/flows/generer-bio-escorte';
+import '@/ai/flows/idees-contenu-visuel';
+import '@/ai/flows/recherche-multilingue';
+import '@/ai/flows/suggere-publication-reseaux-sociaux';
+import '@/ai/flows/generer-image-ia';
+import '@/ai/flows/generer-audio-tts';
+import '@/ai/flows/generer-video-ia';
