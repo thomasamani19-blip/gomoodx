@@ -13,22 +13,26 @@ import { fr } from 'date-fns/locale';
 import { ArrowDownCircle, ArrowUpCircle, PlusCircle } from 'lucide-react';
 
 export default function PortefeuillePage() {
-  const { user, firebaseUser } = useAuth();
-  // Note: For a real app, the wallet would be its own subcollection document.
-  // For this prototype, we assume it's part of the user document.
-  const { data: wallet, loading } = useDoc<Wallet>(firebaseUser ? `users/${firebaseUser.uid}/wallet/main` : '');
+  const { user } = useAuth();
+  // NOTE: In a real app with full Firebase setup, we'd get the user from `useAuth` which would contain the firebase user.
+  // For this prototype, we'll hardcode a UID for the wallet path.
+  const userId = 'escorte-uid'; // This would be dynamic, e.g., user.uid
+  const { data: wallet, loading } = useDoc<Wallet>(userId ? `users/${userId}/wallet/main` : null);
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'deposit':
+      case 'credit':
         return <ArrowUpCircle className="h-5 w-5 text-green-500" />;
       case 'purchase':
+      case 'debit':
         return <ArrowDownCircle className="h-5 w-5 text-red-500" />;
       default:
         return null;
     }
   }
 
+  // Sort history by date descending
   const sortedHistory = wallet?.history?.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
@@ -46,7 +50,7 @@ export default function PortefeuillePage() {
             <CardContent>
                 {loading && <Skeleton className="h-12 w-1/2" />}
                 {!loading && wallet && (
-                     <p className="text-5xl font-bold">{wallet.balance.toFixed(2)} €</p>
+                     <p className="text-5xl font-bold">{wallet.balance ? wallet.balance.toFixed(2) : '0.00'} €</p>
                 )}
                  {!loading && !wallet && (
                      <p className="text-5xl font-bold">0.00 €</p>
@@ -85,12 +89,12 @@ export default function PortefeuillePage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {sortedHistory.map((tx: Transaction) => (
-                                    <TableRow key={tx.id}>
+                                {sortedHistory.map((tx, index) => (
+                                    <TableRow key={tx.id || index}>
                                         <TableCell>{getTransactionIcon(tx.type)}</TableCell>
                                         <TableCell className="font-medium capitalize">{tx.description || tx.type}</TableCell>
-                                        <TableCell className={`text-right font-semibold ${tx.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>
-                                            {tx.type === 'deposit' ? '+' : '-'} {tx.amount.toFixed(2)} €
+                                        <TableCell className={`text-right font-semibold ${tx.type === 'deposit' || tx.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                                            {tx.type === 'deposit' || tx.type === 'credit' ? '+' : '-'} {tx.amount.toFixed(2)} €
                                         </TableCell>
                                         <TableCell className="text-right text-muted-foreground text-xs">
                                             {format(new Date(tx.date), "d MMM yyyy, HH:mm", { locale: fr })}

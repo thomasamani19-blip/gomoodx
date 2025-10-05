@@ -62,3 +62,17 @@ export type Conversation = {
     lastMessage: string;
     lastMessageTimestamp: string;
 };
+
+export type Transaction = {
+    id: string;
+    type: 'deposit' | 'purchase' | 'credit' | 'debit';
+    amount: number;
+    date: string;
+    description?: string;
+};
+
+export type Wallet = {
+    id: string;
+    balance: number;
+    history: Transaction[];
+}

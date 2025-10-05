@@ -2,7 +2,8 @@
 
 import type { UserRole } from '@/lib/types';
 import { createContext, useContext, ReactNode, useMemo } from 'react';
-import { useUser as useFirebaseUser } from '@/firebase';
+import { useUser as useFirebaseUserHook } from '@/firebase';
+import type { User as FirebaseUser } from 'firebase/auth';
 
 export interface User {
   name: string;
@@ -11,29 +12,32 @@ export interface User {
   avatar: string;
 }
 
+export interface UserWithId extends User {
+    id: string;
+}
+
 interface AuthContextType {
-  user: User | null;
+  user: UserWithId | null;
+  firebaseUser: FirebaseUser | null;
   loading: boolean;
-  login: (role: UserRole) => void; // This will be deprecated/removed
-  logout: () => void; // This will trigger Firebase sign out
+  login: (role: UserRole) => void;
+  logout: () => void;
   setUserRole: (role: UserRole) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { user, loading, manualSetUserRole } = useFirebaseUser();
+  const { user, firebaseUser, loading, manualSetUserRole } = useFirebaseUserHook();
   
-  // These will be replaced by actual Firebase auth calls
   const login = (role: UserRole) => {
     console.warn("login() is a mock function. Use Firebase SDK to sign in.");
     manualSetUserRole(role);
   };
 
   const logout = () => {
-    // In a real app, you would call signOut from 'firebase/auth'
-    console.log("Signing out...");
-    manualSetUserRole('client'); // For demo, just reset to a default role
+    console.log("Signing out... (mock)");
+    manualSetUserRole('client');
   };
   
   const setUserRole = (role: UserRole) => {
@@ -41,12 +45,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const value = useMemo(() => ({ 
-      user, 
+      user: user as UserWithId | null, 
+      firebaseUser,
       loading, 
       login, 
       logout, 
       setUserRole 
-    }), [user, loading, manualSetUserRole]);
+    }), [user, firebaseUser, loading, manualSetUserRole]);
 
   return (
     <AuthContext.Provider value={value}>
