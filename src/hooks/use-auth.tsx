@@ -18,6 +18,7 @@ export interface User {
   email: string;
   role: UserRole;
   avatar?: string;
+  pseudo?: string;
 }
 
 
@@ -51,6 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nom: name,
         email: email,
         role: role,
+        // Default avatar for new users
+        avatar: `https://avatar.vercel.sh/${firebaseUser.uid}.png`
     });
   }
 

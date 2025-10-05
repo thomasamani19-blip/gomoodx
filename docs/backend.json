@@ -34,6 +34,11 @@
         "stats": {
           "type": "object",
           "description": "User statistics."
+        },
+        "avatar": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to the user's avatar image."
         }
       },
       "required": ["role", "email", "nom"]
@@ -203,6 +208,10 @@
       "title": "Message",
       "type": "object",
       "properties": {
+        "conversationId": {
+          "type": "string",
+          "description": "ID to group messages in a conversation."
+        },
         "content": {
           "type": "string"
         },
@@ -210,11 +219,17 @@
           "type": "string",
           "format": "date-time"
         },
-        "type": {
+        "senderId": {
           "type": "string"
+        },
+        "receiverId": {
+          "type": "string"
+        },
+        "read": {
+          "type": "boolean"
         }
       },
-      "required": ["content", "timestamp"]
+      "required": ["conversationId", "content", "timestamp", "senderId", "receiverId"]
     }
   },
   "auth": {
@@ -282,11 +297,11 @@
         },
         "description": "A user's wallet document."
     },
-    "/messages/{messageId}": {
+    "/messages": {
         "schema": {
             "$ref": "#/entities/message"
         },
-        "description": "Stores individual chat messages."
+        "description": "Stores all chat messages."
     }
   }
 }

@@ -58,16 +58,17 @@ export type LiveSession = {
 
 export type Message = {
     id: string;
+    conversationId: string;
     content: string;
-    timestamp: string;
+    timestamp: string; // ou FieldValue
     senderId: string; 
-    senderName: string;
+    receiverId: string;
+    read: boolean;
 };
 
 export type Conversation = {
     id: string;
-    participantName: string;
-    participantAvatar: string;
+    participantIds: string[];
     lastMessage: string;
     lastMessageTimestamp: string;
 };
