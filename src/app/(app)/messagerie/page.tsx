@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import PageHeader from '@/components/shared/page-header';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,29 +14,69 @@ import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore } from '@/firebase';
 import { addDoc, collection, serverTimestamp, query, where, orderBy, or } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 export default function MessageriePage() {
     const { user, loading: authLoading } = useAuth();
     const firestore = useFirestore();
 
-    // Fetch potential contacts (all users except the current one)
-    const { data: users, loading: usersLoading } = useCollection<User>('users');
-    const contacts = useMemo(() => users?.filter(u => u.id !== user?.id), [users, user]);
-    
     const [selectedContact, setSelectedContact] = useState<User | null>(null);
     const [newMessage, setNewMessage] = useState('');
+
+    // 1. Fetch all messages involving the current user
+    const { data: allUserMessages, loading: messagesLoading } = useCollection<Message>(
+        'messages',
+        user ? {
+            constraints: [or(where('senderId', '==', user.id), where('receiverId', '==', user.id))]
+        } : undefined
+    );
+    
+    // 2. Fetch all users to map IDs to user data
+    const { data: users, loading: usersLoading } = useCollection<User>('users');
+
+    // 3. Create a list of recent contacts and last messages
+    const recentContacts = useMemo(() => {
+        if (!allUserMessages || !users || !user) return [];
+
+        const userMap = new Map(users.map(u => [u.id, u]));
+        const conversations = new Map<string, { contact: User; lastMessage: Message }>();
+
+        // Sort messages to find the most recent one for each conversation
+        const sortedMessages = [...allUserMessages].sort((a, b) => b.timestamp?.toMillis() - a.timestamp?.toMillis());
+
+        sortedMessages.forEach(msg => {
+            const otherUserId = msg.senderId === user.id ? msg.receiverId : msg.senderId;
+            
+            if (!conversations.has(otherUserId)) {
+                const contactUser = userMap.get(otherUserId);
+                if (contactUser) {
+                    conversations.set(otherUserId, {
+                        contact: contactUser,
+                        lastMessage: msg,
+                    });
+                }
+            }
+        });
+
+        return Array.from(conversations.values());
+
+    }, [allUserMessages, users, user]);
+
 
     const conversationId = useMemo(() => {
         if (!user || !selectedContact) return null;
         return [user.id, selectedContact.id].sort().join('_');
     }, [user, selectedContact]);
+    
+    // 4. Filter messages for the selected conversation
+    const activeMessages = useMemo(() => {
+        if (!conversationId || !allUserMessages) return [];
+        return allUserMessages
+            .filter(msg => msg.conversationId === conversationId)
+            .sort((a, b) => a.timestamp?.toMillis() - b.timestamp?.toMillis());
+    }, [conversationId, allUserMessages]);
 
-    const { data: messages, loading: messagesLoading } = useCollection<Message>(
-        'messages',
-        {
-            constraints: conversationId ? [where('conversationId', '==', conversationId), orderBy('timestamp', 'asc')] : undefined
-        }
-    );
 
     const handleSelectContact = (contact: User) => {
         setSelectedContact(contact);
@@ -44,7 +84,7 @@ export default function MessageriePage() {
 
     const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!newMessage.trim() || !user || !selectedContact || !conversationId) return;
+        if (!newMessage.trim() || !user || !selectedContact || !conversationId || !firestore) return;
 
         const messageData = {
             conversationId,
@@ -89,7 +129,7 @@ export default function MessageriePage() {
                         </div>
                     </div>
                 ))}
-                {!loading && contacts?.map(contact => (
+                {!loading && recentContacts?.map(({contact, lastMessage}) => (
                     <button 
                         key={contact.id} 
                         className={cn(
@@ -104,8 +144,13 @@ export default function MessageriePage() {
                         </Avatar>
                         <div className="flex-1 overflow-hidden">
                             <p className="font-semibold truncate">{contact.nom}</p>
-                            <p className="text-sm text-muted-foreground truncate">{contact.role}</p>
+                            <p className="text-sm text-muted-foreground truncate">{lastMessage.content}</p>
                         </div>
+                         {lastMessage.timestamp && (
+                           <span className="text-xs text-muted-foreground ml-auto">
+                            {formatDistanceToNow(lastMessage.timestamp.toDate(), { addSuffix: true, locale: fr })}
+                           </span>
+                        )}
                     </button>
                 ))}
             </ScrollArea>
@@ -122,8 +167,8 @@ export default function MessageriePage() {
                     </div>
                     <ScrollArea className="flex-1 p-6 bg-muted/20">
                         <div className="space-y-6">
-                            {messagesLoading && <p>Chargement des messages...</p>}
-                            {!messagesLoading && messages?.map(msg => (
+                            {messagesLoading && <div className="text-center text-muted-foreground">Chargement...</div>}
+                            {!messagesLoading && activeMessages?.map(msg => (
                                 <div key={msg.id} className={cn("flex items-end gap-2", msg.senderId === user?.id ? 'justify-end' : '')}>
                                     {msg.senderId !== user?.id && (
                                         <Avatar className="h-8 w-8">
@@ -160,8 +205,8 @@ export default function MessageriePage() {
                 <div className="flex items-center justify-center h-full bg-muted/20">
                     <div className="text-center">
                         <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground" />
-                        <h3 className="mt-4 text-lg font-medium">Sélectionnez un contact</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">Choisissez un utilisateur dans la liste pour commencer à discuter.</p>
+                        <h3 className="mt-4 text-lg font-medium">Sélectionnez une conversation</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">Choisissez une conversation dans la liste pour commencer à discuter.</p>
                     </div>
                 </div>
             )}

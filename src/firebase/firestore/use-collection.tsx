@@ -1,4 +1,3 @@
-// src/lib/firestore/use-collection.tsx
 'use client';
 
 import {
@@ -31,7 +30,9 @@ function useMemoizedQuery(
     if (!path) return null;
     const { constraints } = options ?? {};
     const ref = collection(firestore, path);
-    return constraints ? query(ref, ...constraints) : ref;
+    // Firestore's query() function is variadic, so we can spread the constraints array.
+    // If constraints is undefined, it's like calling query(ref).
+    return query(ref, ...(constraints || []));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firestore, path, JSON.stringify(options?.constraints)]);
 }
@@ -62,6 +63,8 @@ export const useCollection = <T extends DocumentData>(
         // For now, we only support real-time listeners.
         // The implementation would be similar to onSnapshot but using getDocs.
         console.warn("useCollection currently only supports real-time listeners. 'listen: false' is not implemented.");
+        setLoading(false);
+        return;
     }
 
     const unsubscribe = onSnapshot(
@@ -76,7 +79,7 @@ export const useCollection = <T extends DocumentData>(
       },
       (err) => {
         const permissionError = new FirestorePermissionError({
-          path: queryObj.path,
+          path: (queryObj as Query).path,
           operation: 'list',
         });
         errorEmitter.emit('permission-error', permissionError);
