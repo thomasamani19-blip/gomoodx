@@ -60,7 +60,7 @@ export type Message = {
     id: string;
     conversationId: string;
     content: string;
-    timestamp: string; // ou FieldValue
+    timestamp: any; // ou FieldValue
     senderId: string; 
     receiverId: string;
     read: boolean;
@@ -84,7 +84,6 @@ export type Transaction = {
 export type Wallet = {
     id: string;
     balance: number;
-    history: Transaction[];
 };
 
 export type MonthlyRevenue = {

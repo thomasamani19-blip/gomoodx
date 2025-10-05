@@ -2,7 +2,7 @@
 
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useDoc } from '@/firebase';
+import { useDoc, useCollection } from '@/firebase';
 import type { Wallet, Transaction } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,14 +11,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ArrowDownCircle, ArrowUpCircle, PlusCircle } from 'lucide-react';
+import { useMemo } from 'react';
 
 export default function PortefeuillePage() {
   const { user, loading: authLoading } = useAuth();
   
   const walletPath = user ? `users/${user.id}/wallet/main` : null;
+  const transactionsPath = user ? `users/${user.id}/transactions` : null;
+  
   const { data: wallet, loading: walletLoading } = useDoc<Wallet>(walletPath);
+  const { data: transactions, loading: transactionsLoading } = useCollection<Transaction>(transactionsPath);
 
-  const loading = authLoading || walletLoading;
+  const loading = authLoading || walletLoading || transactionsLoading;
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
@@ -34,7 +38,11 @@ export default function PortefeuillePage() {
   }
 
   // Sort history by date descending
-  const sortedHistory = wallet?.history?.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const sortedHistory = useMemo(() => {
+    if (!transactions) return [];
+    return [...transactions].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactions]);
+
 
   return (
     <div>
@@ -49,11 +57,11 @@ export default function PortefeuillePage() {
               <CardTitle>Solde Actuel</CardTitle>
             </CardHeader>
             <CardContent>
-                {loading && <Skeleton className="h-12 w-1/2" />}
-                {!loading && wallet && (
+                {walletLoading && <Skeleton className="h-12 w-1/2" />}
+                {!walletLoading && wallet && (
                      <p className="text-5xl font-bold">{wallet.balance ? wallet.balance.toFixed(2) : '0.00'} €</p>
                 )}
-                 {!loading && !wallet && (
+                 {!walletLoading && !wallet && (
                      <p className="text-5xl font-bold">0.00 €</p>
                 )}
             </CardContent>

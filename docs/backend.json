@@ -182,8 +182,11 @@
           "type": "string"
         },
         "date": {
-            "type": "string",
-            "format": "date-time"
+          "type": "string",
+          "format": "date-time"
+        },
+        "description": {
+            "type": "string"
         }
       },
       "required": ["amount", "type", "date"]
@@ -194,12 +197,6 @@
       "properties": {
         "balance": {
           "type": "number"
-        },
-        "history": {
-          "type": "array",
-          "items": {
-            "$ref": "#/entities/transaction"
-          }
         }
       },
       "required": ["balance"]
