@@ -16,6 +16,7 @@ const GenererVideoIAInputSchema = z.object({
   prompt: z.string().describe('Une description détaillée de la vidéo à générer.'),
   dureeSecondes: z.number().optional().default(5).describe('Durée de la vidéo en secondes (entre 5 et 8).'),
   format: z.enum(['16:9', '9:16']).optional().default('16:9').describe('Format de la vidéo.'),
+  imagesBase64: z.array(z.string()).optional().describe("Une liste d'images encodées en Base64 data URI à utiliser comme référence."),
 });
 export type GenererVideoIAInput = z.infer<typeof GenererVideoIAInputSchema>;
 
@@ -45,9 +46,18 @@ const genererVideoIAFlow = ai.defineFlow(
     outputSchema: GenererVideoIAOutputSchema,
   },
   async (input) => {
+
+    const promptParts: (string | MediaPart)[] = [{ text: input.prompt }];
+    
+    if (input.imagesBase64 && input.imagesBase64.length > 0) {
+      input.imagesBase64.forEach(imageBase64 => {
+        promptParts.push({ media: { url: imageBase64 } });
+      });
+    }
+
     let { operation } = await ai.generate({
         model: googleAI.model('veo-2.0-generate-001'),
-        prompt: input.prompt,
+        prompt: promptParts,
         config: {
           durationSeconds: input.dureeSecondes,
           aspectRatio: input.format,

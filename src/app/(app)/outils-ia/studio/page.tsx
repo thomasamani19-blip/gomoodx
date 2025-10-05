@@ -10,7 +10,7 @@ import PageHeader from '@/components/shared/page-header';
 import { genererImageIA, type GenererImageIAOutput } from '@/ai/flows/generer-image-ia';
 import { genererAudioTTS, type GenererAudioTTSOutput } from '@/ai/flows/generer-audio-tts';
 import { genererVideoIA, type GenererVideoIAOutput } from '@/ai/flows/generer-video-ia';
-import { Loader2, Wand2, Image as ImageIcon, Video, Mic } from 'lucide-react';
+import { Loader2, Wand2, Image as ImageIcon, Video, Mic, Upload, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Image from 'next/image';
@@ -195,10 +195,33 @@ function AudioGeneratorTab() {
   );
 }
 
+function fileToDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
 function VideoGeneratorTab() {
     const [result, setResult] = useState<GenererVideoIAOutput | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [images, setImages] = useState<string[]>([]);
     const { toast } = useToast();
+
+    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (files) {
+            const fileArray = Array.from(files);
+            const dataUrls = await Promise.all(fileArray.map(fileToDataUrl));
+            setImages(prevImages => [...prevImages, ...dataUrls]);
+        }
+    };
+
+    const removeImage = (index: number) => {
+        setImages(prevImages => prevImages.filter((_, i) => i !== index));
+    };
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -208,6 +231,7 @@ function VideoGeneratorTab() {
         const formData = new FormData(event.currentTarget);
         const input = {
             prompt: formData.get('prompt') as string,
+            imagesBase64: images,
         };
 
         if (!input.prompt) {
@@ -241,14 +265,39 @@ function VideoGeneratorTab() {
                 <form onSubmit={handleSubmit}>
                     <Card>
                         <CardHeader>
-                            <CardTitle>Générateur de Vidéo (BETA)</CardTitle>
-                            <CardDescription>Créez de courtes vidéos à partir d'une description textuelle. Cette fonctionnalité est expérimentale.</CardDescription>
+                            <CardTitle>Générateur de Vidéo</CardTitle>
+                            <CardDescription>Créez une courte vidéo à partir d'un texte et/ou d'images. Cette fonctionnalité est expérimentale.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-0 space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="prompt-video">Description de la vidéo (Prompt)</Label>
-                                <Textarea name="prompt" id="prompt-video" placeholder="Ex: un dragon majestueux volant au-dessus d'une forêt mystique..." rows={4} />
+                             <div className="space-y-2">
+                                <Label htmlFor="prompt-video">Description (Prompt)</Label>
+                                <Textarea name="prompt" id="prompt-video" placeholder="Ex: crée une courte promo avec une musique entraînante..." rows={3} />
                             </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="images-video">Images de référence (optionnel)</Label>
+                                <Input id="images-video" type="file" multiple accept="image/*" onChange={handleImageUpload} />
+                                <p className="text-xs text-muted-foreground">Téléchargez une ou plusieurs images pour créer un montage.</p>
+                            </div>
+
+                            {images.length > 0 && (
+                                <div className="grid grid-cols-3 gap-2">
+                                    {images.map((img, index) => (
+                                        <div key={index} className="relative group">
+                                            <Image src={img} alt={`Aperçu ${index + 1}`} width={100} height={100} className="rounded-md object-cover w-full aspect-square" />
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="icon"
+                                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100"
+                                                onClick={() => removeImage(index)}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                         </CardContent>
                         <CardFooter>
                             <Button type="submit" disabled={isLoading}>
