@@ -2,7 +2,7 @@
 
 import PageHeader from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { useCollection } from '@/firebase/firestore/use-collection';
+import { useCollection } from '@/firebase';
 import type { BlogArticle } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
@@ -36,7 +36,7 @@ export default function BlogPage() {
         </div>
       )}
 
-      {!loading && articles && (
+      {!loading && articles && articles.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {articles.map((article) => (
             <Card key={article.id} className="overflow-hidden group flex flex-col">
