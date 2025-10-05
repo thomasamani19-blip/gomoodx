@@ -2,7 +2,7 @@
 
 import PageHeader from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { useCollection } from '@/firebase/firestore/use-collection';
+import { useCollection } from '@/firebase';
 import type { LiveSession } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
@@ -33,7 +33,7 @@ export default function LivePage() {
         </div>
       )}
 
-      {!loading && sessions && (
+      {!loading && sessions && sessions.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {sessions.map((session) => (
             <Card key={session.id} className="overflow-hidden group">
