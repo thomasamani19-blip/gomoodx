@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from "@/components/ui/badge";
 
 export default function LivePage() {
-  const { data: sessions, loading } = useCollection<LiveSession>('liveSessions');
+  const { data: sessions, loading } = useCollection<LiveSession>('live');
 
   return (
     <div>

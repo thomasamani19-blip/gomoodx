@@ -3,19 +3,19 @@
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import type { Service } from '@/lib/types';
+import type { Annonce } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
 export default function ServicesPage() {
-  const { data: services, loading } = useCollection<Service>('services');
+  const { data: annonces, loading } = useCollection<Annonce>('annonces');
 
   return (
     <div>
       <PageHeader
-        title="Services"
-        description="Découvrez le catalogue des services proposés."
+        title="Annonces"
+        description="Découvrez le catalogue des services et rencontres proposés."
       />
       
       {loading && (
@@ -34,26 +34,26 @@ export default function ServicesPage() {
         </div>
       )}
 
-      {!loading && services && services.length > 0 && (
+      {!loading && annonces && annonces.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {services.map((service) => (
-            <Card key={service.id} className="overflow-hidden group">
+          {annonces.map((annonce) => (
+            <Card key={annonce.id} className="overflow-hidden group">
               <CardContent className="p-0">
                 <div className="relative aspect-video">
                   <Image
-                    src={service.imageUrl}
-                    alt={service.title}
+                    src={annonce.imageUrl || 'https://picsum.photos/seed/annonce/600/400'}
+                    alt={annonce.title}
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    data-ai-hint={service.imageHint}
+                    data-ai-hint={annonce.imageHint}
                     sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                   />
                 </div>
                 <div className="p-4">
-                  <h3 className="font-headline text-lg font-semibold truncate">{service.title}</h3>
-                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{service.description}</p>
+                  <h3 className="font-headline text-lg font-semibold truncate">{annonce.title}</h3>
+                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{annonce.description}</p>
                    <div className="flex items-center justify-between mt-4">
-                     <p className="text-lg font-bold text-primary">{service.price ? `${service.price} €` : 'Sur demande'}</p>
+                     <p className="text-lg font-bold text-primary">{annonce.price ? `${annonce.price} €` : 'Sur demande'}</p>
                      <Button variant="secondary" size="sm">Voir plus</Button>
                    </div>
                 </div>
@@ -63,11 +63,11 @@ export default function ServicesPage() {
         </div>
       )}
 
-      {!loading && (!services || services.length === 0) && (
+      {!loading && (!annonces || annonces.length === 0) && (
          <Card>
             <CardContent className="pt-6">
             <p className="text-muted-foreground">
-                Aucun service n'est disponible pour le moment.
+                Aucune annonce n'est disponible pour le moment.
             </p>
             </CardContent>
         </Card>

@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export default function BlogPage() {
-  const { data: articles, loading } = useCollection<BlogArticle>('blogArticles');
+  const { data: articles, loading } = useCollection<BlogArticle>('blog');
 
   return (
     <div>

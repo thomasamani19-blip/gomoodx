@@ -42,8 +42,8 @@ export default function BoutiquePage() {
               <CardContent className="p-0">
                 <div className="relative aspect-video">
                   <Image
-                    src={product.imageUrl}
-                    alt={product.name}
+                    src={product.imageUrl || 'https://picsum.photos/seed/product/600/400'}
+                    alt={product.title}
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
                     data-ai-hint={product.imageHint}
@@ -51,7 +51,7 @@ export default function BoutiquePage() {
                   />
                 </div>
                 <div className="p-4">
-                  <h3 className="font-headline text-lg font-semibold truncate">{product.name}</h3>
+                  <h3 className="font-headline text-lg font-semibold truncate">{product.title}</h3>
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
                    <div className="flex items-center justify-between mt-4">
                      <p className="text-lg font-bold text-primary">{product.price ? `${product.price} €` : 'Prix non disponible'}</p>
