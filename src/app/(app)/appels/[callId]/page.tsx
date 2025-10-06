@@ -4,17 +4,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useDoc, useFirestore } from '@/firebase';
-import type { Call } from '@/lib/types';
-import { doc, onSnapshot, setDoc, updateDoc, collection, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
+import type { Call, User } from '@/lib/types';
+import { doc, onSnapshot, updateDoc, collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Phone, Mic, MicOff, Video, VideoOff, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Utiliser un serveur STUN public
+// Utiliser des serveurs STUN publics fournis par Google
 const servers = {
   iceServers: [
     {
@@ -42,21 +41,40 @@ export default function CallPage({ params }: { params: { callId: string } }) {
   const callRef = doc(firestore, `calls/${params.callId}`);
   const { data: callDoc, loading: callLoading } = useDoc<Call>(callRef);
 
+  // Determine the other user's ID
+  const otherUserId = user && callDoc ? (callDoc.callerId === user.id ? callDoc.receiverId : callDoc.callerId) : null;
+  const otherUserRef = otherUserId ? doc(firestore, `users/${otherUserId}`) : null;
+  const { data: otherUser } = useDoc<User>(otherUserRef);
+
+
   useEffect(() => {
     let peerConnection: RTCPeerConnection;
     let localMediaStream: MediaStream;
     let remoteMediaStream: MediaStream;
-    
-    const initPeerConnection = async () => {
+    let unsubscribeCall: () => void;
+    let unsubscribeCandidates: () => void;
+
+    const setupPeerConnection = async () => {
         if (!user || !firestore || !callDoc) return;
         
         peerConnection = new RTCPeerConnection(servers);
         setPc(peerConnection);
 
-        localMediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        setLocalStream(localMediaStream);
-        if (localVideoRef.current) {
-            localVideoRef.current.srcObject = localMediaStream;
+        try {
+            localMediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            setLocalStream(localMediaStream);
+            if (localVideoRef.current) {
+                localVideoRef.current.srcObject = localMediaStream;
+            }
+
+            localMediaStream.getTracks().forEach((track) => {
+                peerConnection.addTrack(track, localMediaStream);
+            });
+        } catch (error) {
+            console.error("Error getting user media:", error);
+            toast({ title: "Erreur de Média", description: "Impossible d'accéder à la caméra et au micro.", variant: "destructive"});
+            hangUp();
+            return;
         }
 
         remoteMediaStream = new MediaStream();
@@ -64,10 +82,6 @@ export default function CallPage({ params }: { params: { callId: string } }) {
         if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = remoteMediaStream;
         }
-
-        localMediaStream.getTracks().forEach((track) => {
-            peerConnection.addTrack(track, localMediaStream);
-        });
 
         peerConnection.ontrack = (event) => {
             event.streams[0].getTracks().forEach((track) => {
@@ -82,26 +96,26 @@ export default function CallPage({ params }: { params: { callId: string } }) {
 
         peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
-                const candidatesCollection = callDoc.callerId === user.id ? offerCandidates : answerCandidates;
+                const candidatesCollection = callDoc.status === 'pending' ? offerCandidates : answerCandidates;
                 addDoc(candidatesCollection, event.candidate.toJSON());
             }
         };
 
-        // --- Logique de signalisation ---
+        // --- Signaling Logic ---
 
-        // Créer une offre si on est l'appelant
+        // Create offer if I am the caller
         if (callDoc.callerId === user.id && callDoc.status === 'pending') {
             const offerDescription = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offerDescription);
             await updateDoc(callDocRef, { offer: { sdp: offerDescription.sdp, type: offerDescription.type }, status: 'ongoing' });
         }
 
-        // Écouter la description distante et répondre si on est le destinataire
-        const unsubscribe = onSnapshot(callDocRef, async (snapshot) => {
+        // Listen for remote description and answer if I am the receiver
+        unsubscribeCall = onSnapshot(callDocRef, async (snapshot) => {
             const data = snapshot.data();
             if (!data) return;
 
-            // Logique pour le receveur pour répondre à l'offre
+            // Receiver's logic to answer the offer
             if (data.offer && !peerConnection.currentRemoteDescription && user.id === callDoc.receiverId) {
                 try {
                     const offerDescription = new RTCSessionDescription(data.offer);
@@ -110,21 +124,21 @@ export default function CallPage({ params }: { params: { callId: string } }) {
                     await peerConnection.setLocalDescription(answerDescription);
                     await updateDoc(callDocRef, { answer: { sdp: answerDescription.sdp, type: answerDescription.type } });
                 } catch (error) {
-                    console.error("Erreur lors de la création de la réponse :", error);
+                    console.error("Error creating answer:", error);
                 }
             }
             
-            // Logique pour l'appelant pour définir la réponse distante
-            if (data.answer && !peerConnection.currentRemoteDescription && user.id === callDoc.callerId) {
+            // Caller's logic to set the remote answer
+            if (data.answer && peerConnection.localDescription && !peerConnection.currentRemoteDescription && user.id === callDoc.callerId) {
                  try {
                     const answerDescription = new RTCSessionDescription(data.answer);
                     await peerConnection.setRemoteDescription(answerDescription);
                 } catch (error) {
-                    console.error("Erreur lors de la définition de la description distante :", error);
+                    console.error("Error setting remote description:", error);
                 }
             }
             
-            // Lorsque l'appel se termine
+            // When the call ends
             if (data.status === 'ended') {
                 hangUpLocal();
                 toast({ title: "Appel terminé" });
@@ -132,54 +146,47 @@ export default function CallPage({ params }: { params: { callId: string } }) {
             }
         });
         
-        // Écouter les candidats ICE
-        const candidatesUnsubscribe = onSnapshot(
-            callDoc.callerId === user.id ? answerCandidates : offerCandidates, 
-            (snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added') {
-                        const candidate = new RTCIceCandidate(change.doc.data());
-                        peerConnection.addIceCandidate(candidate).catch(e => console.error("Erreur d'ajout de ICE candidate", e));
-                    }
-                });
-            }
-        );
-        
-        return () => {
-            unsubscribe();
-            candidatesUnsubscribe();
-            hangUpLocal();
-        };
+        // Listen for ICE candidates
+        const candidatesCollection = callDoc.callerId === user.id ? answerCandidates : offerCandidates;
+        unsubscribeCandidates = onSnapshot(candidatesCollection, (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                    const candidate = new RTCIceCandidate(change.doc.data());
+                    peerConnection.addIceCandidate(candidate).catch(e => console.error("Error adding ICE candidate", e));
+                }
+            });
+        });
     };
-
+    
     const hangUpLocal = () => {
         pc?.close();
-        localStream?.getTracks().forEach(track => track.stop());
-        remoteStream?.getTracks().forEach(track => track.stop());
         setPc(null);
+        localStream?.getTracks().forEach(track => track.stop());
         setLocalStream(null);
+        remoteStream?.getTracks().forEach(track => track.stop());
         setRemoteStream(null);
+        if (localVideoRef.current) localVideoRef.current.srcObject = null;
+        if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     }
-    
-    initPeerConnection();
 
-    // Nettoyage
+    setupPeerConnection();
+
+    // Cleanup
     return () => {
+        if (unsubscribeCall) unsubscribeCall();
+        if (unsubscribeCandidates) unsubscribeCandidates();
         hangUpLocal();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, firestore, params.callId, callDoc]);
   
   const hangUp = async () => {
-    pc?.close();
-    localStream?.getTracks().forEach(track => track.stop());
-    remoteStream?.getTracks().forEach(track => track.stop());
-
     if (callDoc && callDoc.status !== 'ended' && firestore) {
         const callDocRef = doc(firestore, 'calls', params.callId);
         await updateDoc(callDocRef, { status: 'ended' });
+    } else {
+        router.push('/messagerie');
     }
-    router.push('/messagerie');
   };
   
   const toggleMute = () => {
@@ -196,17 +203,19 @@ export default function CallPage({ params }: { params: { callId: string } }) {
       return <div className="w-full h-screen flex items-center justify-center bg-black"><Skeleton className="w-full h-full" /></div>
   }
 
+  const hasRemoteVideo = remoteStream && remoteStream.getVideoTracks().length > 0;
+
   return (
     <div className="relative h-screen w-screen bg-black text-white flex items-center justify-center">
-        {/* Vidéo distante */}
+        {/* Remote Video */}
         <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
 
-        {/* Vidéo locale */}
+        {/* Local Video */}
         <div className="absolute bottom-24 sm:bottom-8 right-4 sm:right-8 h-48 w-36 rounded-lg overflow-hidden border-2 border-primary">
-             <video ref={localVideoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
+             <video ref={localVideoRef} autoPlay playsInline muted className="h-full w-full object-cover scale-x-[-1]" />
         </div>
 
-        {/* Contrôles de l'appel */}
+        {/* Call Controls */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 p-2 bg-black/50 rounded-full">
             <Button onClick={toggleMute} variant="secondary" size="icon" className="rounded-full h-14 w-14">
                 {isMuted ? <MicOff /> : <Mic />}
@@ -219,18 +228,17 @@ export default function CallPage({ params }: { params: { callId: string } }) {
             </Button>
         </div>
 
-        {/* Superposition de statut d'appel */}
-        {(!remoteStream || remoteStream.getTracks().length === 0) && (
+        {/* Status Overlay */}
+        {!hasRemoteVideo && (
             <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-4">
                 <Avatar className="h-32 w-32">
-                    {/* Devrait montrer l'image de l'autre utilisateur */}
-                    <AvatarImage src={''} /> 
+                    <AvatarImage src={otherUser?.profileImage} /> 
                     <AvatarFallback className="text-4xl">
-                        ?
+                        {otherUser?.displayName?.charAt(0) || '?'}
                     </AvatarFallback>
                 </Avatar>
                 <h2 className="text-2xl font-bold">
-                    {callDoc?.status === 'pending' ? `Appel de ${callDoc?.callerName || 'quelqu\'un'}...` : 'Connexion en cours...'}
+                    {callDoc?.status === 'pending' ? `Appel de ${callDoc?.callerName}...` : 'Connexion en cours...'}
                 </h2>
                 <Loader2 className="animate-spin h-8 w-8 text-primary" />
             </div>
@@ -238,3 +246,4 @@ export default function CallPage({ params }: { params: { callId: string } }) {
     </div>
   );
 }
+

@@ -99,7 +99,6 @@ export interface Review {
 
 // Message
 export type MessageType = 'text' | 'image' | 'audio';
-export type CallType = 'none' | 'voice' | 'video';
 
 export interface Message {
   id: string;
@@ -109,7 +108,6 @@ export interface Message {
   type: MessageType;
   createdAt: Timestamp;
   isRead: boolean;
-  callType: CallType;
 }
 
 // Call (for WebRTC signaling)
@@ -119,12 +117,12 @@ export interface Call {
   id: string;
   callerId: string;
   receiverId: string;
+  callerName: string;
   type: 'voice' | 'video';
   offer?: Record<string, unknown>;
   answer?: Record<string, unknown>;
   status: CallStatus;
   createdAt: Timestamp;
-  callerName: string;
 }
 
 // Live Session

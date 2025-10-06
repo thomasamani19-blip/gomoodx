@@ -19,6 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
 function MessagerieContent() {
     const { user, loading: authLoading } = useAuth();
@@ -177,14 +178,13 @@ function MessagerieContent() {
         e.preventDefault();
         if (!newMessage.trim() || !user || !selectedContact || !firestore) return;
 
-        const messageData = {
+        const messageData: Omit<Message, 'id'> = {
             message: newMessage,
             senderId: user.id,
             receiverId: selectedContact.id,
             createdAt: serverTimestamp(),
             isRead: false,
             type: 'text',
-            callType: 'none',
         };
 
         try {
@@ -277,13 +277,15 @@ function MessagerieContent() {
                 <>
                     <div className="p-4 border-b flex items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
-                            <Avatar>
-                                <AvatarImage src={selectedContact.profileImage} alt={selectedContact.displayName} />
-                                <AvatarFallback>{selectedContact.displayName?.charAt(0) ?? '?'}</AvatarFallback>
-                            </Avatar>
-                            <h2 className="font-semibold text-lg">{selectedContact.displayName}</h2>
+                            <Link href={`/profil/${selectedContact.id}`} className="flex items-center gap-4">
+                                <Avatar>
+                                    <AvatarImage src={selectedContact.profileImage} alt={selectedContact.displayName} />
+                                    <AvatarFallback>{selectedContact.displayName?.charAt(0) ?? '?'}</AvatarFallback>
+                                </Avatar>
+                                <h2 className="font-semibold text-lg hover:underline">{selectedContact.displayName}</h2>
+                            </Link>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={handleInitiateCall}>
+                        <Button variant="ghost" size="icon" onClick={handleInitiateCall} disabled={!user || selectedContact.role !== 'escorte'}>
                             <Video className="h-5 w-5 text-primary" />
                         </Button>
                     </div>
@@ -346,5 +348,3 @@ export default function MessageriePage() {
         </Suspense>
     )
 }
-
-    

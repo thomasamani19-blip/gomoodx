@@ -2,7 +2,7 @@
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
-import type { User } from '@/lib/types';
+import type { User, Call } from '@/lib/types';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,9 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Heart, MessageCircle, Video } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, arrayRemove, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function UserProfilePage({ params }: { params: { id: string } }) {
   const { user: currentUser, loading: authLoading } = useAuth();
@@ -52,6 +53,27 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
         toast({ title: "Une erreur est survenue.", variant: 'destructive'});
     }
   };
+  
+    const handleInitiateCall = async () => {
+        if (!currentUser || !user || !firestore) return;
+
+        const callData: Omit<Call, 'id'> = {
+            callerId: currentUser.id,
+            receiverId: user.id,
+            callerName: currentUser.displayName,
+            status: 'pending',
+            type: 'video',
+            createdAt: serverTimestamp(),
+        };
+
+        try {
+            const callDocRef = await addDoc(collection(firestore, 'calls'), callData);
+            router.push(`/appels/${callDocRef.id}`);
+        } catch (error) {
+            console.error("Erreur lors de l'initiation de l'appel :", error);
+             toast({ title: "Erreur lors de l'initiation de l'appel", variant: 'destructive'});
+        }
+    };
 
   if (userLoading || authLoading) {
     return (
@@ -106,8 +128,16 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
                         <Heart className="mr-2 h-4 w-4" /> 
                         {isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
                     </Button>
-                    <Button variant="outline"><MessageCircle className="mr-2 h-4 w-4" /> Message</Button>
-                     {user.role === 'escorte' && <Button variant="outline"><Video className="mr-2 h-4 w-4" /> Appeler</Button>}
+                    <Button variant="outline" asChild>
+                      <Link href={`/messagerie?contact=${user.id}`}>
+                        <MessageCircle className="mr-2 h-4 w-4" /> Message
+                      </Link>
+                    </Button>
+                     {user.role === 'escorte' && (
+                        <Button variant="outline" onClick={handleInitiateCall}>
+                            <Video className="mr-2 h-4 w-4" /> Appeler
+                        </Button>
+                     )}
                 </div>
             )}
         </div>
