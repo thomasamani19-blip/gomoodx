@@ -155,9 +155,11 @@ function SubscriptionTab() {
     const [isLoading, setIsLoading] = useState(false);
 
     const fwPublicKey = process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY;
+    const tx_ref = `gomoodx-sub-${Date.now()}-${user?.id}`;
+
     const fwConfig = {
         public_key: fwPublicKey || '',
-        tx_ref: `gomoodx-sub-${Date.now()}-${user?.id}`,
+        tx_ref: tx_ref,
         amount: PREMIUM_MEMBER_PRICE,
         currency: 'EUR',
         payment_options: 'card,mobilemoney,ussd',
@@ -172,11 +174,55 @@ function SubscriptionTab() {
         },
     };
 
-    const handleSubscriptionSuccess = (response: any) => {
-        // TODO: Call a new API endpoint to verify subscription and update user role
-        console.log(response);
-        toast({ title: 'Paiement de l\'abonnement réussi !', description: 'Vérification en cours...' });
-        closeFlutterwaveModal();
+    const handleSubscriptionSuccess = async (response: any) => {
+        setIsLoading(true);
+        try {
+            // 1. Verify payment with Flutterwave
+            const verifyResponse = await fetch('/api/payments/verifyFlutterwave', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    transaction_id: response.transaction_id,
+                    tx_ref: response.tx_ref,
+                    user_id: user?.id,
+                    amount: PREMIUM_MEMBER_PRICE,
+                    currency: 'EUR'
+                }),
+            });
+
+            const verifyResult = await verifyResponse.json();
+            if (!verifyResponse.ok || verifyResult.status !== 'success') {
+                throw new Error(verifyResult.message || 'La vérification du paiement de l\'abonnement a échoué.');
+            }
+
+            // 2. Activate subscription via our new API
+            const createSubResponse = await fetch('/api/subscriptions/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: user?.id,
+                    amount: PREMIUM_MEMBER_PRICE,
+                    tx_ref: response.tx_ref
+                })
+            });
+
+            const createSubResult = await createSubResponse.json();
+            if (!createSubResponse.ok || createSubResult.status !== 'success') {
+                 throw new Error(createSubResult.message || 'L\'activation de l\'abonnement a échoué.');
+            }
+            
+            toast({ 
+                title: 'Félicitations, vous êtes Premium !', 
+                description: 'Votre abonnement est actif et le bonus a été ajouté à votre portefeuille.' 
+            });
+            router.push('/portefeuille');
+
+        } catch (error: any) {
+            toast({ title: 'Erreur d\'abonnement', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsLoading(false);
+            closeFlutterwaveModal();
+        }
     }
 
     return (
@@ -201,12 +247,12 @@ function SubscriptionTab() {
                  <FlutterWaveButton
                     {...fwConfig}
                     className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                    disabled={!fwPublicKey || !user || user?.subscription?.status === 'active'}
+                    disabled={!fwPublicKey || !user || user?.subscription?.status === 'active' || isLoading}
                     onClick={() => setIsLoading(true)}
                     callback={handleSubscriptionSuccess}
                     onClose={() => setIsLoading(false)}
                 >
-                    {user?.subscription?.status === 'active' ? 'Vous êtes déjà abonné' : 'Devenir Premium'}
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (user?.subscription?.status === 'active' ? 'Vous êtes déjà abonné' : 'Devenir Premium')}
                 </FlutterWaveButton>
             </CardFooter>
         </Card>
