@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -95,5 +94,3 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
     </div>
   );
 }
-
-    
