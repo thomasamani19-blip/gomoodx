@@ -81,6 +81,7 @@ export interface Annonce {
   status: ServiceStatus;
   location: string;
   rating: number;
+  ratingCount?: number;
   views: number;
 }
 

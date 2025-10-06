@@ -9,6 +9,31 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { collection } from 'firebase/firestore';
+import { Star } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const StarRating = ({ rating, ratingCount, className }: { rating: number, ratingCount?: number, className?: string }) => {
+    const totalStars = 5;
+    const fullStars = Math.floor(rating);
+    const halfStar = rating % 1 !== 0;
+    const emptyStars = totalStars - fullStars - (halfStar ? 1 : 0);
+
+    return (
+        <div className={cn("flex items-center gap-1", className)}>
+            {[...Array(fullStars)].map((_, i) => (
+                <Star key={`full-${i}`} className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+            ))}
+            {halfStar && <Star key="half" className="h-4 w-4 text-yellow-400" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
+            {[...Array(emptyStars)].map((_, i) => (
+                <Star key={`empty-${i}`} className="h-4 w-4 text-gray-300" />
+            ))}
+             {ratingCount !== undefined && (
+                <span className="text-xs text-muted-foreground ml-1">({ratingCount})</span>
+            )}
+        </div>
+    );
+};
+
 
 export default function AnnoncesPage() {
   const firestore = useFirestore();
@@ -56,7 +81,10 @@ export default function AnnoncesPage() {
                   <h3 className="font-headline text-lg font-semibold truncate">{annonce.title}</h3>
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{annonce.description}</p>
                    <div className="flex items-center justify-between mt-4">
-                     <p className="text-lg font-bold text-primary">{annonce.price ? `${annonce.price} €` : 'Sur demande'}</p>
+                    <div>
+                        <p className="text-lg font-bold text-primary">{annonce.price ? `${annonce.price} €` : 'Sur demande'}</p>
+                        <StarRating rating={annonce.rating} ratingCount={annonce.ratingCount} />
+                    </div>
                      <Button variant="secondary" size="sm">Voir plus</Button>
                    </div>
                 </div>
