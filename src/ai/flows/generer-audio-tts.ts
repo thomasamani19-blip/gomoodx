@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -76,6 +77,7 @@ const genererAudioTTSFlow = ai.defineFlow(
     }
     const audioUrl = media.url;
 
+    // Le modèle TTS renvoie des données PCM brutes, nous devons les convertir en WAV pour le navigateur.
     const audioBuffer = Buffer.from(
       audioUrl.substring(audioUrl.indexOf(',') + 1),
       'base64'

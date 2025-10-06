@@ -58,10 +58,10 @@ const escorteNav = [
 ];
 
 const toolsNav = [
-  { title: 'Générer Bio', href: '/outils-ia/generer-bio', icon: PenSquare },
-  { title: 'Idées de Contenu', href: '/outils-ia/idees-contenu', icon: ImageIcon },
-  { title: 'Posts Sociaux', href: '/outils-ia/posts-sociaux', icon: Bot },
-  { title: 'Studio IA', href: '/outils-ia/studio', icon: Sparkles },
+    { title: 'Studio IA Créatif', href: '/outils-ia/studio', icon: Sparkles },
+    { title: 'Générateur de Bio', href: '/outils-ia/generer-bio', icon: PenSquare },
+    { title: 'Idées de Contenu', href: '/outils-ia/idees-contenu', icon: ImageIcon },
+    { title: 'Posts pour Réseaux', href: '/outils-ia/posts-sociaux', icon: Bot },
 ];
 
 const adminNav = [

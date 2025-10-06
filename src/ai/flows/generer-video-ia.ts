@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Flow Genkit pour générer des vidéos à l'aide de l'IA (Veo).
@@ -11,8 +12,6 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit/zod';
 import { googleAI } from '@genkit-ai/google-genai';
 import { media as genkitMedia } from 'genkit/ai';
-import * as fs from 'fs';
-import { Readable } from 'stream';
 import type { MediaPart } from 'genkit';
 
 
@@ -33,29 +32,11 @@ export type GenererVideoIAOutput = z.infer<typeof GenererVideoIAOutputSchema>;
 async function streamToBase64(stream: NodeJS.ReadableStream): Promise<string> {
     return new Promise((resolve, reject) => {
         const chunks: Buffer[] = [];
-        stream.on('data', (chunk) => chunks.push(chunk));
+        stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
         stream.on('error', reject);
         stream.on('end', () => resolve(Buffer.concat(chunks).toString('base64')));
     });
 }
-
-async function downloadVideo(video: MediaPart, path: string) {
-    const fetch = (await import('node-fetch')).default;
-    // Add API key before fetching the video.
-    const videoDownloadResponse = await fetch(
-      `${video.media!.url}&key=${process.env.GEMINI_API_KEY}`
-    );
-    if (
-      !videoDownloadResponse ||
-      videoDownloadResponse.status !== 200 ||
-      !videoDownloadResponse.body
-    ) {
-      throw new Error('Failed to fetch video');
-    }
-  
-    Readable.from(videoDownloadResponse.body).pipe(fs.createWriteStream(path));
-}
-
 
 const genererVideoIAFlow = ai.defineFlow(
   {
@@ -65,19 +46,20 @@ const genererVideoIAFlow = ai.defineFlow(
   },
   async (input) => {
 
-    const promptParts: (string | MediaPart)[] = [
+    const promptParts: (string | {text: string} | MediaPart)[] = [
         { text: input.prompt }
     ];
     
     if (input.imagesBase64 && input.imagesBase64.length > 0) {
       input.imagesBase64.forEach(imageBase64 => {
-        promptParts.push(genkitMedia({ url: imageBase64 }));
+        const mimeType = imageBase64.substring(5, imageBase64.indexOf(';'));
+        promptParts.push(genkitMedia({ url: imageBase64, contentType: mimeType }));
       });
     }
 
     let { operation } = await ai.generate({
         model: googleAI.model('veo-2.0-generate-001'),
-        prompt: promptParts,
+        prompt: promptParts as any,
         config: {
           durationSeconds: input.dureeSecondes,
           aspectRatio: input.format,

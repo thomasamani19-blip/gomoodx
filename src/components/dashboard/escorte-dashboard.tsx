@@ -94,7 +94,7 @@ export default function EscorteDashboard({ user }: { user: User }) {
         </CardHeader>
         <CardContent className="grid gap-6">
             {aiTools.map((tool) => (
-                <div key={tool.title} className="flex items-center justify-between space-x-4 p-4 border rounded-lg">
+                <Link key={tool.title} href={tool.href} className="flex items-center justify-between space-x-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
                     <div className="flex-1 space-y-1">
                         <p className="text-sm font-medium leading-none flex items-center">
                            {tool.icon && <tool.icon className="mr-2 h-4 w-4 text-primary" />}
@@ -102,8 +102,8 @@ export default function EscorteDashboard({ user }: { user: User }) {
                         </p>
                         <p className="text-sm text-muted-foreground">{tool.description}</p>
                     </div>
-                    <Button asChild><Link href={tool.href}>Utiliser</Link></Button>
-                </div>
+                    <Button variant="secondary">Lancer</Button>
+                </Link>
             ))}
         </CardContent>
       </Card>
