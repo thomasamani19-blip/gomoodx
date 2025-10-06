@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -42,7 +43,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const navConfig: Record<UserRole, { title: string; href: string; icon: React.ElementType }[]> = {
   client: [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'Services', href: '/services', icon: HeartHandshake },
+    { title: 'Annonces', href: '/services', icon: HeartHandshake },
     { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
     { title: 'Boutique', href: '/boutique', icon: ShoppingBag },
     { title: 'Live', href: '/live', icon: Clapperboard },
@@ -63,14 +64,10 @@ const navConfig: Record<UserRole, { title: string; href: string; icon: React.Ele
   ],
   partenaire: [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    // { title: 'Mon Établissement', href: '/etablissement', icon: Building },
     { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
   ],
   administrateur: [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    // { title: 'Utilisateurs', href: '/admin/utilisateurs', icon: Users },
-    // { title: 'Contenus', href: '/admin/contenus', icon: BookOpen },
-    // { title: 'Modération', href: '/admin/moderation', icon: ShieldCheck },
   ],
 };
 
@@ -114,8 +111,8 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <Link href="/parametres" passHref legacyBehavior>
-              <SidebarMenuButton tooltip="Paramètres" isActive={pathname === '/parametres'} asChild>
+            <Link href="/profil" passHref legacyBehavior>
+              <SidebarMenuButton tooltip="Paramètres" isActive={pathname === '/profil'} asChild>
                 <a><Settings /><span>Paramètres</span></a>
               </SidebarMenuButton>
             </Link>
@@ -131,3 +128,4 @@ export function AppSidebar() {
       </Sidebar>
   );
 }
+

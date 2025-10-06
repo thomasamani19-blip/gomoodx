@@ -2,7 +2,7 @@
 import type { Timestamp } from 'firebase/firestore';
 
 // Main User Roles
-export type UserRole = 'admin' | 'founder' | 'member' | 'creator' | 'partner' | 'moderator';
+export type UserRole = 'administrateur' | 'escorte' | 'client' | 'partenaire';
 
 // User status
 export type UserStatus = 'active' | 'suspended';
@@ -11,7 +11,7 @@ export type OnlineStatus = 'online' | 'offline';
 // Base User structure
 export interface User {
   id: string; // Corresponds to Firebase Auth UID
-  displayName: string;
+  nom: string;
   email: string;
   phone?: string;
   pseudo?: string;
@@ -23,7 +23,7 @@ export interface User {
   referralCode: string;
   referredBy?: string;
   referralsCount: number;
-  profileImage?: string;
+  avatar?: string;
   bio?: string;
   isVerified: boolean;
   onlineStatus: OnlineStatus;
@@ -41,14 +41,16 @@ export interface Wallet {
 }
 
 // Transaction (subcollection of Wallet)
-export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase';
+export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'withdraw';
+
 export type TransactionStatus = 'pending' | 'success' | 'failed';
 
 export interface Transaction {
   id: string;
+  userId?: string;
   amount: number;
   type: TransactionType;
-  date: Timestamp;
+  createdAt: Timestamp;
   description: string;
   status: TransactionStatus;
   reference: string;
@@ -57,13 +59,14 @@ export interface Transaction {
 // Service (Annonce)
 export type ServiceStatus = 'active' | 'hidden';
 
-export interface Service {
+export interface Annonce {
   id: string;
   title: string;
   description: string;
   price: number;
   category: string;
   imageUrl: string;
+  imageHint?: string;
   createdBy: string; // UID of creator
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -105,7 +108,7 @@ export interface Call {
 // Live Session
 export type LiveStatus = 'ongoing' | 'ended';
 
-export interface Live {
+export interface LiveSession {
     id: string;
     hostId: string;
     title: string;
@@ -117,6 +120,10 @@ export interface Live {
     viewersCount: number;
     likes: number;
     status: LiveStatus;
+    imageUrl: string;
+    imageHint: string;
+    creatorName: string;
+    price_per_minute: number;
 }
 
 // Reward
@@ -176,13 +183,11 @@ export interface AIAssistant {
 
 
 // --- Compatibility Types for existing components ---
-// These can be phased out as components are updated.
 
-export type Annonce = Service & { imageUrl?: string; imageHint?: string };
-export type LiveSession = Live & { imageUrl: string; imageHint: string; creatorName: string; price_per_minute: number };
-export type Creator = User & { imageUrl: string; imageHint: string; name: string };
 export type Product = { id: string, name: string, imageUrl: string, imageHint: string, title: string, description: string, price: number };
 export type BlogArticle = { id: string, title: string, content: string, imageUrl: string, imageHint: string, date: string };
+export type Creator = User & { imageUrl: string; imageHint: string; name: string };
+
 
 export type CreatorStats = {
     id: string;

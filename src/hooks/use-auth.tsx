@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { UserRole } from '@/lib/types';
@@ -44,8 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // 1. Create user document
     const userRef = doc(firestore, 'users', fbUser.uid);
-    const newUser: Partial<User> = {
-      displayName: name,
+    const newUser: Omit<User, 'id'> = {
+      nom: name,
       email: email,
       role: role,
       status: 'active',
@@ -53,8 +54,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updatedAt: serverTimestamp() as Timestamp,
       rewardPoints: 0,
       referralsCount: 0,
-      isVerified: false, // Or true if email verification is implemented and successful
+      isVerified: false,
       onlineStatus: 'offline',
+      lastLogin: serverTimestamp() as Timestamp,
       referralCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
     };
     batch.set(userRef, newUser);
