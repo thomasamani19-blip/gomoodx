@@ -30,7 +30,7 @@ export function ProductCarousel() {
             <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
               <div className="p-1">
                 <Card>
-                  <CardContent className="flex aspect-[4/3] items-center justify-center p-0 relative">
+                  <CardContent className="flex aspect-video items-center justify-center p-0 relative">
                      <Skeleton className="w-full h-full" />
                   </CardContent>
                 </Card>
@@ -84,5 +84,3 @@ export function ProductCarousel() {
     </Carousel>
   );
 }
-
-    
