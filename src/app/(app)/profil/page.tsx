@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
@@ -100,19 +98,22 @@ export default function ProfilPage() {
 
   const removeGalleryImage = (index: number) => {
     const removedPreview = galleryPreviews[index];
-    
-    // Check if the image to be removed is one of the new files (by checking if its preview is a data URL)
-    if (removedPreview.startsWith('data:')) {
-        const fileIndexToRemove = galleryPreviews.slice(0, index).filter(p => p.startsWith('data:')).length;
-        
-        // Remove from both files and previews state
-        setGalleryFiles(prevFiles => prevFiles.filter((_, i) => i !== fileIndexToRemove));
-        setGalleryPreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
+    const newPreviews = galleryPreviews.filter((_, i) => i !== index);
 
+    if (removedPreview.startsWith('data:')) {
+        let fileIndexToRemove = -1;
+        let dataUrlCount = 0;
+        for (let i=0; i<=index; i++) {
+            if (galleryPreviews[i].startsWith('data:')) {
+                dataUrlCount++;
+            }
+        }
+        fileIndexToRemove = dataUrlCount - 1;
+        
+        setGalleryFiles(prevFiles => prevFiles.filter((_, i) => i !== fileIndexToRemove));
+        setGalleryPreviews(newPreviews);
     } else {
-        // If it's an existing URL, just remove it from previews.
-        // It will be filtered out from the final list upon saving.
-        setGalleryPreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
+        setGalleryPreviews(newPreviews);
     }
   };
 
@@ -144,14 +145,12 @@ export default function ProfilPage() {
         })
       );
       
-      // Filter out removed previews from existing URLs
-      const existingUrls = user.galleryImages || [];
       const finalGalleryUrls = galleryPreviews.filter(url => !url.startsWith('data:'));
       
       const updatedData = {
         displayName,
         pseudo,
-        email,
+        // email cannot be updated from here
         bio,
         profileImage: avatarUrl,
         bannerImage: bannerUrl,
@@ -244,6 +243,7 @@ export default function ProfilPage() {
           </CardContent>
         </Card>
         
+        {user.role !== 'client' && (
         <Card className="mt-8">
             <CardHeader>
                 <CardTitle>Galerie du Profil</CardTitle>
@@ -276,6 +276,7 @@ export default function ProfilPage() {
                 />
             </CardContent>
         </Card>
+        )}
 
         <Card className="mt-8">
           <CardHeader>

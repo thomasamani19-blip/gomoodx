@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
@@ -60,6 +59,11 @@ export default function GestionEtablissementPage() {
       router.push('/connexion');
     }
     if (user) {
+      if (user.role !== 'partenaire') {
+          toast({ title: "Accès non autorisé", description: "Cette page est réservée aux partenaires.", variant: "destructive"});
+          router.push('/dashboard');
+          return;
+      }
       setDisplayName(user.displayName || '');
       setEmail(user.email || '');
       setBio(user.bio || '');
@@ -68,7 +72,7 @@ export default function GestionEtablissementPage() {
       setBannerPreview(user.bannerImage || `https://picsum.photos/seed/${user.id}/1200/400`);
       setGalleryPreviews(user.galleryImages || []);
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, toast]);
   
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
     const file = e.target.files?.[0];
@@ -104,16 +108,23 @@ export default function GestionEtablissementPage() {
     
     // Check if the image to be removed is one of the new files (by checking if its preview is a data URL)
     if (removedPreview.startsWith('data:')) {
-        const fileIndexToRemove = galleryPreviews.slice(0, index).filter(p => p.startsWith('data:')).length;
+        let fileIndexToRemove = -1;
+        let dataUrlCount = 0;
+        for (let i=0; i<=index; i++) {
+            if (galleryPreviews[i].startsWith('data:')) {
+                dataUrlCount++;
+            }
+        }
+        fileIndexToRemove = dataUrlCount - 1;
         
         // Remove from both files and previews state
         setGalleryFiles(prevFiles => prevFiles.filter((_, i) => i !== fileIndexToRemove));
-        setGalleryPreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
+        setGalleryPreviews(newPreviews);
 
     } else {
         // If it's an existing URL, just remove it from previews.
-        // It will be filtered out from the final list upon saving.
-        setGalleryPreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
+        // The final list will be constructed from the remaining previews upon saving.
+        setGalleryPreviews(newPreviews);
     }
   };
 
@@ -137,6 +148,7 @@ export default function GestionEtablissementPage() {
         bannerUrl = await uploadFile(storage, storagePath, bannerFile);
       }
 
+      // Upload new gallery files
       const newGalleryUrls = await Promise.all(
         galleryFiles.map(file => {
             const storagePath = `galleries/${user.id}/${Date.now()}_${file.name}`;
@@ -144,8 +156,9 @@ export default function GestionEtablissementPage() {
         })
       );
       
-      const existingUrls = user.galleryImages || [];
-      const finalGalleryUrls = existingUrls.filter(url => galleryPreviews.includes(url));
+      // Keep only URLs that are still in the preview list
+      const finalGalleryUrls = galleryPreviews.filter(url => !url.startsWith('data:'));
+
       
       const updatedData = {
         displayName,
@@ -296,7 +309,7 @@ export default function GestionEtablissementPage() {
              <div className="space-y-2">
                 <Label htmlFor="email">Adresse e-mail de contact</Label>
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                <p className="text-xs text-muted-foreground">Cette adresse sera publique. L'e-mail de connexion reste privé.</p>
+                <p className="text-xs text-muted-foreground">Cette adresse sera publique. L'e-mail de connexion est différent et reste privé.</p>
             </div>
           </CardContent>
           <CardFooter>
