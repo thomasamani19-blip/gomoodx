@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     try {
         const { callId, duration } = await request.json() as { callId: string, duration: number };
 
-        if (!callId || duration === undefined || duration < 0) {
+        if (!callId || duration === undefined || duration <= 0) {
             return NextResponse.json({ status: 'error', message: 'ID d\'appel ou durée invalide.' }, { status: 400 });
         }
         
@@ -28,9 +28,9 @@ export async function POST(request: Request) {
             
             const callData = callDoc.data() as Call;
 
-            // Only bill for video calls with a defined price and positive duration
-            if (callData.type !== 'video' || !callData.pricePerMinute || callData.pricePerMinute <= 0 || duration <= 0) {
-                t.update(callRef, { billedDuration: duration });
+            // Only bill for calls with a defined price and positive duration
+            if (!callData.pricePerMinute || callData.pricePerMinute <= 0) {
+                 t.update(callRef, { billedDuration: duration });
                 return { message: "Aucune facturation requise pour cet appel.", totalCost: 0 };
             }
 
@@ -51,8 +51,6 @@ export async function POST(request: Request) {
             const callerWallet = callerWalletDoc.data() as Wallet;
             if (callerWallet.balance < totalCost) {
                 // This is a fallback; primary checks should be on the client.
-                // Here we might charge the available balance or handle as an error.
-                // For now, we throw, but in production you might want partial billing.
                 throw new Error("Solde insuffisant pour la durée de l'appel.");
             }
 
@@ -75,7 +73,7 @@ export async function POST(request: Request) {
                 amount: totalCost,
                 type: 'call_fee',
                 createdAt: Timestamp.now(),
-                description: `Appel vidéo (${minutesBilled} min)`,
+                description: `Appel ${callData.type} (${minutesBilled} min)`,
                 status: 'success',
                 reference: callId,
             };
@@ -87,7 +85,7 @@ export async function POST(request: Request) {
                 amount: totalCost,
                 type: 'credit',
                 createdAt: Timestamp.now(),
-                description: `Revenu appel vidéo (${minutesBilled} min)`,
+                description: `Revenu appel ${callData.type} (${minutesBilled} min)`,
                 status: 'success',
                 reference: callId,
             };

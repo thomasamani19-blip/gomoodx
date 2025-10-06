@@ -124,7 +124,6 @@ export default function CallPage({ params }: { params: { callId: string } }) {
     return () => clearInterval(interval);
   }, [callStatus]);
   
-  // Hang up effect with billing logic
   const hangUp = useMemo(() => async (updateDb = true) => {
     if (hasHungUp.current) return;
     hasHungUp.current = true;
@@ -134,21 +133,35 @@ export default function CallPage({ params }: { params: { callId: string } }) {
     localStream?.getTracks().forEach(track => track.stop());
 
     const callDuration = callStartTimeRef.current ? Math.floor((new Date().getTime() - callStartTimeRef.current.getTime()) / 1000) : 0;
-
-    // Only the caller handles billing to avoid double billing
-    if (isCaller && callDoc?.pricePerMinute && callDoc.pricePerMinute > 0 && callDuration > 0) {
-        try {
-            await fetch('/api/calls/billing', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ callId: callDoc.id, duration: callDuration }),
-            });
-            toast({ title: 'Appel terminé', description: 'La facturation a été traitée.' });
-        } catch (error) {
-            console.error("Billing API call failed:", error);
-            toast({ title: 'Erreur de facturation', description: "Impossible de traiter la facturation de l'appel.", variant: 'destructive' });
+    
+    if (isCaller && callDuration > 0 && callDoc) {
+        if (callDoc.isFreeCall) {
+            // Log duration for free calls
+            try {
+                await fetch('/api/calls/log-duration', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: callDoc.callerId, duration: callDuration }),
+                });
+            } catch (error) {
+                console.error("Failed to log call duration:", error);
+            }
+        } else if (callDoc.pricePerMinute && callDoc.pricePerMinute > 0) {
+            // Handle billing for paid calls
+            try {
+                await fetch('/api/calls/billing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ callId: callDoc.id, duration: callDuration }),
+                });
+                toast({ title: 'Appel terminé', description: 'La facturation a été traitée.' });
+            } catch (error) {
+                console.error("Billing API call failed:", error);
+                toast({ title: 'Erreur de facturation', description: "Impossible de traiter la facturation de l'appel.", variant: 'destructive' });
+            }
         }
     }
+
 
     if (updateDb && callRef) {
         await updateDoc(callRef, { status: 'ended', endedAt: serverTimestamp() });

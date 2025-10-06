@@ -179,6 +179,7 @@ export interface Call {
   startedAt?: Timestamp;
   endedAt?: Timestamp;
   billedDuration?: number; // in seconds
+  isFreeCall?: boolean;
 }
 
 // Live Session

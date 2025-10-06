@@ -127,7 +127,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
     const router = useRouter();
     const { toast } = useToast();
     const isFavorite = currentUser?.favorites?.includes(user.id);
-    const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null }>({ show: false, type: null });
+    const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null, isFree?: boolean }>({ show: false, type: null, isFree: false });
 
     const handleToggleFavorite = async () => {
         if (!currentUser || !firestore) {
@@ -154,11 +154,15 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         if (!currentUser || !user || !firestore || !callConfirmation.type) return;
 
         const callType = callConfirmation.type;
+        const isFreeCall = callConfirmation.isFree;
         setCallConfirmation({ show: false, type: null });
 
         toast({ title: "Initiation de l'appel...", description: `Appel ${callType === 'video' ? 'vidéo' : 'vocal'} avec ${user.displayName} en cours de préparation.` });
         
-        const pricePerMinute = callType === 'video' ? user.rates?.videoCallPerMinute : undefined;
+        let pricePerMinute;
+        if (!isFreeCall) {
+             pricePerMinute = callType === 'video' ? user.rates?.videoCallPerMinute : user.rates?.voiceCallPerMinute;
+        }
 
         const callData: Omit<Call, 'id'> = {
             callerId: currentUser.id,
@@ -167,6 +171,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
             status: 'pending',
             type: callType,
             createdAt: serverTimestamp() as any,
+            isFreeCall: isFreeCall,
             ...(pricePerMinute && { pricePerMinute }),
         };
         try {
@@ -178,7 +183,27 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         }
     };
 
+    const confirmCall = (type: CallType) => {
+        const FREE_QUOTA_MINUTES = 60; // Example quota
+        const lastReset = currentUser?.dailyVoiceCallQuota?.lastReset.toDate();
+        const now = new Date();
+        let quotaUsed = currentUser?.dailyVoiceCallQuota?.minutesUsed || 0;
+
+        let isQuotaExceeded = false;
+        if (lastReset && now.toDateString() === lastReset.toDateString()) {
+             isQuotaExceeded = quotaUsed >= FREE_QUOTA_MINUTES;
+        } else {
+            // Reset quota if it's a new day
+            quotaUsed = 0;
+        }
+        
+        const isFree = type === 'voice' && !isQuotaExceeded;
+        setCallConfirmation({ show: true, type, isFree });
+    }
+
     const videoCallRate = user.rates?.videoCallPerMinute;
+    const voiceCallRate = user.rates?.voiceCallPerMinute;
+
 
     return (
         <>
@@ -225,11 +250,11 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => setCallConfirmation({show: true, type: 'video'})}>
+                                    <DropdownMenuItem onClick={() => confirmCall('video')}>
                                         <Video className="mr-2 h-4 w-4" />
                                         Appel Vidéo {videoCallRate && `(${videoCallRate}€/min)`}
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setCallConfirmation({show: true, type: 'voice'})}>
+                                    <DropdownMenuItem onClick={() => confirmCall('voice')}>
                                         <Phone className="mr-2 h-4 w-4" />
                                         Appel Vocal
                                     </DropdownMenuItem>
@@ -280,7 +305,10 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                     <AlertDialogDescription>
                         {callConfirmation.type === 'video' && videoCallRate ? 
                         `Lancer un appel vidéo avec ${user.displayName} ? Cet appel sera facturé ${videoCallRate}€ par minute.` :
-                        `Lancer un appel vocal gratuit avec ${user.displayName} ?`}
+                        callConfirmation.type === 'voice' && callConfirmation.isFree ?
+                        `Lancer un appel vocal gratuit avec ${user.displayName} ?` :
+                        `Votre quota d'appels vocaux gratuits est épuisé. Cet appel sera facturé ${voiceCallRate || 'au tarif en vigueur'}€ par minute. Continuer ?`
+                        }
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
