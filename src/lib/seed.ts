@@ -23,33 +23,54 @@ const auth = getAuth(app);
 
 const USERS_TO_CREATE = [
     {
-        email: 'admin@gomoodx.com',
+        email: 'amanignangoran104@gmail.com',
         password: 'password123',
         data: {
             displayName: 'Amani Gnangoran',
-            role: 'administrateur',
-            status: 'active',
+            role: 'founder',
         }
     },
     {
-        email: 'creator@gomoodx.com',
+        email: 'admin@test.com',
+        password: 'password123',
+        data: {
+            displayName: 'Admin GoMoodX',
+            role: 'administrateur',
+        }
+    },
+    {
+        email: 'creator@test.com',
         password: 'password123',
         data: {
             displayName: 'Eva Sensuelle',
             role: 'escorte',
-            status: 'active',
             profileImage: 'https://picsum.photos/seed/creator1/400/600',
         }
     },
     {
-        email: 'member@gomoodx.com',
+        email: 'member@test.com',
         password: 'password123',
         data: {
             displayName: 'Alexandre',
             role: 'client',
-            status: 'active',
         }
     },
+    {
+        email: 'partner@test.com',
+        password: 'password123',
+        data: {
+            displayName: 'Partenaire Hôtel Luxe',
+            role: 'partenaire',
+        }
+    },
+     {
+        email: 'moderator@test.com',
+        password: 'password123',
+        data: {
+            displayName: 'Modérateur',
+            role: 'moderator',
+        }
+    }
 ];
 
 async function seedDatabase() {
@@ -80,7 +101,8 @@ async function seedDatabase() {
                     lastLogin: Timestamp.now(),
                     referralCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
                     profileImage: (user.data as any).profileImage || `https://picsum.photos/seed/${uid}/150/150`,
-                    bio: 'Description de profil par défaut.'
+                    bio: 'Description de profil par défaut.',
+                    favorites: [],
                 };
                 await setDoc(userDocRef, baseData);
 
