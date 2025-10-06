@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useDoc, useFirestore } from '@/firebase';
-import type { Annonce, User } from '@/lib/types';
-import { doc } from 'firebase/firestore';
+import { useCollection, useDoc, useFirestore } from '@/firebase';
+import type { Annonce, User, Review } from '@/lib/types';
+import { doc, collection, query, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Star, MessageCircle, Heart, Share2, Send } from 'lucide-react';
@@ -13,7 +13,8 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useAuth } from '@/hooks/use-auth';
 
 // Copié depuis annonces/page.tsx
 const StarRating = ({ rating, ratingCount, className }: { rating: number, ratingCount?: number, className?: string }) => {
@@ -79,27 +80,69 @@ const ReviewForm = () => {
     )
 }
 
-const mockReviews = [
-    { id: 1, author: 'Alexandre', avatar: 'https://picsum.photos/seed/user1/100/100', rating: 5, comment: 'Une expérience absolument incroyable. Eva est une hôte charmante et attentionnée. Je recommande vivement !' },
-    { id: 2, author: 'Julien', avatar: 'https://picsum.photos/seed/user2/100/100', rating: 4, comment: "Très bonne soirée, l'ambiance était parfaite. Juste un petit bémol sur la ponctualité, mais rien de grave." },
-];
+function ReviewList({ annonceId }: { annonceId: string }) {
+    const firestore = useFirestore();
+    const reviewsQuery = useMemo(() => {
+        if (!firestore || !annonceId) return null;
+        return query(collection(firestore, 'services', annonceId, 'reviews'), orderBy('createdAt', 'desc'));
+    }, [firestore, annonceId]);
+    
+    const { data: reviews, loading } = useCollection<Review>(reviewsQuery);
 
-const ReviewList = () => {
+    if (loading) {
+        return (
+             <Card>
+                <CardHeader>
+                    <CardTitle>Évaluations des membres</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="flex gap-4">
+                         <Skeleton className="h-10 w-10 rounded-full" />
+                         <div className="space-y-2 flex-1">
+                             <Skeleton className="h-4 w-1/4" />
+                             <Skeleton className="h-4 w-full" />
+                         </div>
+                    </div>
+                     <div className="flex gap-4">
+                         <Skeleton className="h-10 w-10 rounded-full" />
+                         <div className="space-y-2 flex-1">
+                             <Skeleton className="h-4 w-1/4" />
+                             <Skeleton className="h-4 w-full" />
+                         </div>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+    
+    if (!reviews || reviews.length === 0) {
+        return (
+             <Card>
+                <CardHeader>
+                    <CardTitle>Évaluations des membres</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground">Aucun avis pour cette annonce pour le moment.</p>
+                </CardContent>
+            </Card>
+        )
+    }
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Évaluations des membres</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-                {mockReviews.map(review => (
+                {reviews.map(review => (
                     <div key={review.id} className="flex gap-4">
                         <Avatar>
-                            <AvatarImage src={review.avatar} />
-                            <AvatarFallback>{review.author.charAt(0)}</AvatarFallback>
+                            <AvatarImage src={review.authorImage} />
+                            <AvatarFallback>{review.authorName.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div>
                             <div className="flex items-center gap-2">
-                                <p className="font-semibold">{review.author}</p>
+                                <p className="font-semibold">{review.authorName}</p>
                                 <StarRating rating={review.rating} />
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">{review.comment}</p>
@@ -183,7 +226,7 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
 
                 <div className="space-y-6">
                     <ReviewForm />
-                    <ReviewList />
+                    <ReviewList annonceId={params.id} />
                 </div>
 
             </div>

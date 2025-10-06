@@ -398,6 +398,52 @@
         "contenu",
         "dateEnvoi"
       ]
+    },
+    "Review": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Review",
+      "type": "object",
+      "description": "Représente un avis laissé par un utilisateur pour une annonce.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifiant unique de l'avis."
+        },
+        "authorId": {
+          "type": "string",
+          "description": "ID de l'utilisateur qui a laissé l'avis."
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Nom de l'utilisateur qui a laissé l'avis."
+        },
+        "authorImage": {
+          "type": "string",
+          "description": "URL de l'image de profil de l'auteur.",
+          "format": "uri"
+        },
+        "rating": {
+          "type": "number",
+          "description": "Note de 1 à 5."
+        },
+        "comment": {
+          "type": "string",
+          "description": "Commentaire de l'utilisateur."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Date de création de l'avis.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "authorId",
+        "authorName",
+        "rating",
+        "comment",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -532,6 +578,26 @@
             {
               "name": "reservationId",
               "description": "ID unique de la réservation."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/services/{serviceId}/reviews/{reviewId}",
+        "definition": {
+          "entityName": "Review",
+          "schema": {
+            "$ref": "#/backend/entities/Review"
+          },
+          "description": "Stocke les avis pour une annonce de service spécifique.",
+          "params": [
+            {
+              "name": "serviceId",
+              "description": "ID unique du service."
+            },
+            {
+              "name": "reviewId",
+              "description": "ID unique de l'avis."
             }
           ]
         }

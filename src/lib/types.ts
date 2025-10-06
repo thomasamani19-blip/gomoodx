@@ -85,6 +85,18 @@ export interface Annonce {
   views: number;
 }
 
+// Review (subcollection of Annonce)
+export interface Review {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorImage?: string;
+  rating: number;
+  comment: string;
+  createdAt: Timestamp;
+}
+
+
 // Message
 export type MessageType = 'text' | 'image' | 'audio';
 export type CallType = 'none' | 'voice' | 'video';

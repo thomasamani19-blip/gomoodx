@@ -4,7 +4,7 @@
  * Usage: npx tsx src/lib/seed.ts
  */
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, Timestamp } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, Timestamp, writeBatch } from 'firebase/firestore';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import type { PartnerType } from './types';
 
@@ -54,6 +54,16 @@ const USERS_TO_CREATE = [
         data: {
             displayName: 'Alexandre',
             role: 'client',
+             profileImage: 'https://picsum.photos/seed/user1/100/100',
+        }
+    },
+      {
+        email: 'member2@test.com',
+        password: 'password123',
+        data: {
+            displayName: 'Julien',
+            role: 'client',
+            profileImage: 'https://picsum.photos/seed/user2/100/100',
         }
     },
     {
@@ -88,7 +98,7 @@ const USERS_TO_CREATE = [
 
 async function seedDatabase() {
     console.log('Starting database seeding...');
-    const userIds: { [key: string]: string } = {};
+    const userIds: { [key: string]: { uid: string, displayName: string, profileImage: string } } = {};
     
     try {
         for (const user of USERS_TO_CREATE) {
@@ -96,8 +106,18 @@ async function seedDatabase() {
                 console.log(`Creating auth user: ${user.email}`);
                 const userCredential = await createUserWithEmailAndPassword(auth, user.email, user.password);
                 const uid = userCredential.user.uid;
-                userIds[user.data.role] = uid;
+                
+                const profileImage = (user.data as any).profileImage || `https://picsum.photos/seed/${uid}/150/150`;
+
+                userIds[user.email] = {
+                    uid,
+                    displayName: user.data.displayName,
+                    profileImage,
+                };
+                
                 console.log(`User created with UID: ${uid}. Now creating Firestore document...`);
+
+                const batch = writeBatch(firestore);
 
                 const userDocRef = doc(firestore, 'users', uid);
                 const baseData: any = {
@@ -113,7 +133,7 @@ async function seedDatabase() {
                     onlineStatus: 'offline',
                     lastLogin: Timestamp.now(),
                     referralCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
-                    profileImage: (user.data as any).profileImage || `https://picsum.photos/seed/${uid}/150/150`,
+                    profileImage: profileImage,
                     bio: 'Description de profil par défaut.',
                     favorites: [],
                 };
@@ -122,11 +142,11 @@ async function seedDatabase() {
                     baseData.partnerType = (user.data as any).partnerType as PartnerType;
                 }
 
-                await setDoc(userDocRef, baseData);
+                batch.set(userDocRef, baseData);
 
                 // Create wallet for each user
                 const walletRef = doc(firestore, 'wallets', uid);
-                await setDoc(walletRef, {
+                batch.set(walletRef, {
                     balance: Math.floor(Math.random() * 200),
                     currency: 'XOF',
                     totalEarned: 0,
@@ -134,6 +154,7 @@ async function seedDatabase() {
                     status: 'active'
                 });
 
+                await batch.commit();
                 console.log(`Firestore document and wallet created for ${user.email}`);
 
             } catch (error: any) {
@@ -147,7 +168,7 @@ async function seedDatabase() {
         
         console.log("\nSeeding additional data (services, products)...");
 
-        const creatorUid = userIds['escorte'] || 'creator-uid-placeholder';
+        const creatorUid = userIds['creator@test.com']?.uid || 'creator-uid-placeholder';
 
         // Example service
         const serviceRef = doc(collection(firestore, 'services'));
@@ -164,8 +185,38 @@ async function seedDatabase() {
             status: 'active',
             location: 'Paris, FR',
             rating: 4.8,
+            ratingCount: 15,
             views: 1250,
         });
+
+         // Add reviews to the service
+        const alexandre = userIds['member@test.com'];
+        const julien = userIds['member2@test.com'];
+        
+        if (alexandre) {
+            const review1Ref = doc(collection(firestore, 'services', serviceRef.id, 'reviews'));
+            await setDoc(review1Ref, {
+                authorId: alexandre.uid,
+                authorName: alexandre.displayName,
+                authorImage: alexandre.profileImage,
+                rating: 5,
+                comment: 'Une expérience absolument incroyable. Eva est une hôte charmante et attentionnée. Je recommande vivement !',
+                createdAt: Timestamp.now(),
+            });
+        }
+        
+         if (julien) {
+            const review2Ref = doc(collection(firestore, 'services', serviceRef.id, 'reviews'));
+            await setDoc(review2Ref, {
+                authorId: julien.uid,
+                authorName: julien.displayName,
+                authorImage: julien.profileImage,
+                rating: 4,
+                comment: "Très bonne soirée, l'ambiance était parfaite. Juste un petit bémol sur la ponctualité, mais rien de grave.",
+                createdAt: Timestamp.now(),
+            });
+        }
+
         
         // Example product
         const productRef = doc(collection(firestore, 'products'));
