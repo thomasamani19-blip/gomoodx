@@ -69,7 +69,7 @@ export interface Wallet {
 }
 
 // Transaction (subcollection of Wallet)
-export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'call_fee' | 'platform_fee' | 'commission';
+export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'call_fee' | 'platform_fee' | 'commission' | 'points_conversion';
 
 export type TransactionStatus = 'pending' | 'success' | 'failed';
 
@@ -251,6 +251,7 @@ export interface Settings {
         videoToProducerPerMinute: number;
     };
     platformCommissionRate?: number;
+    rewardPointsConversionRate?: number; // e.g., 100 points = 1 EUR
 }
 
 // AI Assistant Log

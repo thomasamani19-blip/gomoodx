@@ -113,7 +113,8 @@ async function seedDatabase() {
                 voicePerMinute: 1.5, // 1.5€ / minute for voice calls after quota
                 videoToProducerPerMinute: 8 // 8€ / minute for video calls to producers
             },
-            platformCommissionRate: 0.20 // 20% commission
+            platformCommissionRate: 0.20, // 20% commission
+            rewardPointsConversionRate: 0.01 // 100 points = 1 EUR
         });
         console.log('Global settings seeded.');
 
@@ -121,7 +122,7 @@ async function seedDatabase() {
         const platformWalletRef = doc(firestore, 'wallets', 'platform_wallet');
         console.log('Seeding platform wallet...');
         await setDoc(platformWalletRef, {
-            balance: 0,
+            balance: 10000, // Start with a high balance for conversions
             currency: 'EUR',
             totalEarned: 0,
             status: 'active',
@@ -156,7 +157,7 @@ async function seedDatabase() {
                     status: 'active',
                     createdAt: Timestamp.now(),
                     updatedAt: Timestamp.now(),
-                    rewardPoints: 0,
+                    rewardPoints: Math.floor(Math.random() * 5000), // Give some random points
                     referralsCount: 0,
                     isVerified: true,
                     onlineStatus: 'offline',
