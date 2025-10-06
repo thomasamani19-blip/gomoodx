@@ -6,18 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useCollection, useFirestore } from '@/firebase';
 import type { User, UserRole, UserStatus } from '@/lib/types';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, ShieldOff, UserCheck } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 const roleVariantMap: { [key in UserRole]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
     founder: 'destructive',
@@ -39,6 +41,7 @@ export default function AdminUsersPage() {
     const { user: currentUser, loading: authLoading } = useAuth();
     const router = useRouter();
     const firestore = useFirestore();
+    const { toast } = useToast();
     const [isAllowed, setIsAllowed] = useState(false);
     const [isCheckingPermissions, setIsCheckingPermissions] = useState(true);
 
@@ -63,19 +66,31 @@ export default function AdminUsersPage() {
     const { data: users, loading: usersLoading } = useCollection<User>(usersQuery);
 
     const loading = authLoading || isCheckingPermissions || (isAllowed && usersLoading);
+    
+    const handleUpdateStatus = async (userId: string, newStatus: UserStatus) => {
+        if (!firestore) return;
+        
+        try {
+            const userRef = doc(firestore, 'users', userId);
+            await updateDoc(userRef, { status: newStatus });
+            toast({ title: "Statut mis à jour", description: `L'utilisateur a été ${newStatus === 'suspended' ? 'suspendu' : 'activé'}.` });
+        } catch (error) {
+            toast({ title: "Erreur", description: "Impossible de mettre à jour le statut de l'utilisateur.", variant: 'destructive' });
+            console.error("Error updating user status:", error);
+        }
+    }
+
 
     if (!loading && !isAllowed) {
         return (
             <div>
-                <PageHeader title="Gestion des Utilisateurs" description="Supervisez et gérez tous les comptes de la plateforme." />
+                <PageHeader title="Gestion des Utilisateurs" />
                 <Card>
                     <CardHeader>
                         <CardTitle>Accès non autorisé</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center justify-center h-40">
-                             <p className="text-muted-foreground">Vous n'avez pas les permissions nécessaires pour accéder à cette page.</p>
-                        </div>
+                    <CardContent className="h-40 flex items-center justify-center">
+                         <p className="text-muted-foreground">Vous n'avez pas les permissions nécessaires pour accéder à cette page.</p>
                     </CardContent>
                 </Card>
             </div>
@@ -121,7 +136,7 @@ export default function AdminUsersPage() {
                                         <div className="flex items-center gap-3">
                                             <Avatar>
                                                 <AvatarImage src={user.profileImage} />
-                                                <AvatarFallback>{user.displayName.charAt(0)}</AvatarFallback>
+                                                <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
                                             </Avatar>
                                             <div>
                                                 <p className="font-medium">{user.displayName}</p>
@@ -146,9 +161,21 @@ export default function AdminUsersPage() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent>
-                                                <DropdownMenuItem>Voir le profil</DropdownMenuItem>
-                                                <DropdownMenuItem>Modifier</DropdownMenuItem>
-                                                <DropdownMenuItem className="text-destructive">Suspendre</DropdownMenuItem>
+                                                <DropdownMenuItem asChild>
+                                                    <Link href={`/profil/${user.id}`}>Voir le profil</Link>
+                                                </DropdownMenuItem>
+                                                {user.status === 'active' && (
+                                                    <DropdownMenuItem className="text-destructive" onClick={() => handleUpdateStatus(user.id, 'suspended')}>
+                                                        <ShieldOff className="mr-2 h-4 w-4" />
+                                                        Suspendre
+                                                    </DropdownMenuItem>
+                                                )}
+                                                {user.status === 'suspended' && (
+                                                     <DropdownMenuItem onClick={() => handleUpdateStatus(user.id, 'active')}>
+                                                         <UserCheck className="mr-2 h-4 w-4" />
+                                                         Réactiver
+                                                     </DropdownMenuItem>
+                                                )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
