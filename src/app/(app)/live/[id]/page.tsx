@@ -6,6 +6,7 @@ import type { LiveSession } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/shared/page-header';
+import { Badge } from '@/components/ui/badge';
 
 export default function LiveSessionPage({ params }: { params: { id: string } }) {
   const firestore = useFirestore();
@@ -36,12 +37,26 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
     );
   }
 
+  const headerDescription = (
+    <div className="flex items-center gap-4 mt-2">
+        <span>En direct avec {session.creatorName || 'un créateur'}</span>
+        {session.price_per_minute && session.price_per_minute > 0 ? (
+            <Badge variant="secondary">{session.price_per_minute} €/min</Badge>
+        ) : (
+            <Badge>Gratuit</Badge>
+        )}
+    </div>
+  );
+  
+
   // Check if the streamUrl is a data URL (AI generated video)
   const isAiGenerated = session.streamUrl?.startsWith('data:video');
 
   return (
     <div>
-      <PageHeader title={session.title} description={`En direct avec ${session.creatorName || 'un créateur'}`} />
+      <PageHeader title={session.title} />
+      <div className="mb-8 -mt-6">{headerDescription}</div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
             <div className="aspect-video bg-black rounded-lg flex items-center justify-center text-white text-center">

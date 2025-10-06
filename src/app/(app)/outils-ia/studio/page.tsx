@@ -11,7 +11,7 @@ import PageHeader from '@/components/shared/page-header';
 import { genererImageIA, type GenererImageIAOutput } from '@/ai/flows/generer-image-ia';
 import { genererAudioTTS, type GenererAudioTTSOutput } from '@/ai/flows/generer-audio-tts';
 import { genererVideoIA, type GenererVideoIAOutput } from '@/ai/flows/generer-video-ia';
-import { Loader2, Wand2, Image as ImageIcon, Video, Mic, Upload, X, Clapperboard } from 'lucide-react';
+import { Loader2, Wand2, Image as ImageIcon, Video, Mic, Upload, X, Clapperboard, Film } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Image from 'next/image';
@@ -19,6 +19,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { useFirestore } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 
 function ImageGeneratorTab() {
   const [result, setResult] = useState<GenererImageIAOutput | null>(null);
@@ -212,8 +214,13 @@ function fileToDataUrl(file: File): Promise<string> {
 function VideoGeneratorTab() {
     const [result, setResult] = useState<GenererVideoIAOutput | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-    const [imageDataUrls, setImageDataUrls] = useState<string[]>([]);
+    const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
+    const [mediaDataUrls, setMediaDataUrls] = useState<string[]>([]);
+    const [mediaTypes, setMediaTypes] = useState<('image'|'video')[]>([]);
+    const [duration, setDuration] = useState(5);
+    const [isPaid, setIsPaid] = useState(false);
+    const [price, setPrice] = useState(1);
+    
     const { toast } = useToast();
     const [isSavingLive, setIsSavingLive] = useState(false);
 
@@ -222,23 +229,26 @@ function VideoGeneratorTab() {
     const router = useRouter();
 
 
-    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleMediaUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (files) {
             const fileArray = Array.from(files);
             const newPreviews = fileArray.map(file => URL.createObjectURL(file));
-            setImagePreviews(prev => [...prev, ...newPreviews]); 
+            setMediaPreviews(prev => [...prev, ...newPreviews]); 
             const dataUrls = await Promise.all(fileArray.map(fileToDataUrl)); 
-            setImageDataUrls(prevUrls => [...prevUrls, ...dataUrls]);
+            setMediaDataUrls(prevUrls => [...prevUrls, ...dataUrls]);
+            const types = fileArray.map(file => file.type.startsWith('video') ? 'video' : 'image');
+            setMediaTypes(prev => [...prev, ...types]);
         }
     };
 
-    const removeImage = (index: number) => {
-        const urlToRemove = imagePreviews[index];
+    const removeMedia = (index: number) => {
+        const urlToRemove = mediaPreviews[index];
         URL.revokeObjectURL(urlToRemove);
 
-        setImagePreviews(prev => prev.filter((_, i) => i !== index));
-        setImageDataUrls(prev => prev.filter((_, i) => i !== index));
+        setMediaPreviews(prev => prev.filter((_, i) => i !== index));
+        setMediaDataUrls(prev => prev.filter((_, i) => i !== index));
+        setMediaTypes(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -249,15 +259,15 @@ function VideoGeneratorTab() {
         const formData = new FormData(event.currentTarget);
         const input = {
             prompt: formData.get('prompt') as string,
-            imagesBase64: imageDataUrls,
-            dureeSecondes: 5,
+            base64Media: mediaDataUrls,
+            dureeSecondes: duration,
             format: '16:9' as '16:9' | '9:16'
         };
 
-        if (!input.prompt && imageDataUrls.length === 0) {
+        if (!input.prompt && mediaDataUrls.length === 0) {
             toast({
                 title: 'Entrée requise',
-                description: 'Veuillez décrire la vidéo ou fournir une image.',
+                description: 'Veuillez décrire la vidéo ou fournir une image/vidéo.',
                 variant: 'destructive',
             });
             setIsLoading(false);
@@ -298,6 +308,7 @@ function VideoGeneratorTab() {
                 imageUrl: user.profileImage || `https://picsum.photos/seed/${user.id}/600/400`,
                 viewersCount: 0,
                 likes: 0,
+                price_per_minute: isPaid ? price : 0,
             };
             const docRef = await addDoc(collection(firestore, 'lives'), liveSessionData);
             toast({ title: "Live lancé !", description: "Votre session de live simulé est maintenant visible." });
@@ -318,7 +329,7 @@ function VideoGeneratorTab() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Générateur de Vidéo</CardTitle>
-                            <CardDescription>Créez une courte vidéo à partir d'un texte et/ou d'images. Cette fonctionnalité est expérimentale.</CardDescription>
+                            <CardDescription>Créez une courte vidéo à partir d'un texte et/ou d'un média. Cette fonctionnalité est expérimentale.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-0 space-y-4">
                             <div className="space-y-2">
@@ -326,27 +337,34 @@ function VideoGeneratorTab() {
                                 <Textarea name="prompt" id="prompt-video" placeholder="Ex: un clin d'œil et un sourire, dans un style cinématique..." rows={3} required />
                             </div>
                             <div className="space-y-2">
-                                <Label>Images de référence (optionnel)</Label>
+                                <Label>Média de référence (image ou vidéo)</Label>
                                 <Card className="border-2 border-dashed p-4 text-center hover:border-primary">
-                                    <Input id="images-video" type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} />
-                                    <Label htmlFor="images-video" className="cursor-pointer">
+                                    <Input id="media-video" type="file" multiple accept="image/*,video/mp4,video/quicktime,video/x-matroska,video/webm" className="hidden" onChange={handleMediaUpload} />
+                                    <Label htmlFor="media-video" className="cursor-pointer">
                                         <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                                        <p className="text-sm text-muted-foreground">Cliquez ou glissez-déposez des images ici</p>
+                                        <p className="text-sm text-muted-foreground">Cliquez ou glissez-déposez des médias ici</p>
                                     </Label>
                                 </Card>
                             </div>
 
-                            {imagePreviews.length > 0 && (
+                            {mediaPreviews.length > 0 && (
                                 <div className="grid grid-cols-3 gap-2">
-                                    {imagePreviews.map((imgSrc, index) => (
+                                    {mediaPreviews.map((mediaSrc, index) => (
                                         <div key={index} className="relative group">
-                                            <Image src={imgSrc} alt={`Aperçu ${index + 1}`} width={100} height={100} className="rounded-md object-cover w-full aspect-square" />
+                                            {mediaTypes[index] === 'video' ? (
+                                                <video src={mediaSrc} className="rounded-md object-cover w-full aspect-square" />
+                                            ) : (
+                                                <Image src={mediaSrc} alt={`Aperçu ${index + 1}`} width={100} height={100} className="rounded-md object-cover w-full aspect-square" />
+                                            )}
+                                            <div className="absolute top-0 left-0 bg-black/50 text-white rounded-br-md px-1 py-0.5 text-xs">
+                                                {mediaTypes[index]}
+                                            </div>
                                             <Button
                                                 type="button"
                                                 variant="destructive"
                                                 size="icon"
                                                 className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100"
-                                                onClick={() => removeImage(index)}
+                                                onClick={() => removeMedia(index)}
                                             >
                                                 <X className="h-4 w-4" />
                                             </Button>
@@ -354,11 +372,21 @@ function VideoGeneratorTab() {
                                     ))}
                                 </div>
                             )}
-
+                             <div className="space-y-2">
+                                <Label htmlFor="duration">Durée de la vidéo ({duration}s)</Label>
+                                <Slider
+                                    id="duration"
+                                    min={5}
+                                    max={8}
+                                    step={1}
+                                    value={[duration]}
+                                    onValueChange={(value) => setDuration(value[0])}
+                                />
+                             </div>
                         </CardContent>
                         <CardFooter>
                             <Button type="submit" disabled={isLoading}>
-                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Video className="mr-2 h-4 w-4" />}
+                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}
                                 Générer la Vidéo
                             </Button>
                         </CardFooter>
@@ -382,10 +410,24 @@ function VideoGeneratorTab() {
                                         Votre navigateur ne supporte pas la lecture de vidéos.
                                     </video>
                                 </div>
-                                <Button onClick={handleLaunchLive} disabled={isSavingLive}>
-                                    {isSavingLive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Clapperboard className="mr-2 h-4 w-4" />}
-                                    Lancer en Live (Simulé)
-                                </Button>
+                                <Card className="w-full">
+                                    <CardContent className="pt-4 space-y-4">
+                                         <div className="flex items-center space-x-2">
+                                            <Switch id="paid-switch" checked={isPaid} onCheckedChange={setIsPaid} />
+                                            <Label htmlFor="paid-switch">Lancer en accès payant</Label>
+                                        </div>
+                                        {isPaid && (
+                                             <div className="space-y-2">
+                                                <Label htmlFor="price">Prix par minute (€)</Label>
+                                                <Input id="price" type="number" value={price} onChange={e => setPrice(Math.max(0, Number(e.target.value)))} min="0" step="0.5" />
+                                             </div>
+                                        )}
+                                        <Button onClick={handleLaunchLive} disabled={isSavingLive} className="w-full">
+                                            {isSavingLive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Clapperboard className="mr-2 h-4 w-4" />}
+                                            Lancer en Live (Simulé)
+                                        </Button>
+                                    </CardContent>
+                                </Card>
                             </div>
                         )}
                         {!isLoading && !result && (
@@ -428,5 +470,3 @@ export default function StudioIAPage() {
     </div>
   );
 }
-
-    

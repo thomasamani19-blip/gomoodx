@@ -18,7 +18,7 @@ export const GenererVideoIAInputSchema = z.object({
   prompt: z.string().describe('Une description détaillée de la vidéo à générer.'),
   dureeSecondes: z.number().optional().default(5).describe('Durée de la vidéo en secondes (entre 5 et 8).'),
   format: z.enum(['16:9', '9:16']).optional().default('16:9').describe('Format de la vidéo.'),
-  imagesBase64: z.array(z.string()).optional().describe("Une liste d'images encodées en Base64 data URI à utiliser comme référence."),
+  base64Media: z.array(z.string()).optional().describe("Une liste de médias (images ou vidéo) encodés en Base64 data URI à utiliser comme référence."),
 });
 export type GenererVideoIAInput = z.infer<typeof GenererVideoIAInputSchema>;
 
@@ -53,10 +53,10 @@ const genererVideoIAFlow = ai.defineFlow(
         { text: input.prompt }
     ];
     
-    if (input.imagesBase64 && input.imagesBase64.length > 0) {
-      input.imagesBase64.forEach(imageBase64 => {
+    if (input.base64Media && input.base64Media.length > 0) {
+      input.base64Media.forEach(mediaBase64 => {
         // Le `genkitMedia` helper déduit le contentType de l'URL data, pas besoin de le parser manuellement
-        promptParts.push(genkitMedia({ url: imageBase64 }));
+        promptParts.push(genkitMedia({ url: mediaBase64 }));
       });
     }
 
@@ -104,6 +104,7 @@ const genererVideoIAFlow = ai.defineFlow(
         throw new Error(`Échec du téléchargement de la vidéo: ${videoResponse.statusText}`);
     }
 
+    // Le contentType n'est pas toujours présent dans la réponse, on force video/mp4
     const videoBase64 = await streamToBase64(videoResponse.body);
     const videoDataUrl = `data:video/mp4;base64,${videoBase64}`;
 
