@@ -6,12 +6,14 @@ import type { Annonce, User } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import { Star, MessageCircle, Heart, Share2 } from 'lucide-react';
+import { Star, MessageCircle, Heart, Share2, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { useState } from 'react';
 
 // Copié depuis annonces/page.tsx
 const StarRating = ({ rating, ratingCount, className }: { rating: number, ratingCount?: number, className?: string }) => {
@@ -35,6 +37,79 @@ const StarRating = ({ rating, ratingCount, className }: { rating: number, rating
         </div>
     );
 };
+
+const ReviewForm = () => {
+    const [rating, setRating] = useState(0);
+    const [hover, setHover] = useState(0);
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Laissez votre avis</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div>
+                    <p className="text-sm font-medium mb-2">Votre note</p>
+                    <div className="flex items-center">
+                        {[...Array(5)].map((_, index) => {
+                            const starValue = index + 1;
+                            return (
+                                <button
+                                    type="button"
+                                    key={starValue}
+                                    onClick={() => setRating(starValue)}
+                                    onMouseEnter={() => setHover(starValue)}
+                                    onMouseLeave={() => setHover(rating)}
+                                    className="p-1"
+                                >
+                                    <Star
+                                        className={cn("h-6 w-6 transition-colors", starValue <= (hover || rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300')}
+                                    />
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+                <Textarea placeholder="Rédigez votre commentaire ici..." rows={4} />
+                <Button>
+                    <Send className="mr-2 h-4 w-4" /> Envoyer l'avis
+                </Button>
+            </CardContent>
+        </Card>
+    )
+}
+
+const mockReviews = [
+    { id: 1, author: 'Alexandre', avatar: 'https://picsum.photos/seed/user1/100/100', rating: 5, comment: 'Une expérience absolument incroyable. Eva est une hôte charmante et attentionnée. Je recommande vivement !' },
+    { id: 2, author: 'Julien', avatar: 'https://picsum.photos/seed/user2/100/100', rating: 4, comment: "Très bonne soirée, l'ambiance était parfaite. Juste un petit bémol sur la ponctualité, mais rien de grave." },
+];
+
+const ReviewList = () => {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Évaluations des membres</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                {mockReviews.map(review => (
+                    <div key={review.id} className="flex gap-4">
+                        <Avatar>
+                            <AvatarImage src={review.avatar} />
+                            <AvatarFallback>{review.author.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <p className="font-semibold">{review.author}</p>
+                                <StarRating rating={review.rating} />
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">{review.comment}</p>
+                        </div>
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    );
+}
 
 export default function AnnonceDetailPage({ params }: { params: { id: string } }) {
   const firestore = useFirestore();
@@ -106,14 +181,10 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Évaluations et Commentaires</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground">Le formulaire pour laisser un avis et la liste des avis apparaîtront ici.</p>
-                    </CardContent>
-                </Card>
+                <div className="space-y-6">
+                    <ReviewForm />
+                    <ReviewList />
+                </div>
 
             </div>
             <div className="md:col-span-1 space-y-6">
