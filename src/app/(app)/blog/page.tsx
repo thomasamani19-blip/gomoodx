@@ -10,11 +10,13 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { collection } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
+import { useMemo } from 'react';
 
 export default function BlogPage() {
   const firestore = useFirestore();
-  const { data: articles, loading } = useCollection<BlogArticle>(collection(firestore, 'blog'));
+  const articlesQuery = useMemo(() => firestore ? query(collection(firestore, 'blog')) : null, [firestore]);
+  const { data: articles, loading } = useCollection<BlogArticle>(articlesQuery);
 
   return (
     <div>

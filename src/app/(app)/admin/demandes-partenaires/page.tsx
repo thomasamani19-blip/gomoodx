@@ -14,6 +14,7 @@ import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useMemo } from 'react';
 
 const statusVariantMap: { [key in PartnerRequest['status']]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
     pending: 'outline',
@@ -31,7 +32,7 @@ export default function AdminPartnerRequestsPage() {
     const firestore = useFirestore();
     const { toast } = useToast();
     
-    const requestsQuery = query(collection(firestore, 'partnerRequests'), orderBy('createdAt', 'desc'));
+    const requestsQuery = useMemo(() => firestore ? query(collection(firestore, 'partnerRequests'), orderBy('createdAt', 'desc')) : null, [firestore]);
     const { data: requests, loading: requestsLoading } = useCollection<PartnerRequest>(requestsQuery);
 
     const handleUpdateRequest = async (id: string, status: 'approved' | 'rejected') => {

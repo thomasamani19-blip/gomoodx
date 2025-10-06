@@ -8,12 +8,14 @@ import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { collection } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import Link from 'next/link';
+import { useMemo } from 'react';
 
 export default function BoutiquePage() {
   const firestore = useFirestore();
-  const { data: products, loading } = useCollection<Product>(collection(firestore, 'products'));
+  const productsQuery = useMemo(() => firestore ? query(collection(firestore, 'products')) : null, [firestore]);
+  const { data: products, loading } = useCollection<Product>(productsQuery);
 
   return (
     <div>

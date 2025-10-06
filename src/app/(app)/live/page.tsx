@@ -11,10 +11,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from "@/components/ui/badge";
 import { collection, orderBy, query } from "firebase/firestore";
 import Link from "next/link";
+import { useMemo } from "react";
 
 export default function LivePage() {
   const firestore = useFirestore();
-  const { data: sessions, loading } = useCollection<LiveSession>(query(collection(firestore, 'lives'), orderBy('status', 'desc')));
+  const sessionsQuery = useMemo(() => firestore ? query(collection(firestore, 'lives'), orderBy('status', 'desc')) : null, [firestore]);
+  const { data: sessions, loading } = useCollection<LiveSession>(sessionsQuery);
 
   return (
     <div>

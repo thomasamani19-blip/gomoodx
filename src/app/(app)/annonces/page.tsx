@@ -8,10 +8,11 @@ import type { Annonce } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { collection } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useMemo } from 'react';
 
 const StarRating = ({ rating, ratingCount, className }: { rating: number, ratingCount?: number, className?: string }) => {
     const totalStars = 5;
@@ -38,7 +39,8 @@ const StarRating = ({ rating, ratingCount, className }: { rating: number, rating
 
 export default function AnnoncesPage() {
   const firestore = useFirestore();
-  const { data: annonces, loading } = useCollection<Annonce>(collection(firestore, 'services'));
+  const annoncesQuery = useMemo(() => firestore ? query(collection(firestore, 'services')) : null, [firestore]);
+  const { data: annonces, loading } = useCollection<Annonce>(annoncesQuery);
 
   return (
     <div>
