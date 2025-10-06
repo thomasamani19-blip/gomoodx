@@ -17,6 +17,8 @@ import { useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 // Copié depuis annonces/page.tsx
 const StarRating = ({ rating, ratingCount, className }: { rating: number, ratingCount?: number, className?: string }) => {
@@ -207,7 +209,7 @@ function ReviewList({ annonceId }: { annonceId: string }) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Évaluations des membres</CardTitle>
+                <CardTitle>Évaluations des membres ({reviews.length})</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
                 {reviews.map(review => (
@@ -217,11 +219,14 @@ function ReviewList({ annonceId }: { annonceId: string }) {
                             <AvatarFallback>{review.authorName.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 mb-1">
                                 <p className="font-semibold">{review.authorName}</p>
-                                <StarRating rating={review.rating} />
+                                <p className="text-xs text-muted-foreground">
+                                    {review.createdAt && format(review.createdAt.toDate(), 'd MMMM yyyy', {locale: fr})}
+                                </p>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-1">{review.comment}</p>
+                             <StarRating rating={review.rating} />
+                            <p className="text-sm text-muted-foreground mt-2">{review.comment}</p>
                         </div>
                     </div>
                 ))}
@@ -344,3 +349,5 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
     </div>
   );
 }
+
+    
