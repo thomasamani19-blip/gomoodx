@@ -111,6 +111,19 @@ export interface Reservation {
     reservationDate: Timestamp; // The date for which the service is booked
 }
 
+// Purchase
+export type PurchaseStatus = 'pending' | 'completed' | 'shipped' | 'cancelled';
+export interface Purchase {
+  id: string;
+  memberId: string;
+  sellerId: string; // creator or partner
+  productId: string;
+  productTitle: string;
+  amount: number;
+  status: PurchaseStatus;
+  createdAt: Timestamp;
+}
+
 
 // Message
 export type MessageType = 'text' | 'image' | 'audio';
@@ -226,6 +239,8 @@ export interface Product {
     price: number;
     imageUrl: string;
     imageHint?: string;
+    createdBy: string; // creator or partner UID
+    createdAt: Timestamp;
 }
 
 export interface BlogArticle {
