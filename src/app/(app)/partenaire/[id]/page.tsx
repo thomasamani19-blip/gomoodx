@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -132,8 +133,8 @@ export default function PartnerProfilePage({ params }: { params: { id: string } 
                         <div className="flex items-start gap-3">
                             <MapPin className="h-5 w-5 text-muted-foreground mt-1" />
                             <div>
-                                <p className="font-medium">Localisation</p>
-                                <p className="text-sm text-muted-foreground">Paris, France (bientôt disponible)</p>
+                                <h4 className="font-medium">Localisation</h4>
+                                <p className="text-sm text-muted-foreground">{user.location || "Non spécifiée"}</p>
                             </div>
                         </div>
                     </CardContent>

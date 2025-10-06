@@ -177,15 +177,32 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
         </div>
 
 
-        <div className="px-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>À propos de moi</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground whitespace-pre-wrap">{user.bio || "Aucune biographie n'a été ajoutée pour le moment."}</p>
-                </CardContent>
-            </Card>
+        <div className="px-6 grid md:grid-cols-3 gap-8">
+           <div className="md:col-span-2 space-y-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>À propos de moi</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground whitespace-pre-wrap">{user.bio || "Aucune biographie n'a été ajoutée pour le moment."}</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Galerie</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {Array.from({length: 6}).map((_, i) => (
+                             <div key={i} className="aspect-square relative rounded-md overflow-hidden group">
+                                <Image src={`https://picsum.photos/seed/${user.id}-gallery${i}/400/400`} alt={`Galerie ${i+1}`} fill className="object-cover group-hover:scale-105 transition-transform" />
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+           </div>
+           <div className="md:col-span-1 space-y-8">
+                {/* Future content like stats can go here */}
+           </div>
         </div>
     </div>
   );

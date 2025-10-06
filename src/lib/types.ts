@@ -35,6 +35,7 @@ export interface User {
   onlineStatus: OnlineStatus;
   lastLogin: Timestamp;
   favorites?: string[]; // Array of creator UIDs
+  location?: string;
 }
 
 // Wallet
