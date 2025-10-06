@@ -12,15 +12,26 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ArrowDownCircle, ArrowUpCircle, PlusCircle } from 'lucide-react';
 import { useMemo } from 'react';
+import { query, where } from 'firebase/firestore';
 
 export default function PortefeuillePage() {
   const { user, loading: authLoading } = useAuth();
   
-  const walletPath = user ? `users/${user.id}/wallet/main` : null;
-  const transactionsPath = user ? `users/${user.id}/transactions` : null;
+  // Path to the user's wallet document. The walletId is the userId.
+  const walletPath = user ? `wallets/${user.id}` : null;
   
+  // Query for the user's transactions
+  const transactionsQuery = useMemo(() => {
+    if (!user) return null;
+    return query(
+      where('userId', '==', user.id)
+    );
+  }, [user]);
+
   const { data: wallet, loading: walletLoading } = useDoc<Wallet>(walletPath);
-  const { data: transactions, loading: transactionsLoading } = useCollection<Transaction>(transactionsPath);
+  const { data: transactions, loading: transactionsLoading } = useCollection<Transaction>('transactions', {
+      constraints: transactionsQuery ? [transactionsQuery] : undefined
+  });
 
   const loading = authLoading || walletLoading || transactionsLoading;
 
@@ -31,6 +42,7 @@ export default function PortefeuillePage() {
         return <ArrowUpCircle className="h-5 w-5 text-green-500" />;
       case 'purchase':
       case 'debit':
+      case 'withdraw':
         return <ArrowDownCircle className="h-5 w-5 text-red-500" />;
       default:
         return null;
@@ -40,7 +52,12 @@ export default function PortefeuillePage() {
   // Sort history by date descending
   const sortedHistory = useMemo(() => {
     if (!transactions) return [];
-    return [...transactions].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Ensure createdAt is a valid date object for sorting
+    return [...transactions].sort((a,b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(0).getTime();
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(0).getTime();
+        return dateB - dateA;
+    });
   }, [transactions]);
 
 
@@ -57,11 +74,11 @@ export default function PortefeuillePage() {
               <CardTitle>Solde Actuel</CardTitle>
             </CardHeader>
             <CardContent>
-                {walletLoading && <Skeleton className="h-12 w-1/2" />}
-                {!walletLoading && wallet && (
+                {loading && <Skeleton className="h-12 w-1/2" />}
+                {!loading && wallet && (
                      <p className="text-5xl font-bold">{wallet.balance ? wallet.balance.toFixed(2) : '0.00'} €</p>
                 )}
-                 {!walletLoading && !wallet && (
+                 {!loading && !wallet && (
                      <p className="text-5xl font-bold">0.00 €</p>
                 )}
             </CardContent>
@@ -98,15 +115,15 @@ export default function PortefeuillePage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {sortedHistory.map((tx, index) => (
-                                    <TableRow key={tx.id || index}>
+                                {sortedHistory.map((tx) => (
+                                    <TableRow key={tx.id}>
                                         <TableCell>{getTransactionIcon(tx.type)}</TableCell>
-                                        <TableCell className="font-medium capitalize">{tx.description || tx.type}</TableCell>
+                                        <TableCell className="font-medium capitalize">{tx.reference || tx.type}</TableCell>
                                         <TableCell className={`text-right font-semibold ${tx.type === 'deposit' || tx.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
                                             {tx.type === 'deposit' || tx.type === 'credit' ? '+' : '-'} {tx.amount.toFixed(2)} €
                                         </TableCell>
                                         <TableCell className="text-right text-muted-foreground text-xs">
-                                            {format(new Date(tx.date), "d MMM yyyy, HH:mm", { locale: fr })}
+                                            {tx.createdAt?.toDate ? format(tx.createdAt.toDate(), "d MMM yyyy, HH:mm", { locale: fr }) : 'Date inconnue'}
                                         </TableCell>
                                     </TableRow>
                                 ))}
