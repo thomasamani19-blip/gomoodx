@@ -143,13 +143,6 @@
           "type": "string",
           "description": "Référence au Portefeuille du partenaire. (Relation: Partenaire 1:1 Portefeuille)"
         },
-        "produitIds": {
-          "type": "array",
-          "description": "Références aux Produits du partenaire. (Relation: Partenaire 1:N Produit)",
-          "items": {
-            "type": "string"
-          }
-        },
         "role": {
           "type": "string",
           "description": "Role du partenaire (client, escorte, partenaire, administrateur)."

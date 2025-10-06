@@ -6,12 +6,11 @@ import type { User } from "@/lib/types";
 import PageHeader from "../shared/page-header";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { Building, ShoppingBag } from "lucide-react";
+import { Building } from "lucide-react";
 
 export default function PartenaireDashboard({ user }: { user: User }) {
   const managementTools = [
     { title: "Gérer mon profil", description: "Modifiez les informations, la galerie et les détails de votre profil.", href: "/gestion/etablissement", icon: Building },
-    { title: "Gérer les produits", description: "Ajoutez ou mettez à jour les produits ou services que vous proposez.", href: "/gestion/produits", icon: ShoppingBag },
 ];
 
 
@@ -19,12 +18,12 @@ export default function PartenaireDashboard({ user }: { user: User }) {
     <div>
         <PageHeader
             title={`Tableau de bord de ${user?.displayName || 'Partenaire'}`}
-            description="Gérez les informations et les services de votre établissement."
+            description="Gérez les informations et les services de votre établissement ou de votre activité."
         />
        <Card>
         <CardHeader>
-          <CardTitle className="font-headline">Gestion du Profil & des Produits</CardTitle>
-          <CardDescription>Gérez l'ensemble de vos informations et contenus.</CardDescription>
+          <CardTitle className="font-headline">Gestion de votre Présence</CardTitle>
+          <CardDescription>Mettez en valeur votre activité pour attirer de nouveaux clients.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6">
             {managementTools.map((tool) => (
@@ -44,5 +43,3 @@ export default function PartenaireDashboard({ user }: { user: User }) {
     </div>
   );
 }
-
-    
