@@ -146,7 +146,7 @@ export default function ProfilPage() {
       
       // Filter out removed previews from existing URLs
       const existingUrls = user.galleryImages || [];
-      const finalGalleryUrls = existingUrls.filter(url => galleryPreviews.includes(url));
+      const finalGalleryUrls = galleryPreviews.filter(url => !url.startsWith('data:'));
       
       const updatedData = {
         displayName,

@@ -102,15 +102,19 @@ export default function GestionEtablissementPage() {
     const removedPreview = galleryPreviews[index];
     const newPreviews = galleryPreviews.filter((_, i) => i !== index);
     
-    const fileIndex = galleryPreviews.slice(0, index).filter(p => !user?.galleryImages?.includes(p)).length;
-    
-    if (fileIndex < galleryFiles.length && removedPreview.startsWith('data:')) {
-      const newFiles = [...galleryFiles];
-      newFiles.splice(fileIndex, 1);
-      setGalleryFiles(newFiles);
-    }
+    // Check if the image to be removed is one of the new files (by checking if its preview is a data URL)
+    if (removedPreview.startsWith('data:')) {
+        const fileIndexToRemove = galleryPreviews.slice(0, index).filter(p => p.startsWith('data:')).length;
+        
+        // Remove from both files and previews state
+        setGalleryFiles(prevFiles => prevFiles.filter((_, i) => i !== fileIndexToRemove));
+        setGalleryPreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
 
-    setGalleryPreviews(newPreviews);
+    } else {
+        // If it's an existing URL, just remove it from previews.
+        // It will be filtered out from the final list upon saving.
+        setGalleryPreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
+    }
   };
 
 
@@ -306,5 +310,3 @@ export default function GestionEtablissementPage() {
     </div>
   );
 }
-
-    

@@ -116,11 +116,19 @@ export default function PartnerProfilePage({ params }: { params: { id: string } 
                         <CardTitle>Galerie</CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {Array.from({length: 6}).map((_, i) => (
-                             <div key={i} className="aspect-square relative rounded-md overflow-hidden group">
-                                <Image src={`https://picsum.photos/seed/${user.id}-gallery${i}/400/400`} alt={`Galerie ${i+1}`} fill className="object-cover group-hover:scale-105 transition-transform" />
-                            </div>
-                        ))}
+                       {(user.galleryImages && user.galleryImages.length > 0) ? (
+                                user.galleryImages.map((imgUrl, i) => (
+                                    <div key={i} className="aspect-square relative rounded-md overflow-hidden group">
+                                        <Image src={imgUrl} alt={`Galerie ${i+1}`} fill className="object-cover group-hover:scale-105 transition-transform" />
+                                    </div>
+                                ))
+                            ) : (
+                                Array.from({length: 6}).map((_, i) => (
+                                     <div key={i} className="aspect-square relative rounded-md overflow-hidden group bg-muted">
+                                        <Image src={`https://picsum.photos/seed/${user.id}-gallery${i}/400/400`} alt={`Galerie ${i+1}`} fill className="object-cover group-hover:scale-105 transition-transform" />
+                                    </div>
+                                ))
+                            )}
                     </CardContent>
                 </Card>
            </div>
@@ -144,4 +152,3 @@ export default function PartnerProfilePage({ params }: { params: { id: string } 
     </div>
   );
 }
-
