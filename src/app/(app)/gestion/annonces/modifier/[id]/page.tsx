@@ -15,12 +15,13 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Loader2, Save, Upload } from 'lucide-react';
+import { Loader2, Save, Upload, Star } from 'lucide-react';
 import PageHeader from '@/components/shared/page-header';
 import { uploadFile } from '@/lib/storage';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Annonce } from '@/lib/types';
+import { Switch } from '@/components/ui/switch';
 
 const annonceSchema = z.object({
   title: z.string().min(5, "Le titre doit faire au moins 5 caractères."),
@@ -29,6 +30,7 @@ const annonceSchema = z.object({
   category: z.string().min(3, "La catégorie est requise."),
   location: z.string().min(3, "La localisation est requise."),
   image: z.any().optional(), // Image is optional on update
+  isPremium: z.boolean().default(false),
 });
 
 type AnnonceFormValues = z.infer<typeof annonceSchema>;
@@ -59,6 +61,7 @@ export default function ModifierAnnoncePage({ params }: { params: { id: string }
                 price: annonce.price,
                 category: annonce.category,
                 location: annonce.location,
+                isPremium: annonce.isPremium || false,
             });
             setImagePreview(annonce.imageUrl);
         }
@@ -95,6 +98,7 @@ export default function ModifierAnnoncePage({ params }: { params: { id: string }
                 location: data.location,
                 imageUrl: imageUrl,
                 updatedAt: serverTimestamp(),
+                isPremium: data.isPremium,
             });
 
             toast({ title: "Annonce modifiée !", description: "Votre annonce a été mise à jour." });
@@ -145,6 +149,30 @@ export default function ModifierAnnoncePage({ params }: { params: { id: string }
             <form onSubmit={handleSubmit(onSubmit)}>
                 <Card>
                     <CardContent className="pt-6 grid gap-6">
+                         <div className="space-y-2">
+                            <Controller
+                                name="isPremium"
+                                control={control}
+                                render={({ field }) => (
+                                    <div className="flex items-center justify-between rounded-lg border p-4">
+                                        <div className="space-y-0.5">
+                                            <Label htmlFor="premium-switch" className="text-base flex items-center">
+                                                <Star className="mr-2 h-4 w-4 text-primary" />
+                                                Contenu Premium
+                                            </Label>
+                                            <p className="text-sm text-muted-foreground">
+                                               Cochez pour rendre cette annonce visible uniquement par les membres Premium.
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            id="premium-switch"
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </div>
+                                )}
+                            />
+                        </div>
                         <div className="space-y-2">
                             <Label htmlFor="title">Titre de l'annonce</Label>
                             <Input id="title" {...register('title')} placeholder="Ex: Soirée exclusive à Paris" />
@@ -219,3 +247,5 @@ export default function ModifierAnnoncePage({ params }: { params: { id: string }
         </div>
     );
 }
+
+    

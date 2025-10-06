@@ -15,12 +15,13 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Loader2, PlusCircle, Upload } from 'lucide-react';
+import { Loader2, PlusCircle, Upload, Star } from 'lucide-react';
 import PageHeader from '@/components/shared/page-header';
 import { uploadFile } from '@/lib/storage';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { ProductType } from '@/lib/types';
+import { Switch } from '@/components/ui/switch';
 
 const productSchema = z.object({
   title: z.string().min(5, "Le titre doit faire au moins 5 caractères."),
@@ -28,6 +29,7 @@ const productSchema = z.object({
   price: z.coerce.number().min(1, "Le prix doit être supérieur à 0."),
   productType: z.enum(['digital', 'physique'], { required_error: 'Veuillez sélectionner un type de produit.'}),
   image: z.any().refine(file => file instanceof File, 'Une image est requise.'),
+  isPremium: z.boolean().default(false),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -44,7 +46,8 @@ export default function CreerProduitPage() {
     const { register, handleSubmit, control, formState: { errors }, setValue } = useForm<ProductFormValues>({
         resolver: zodResolver(productSchema),
         defaultValues: {
-            productType: 'digital'
+            productType: 'digital',
+            isPremium: false,
         }
     });
 
@@ -71,6 +74,7 @@ export default function CreerProduitPage() {
                 imageUrl: imageUrl,
                 createdBy: user.id,
                 createdAt: serverTimestamp(),
+                isPremium: data.isPremium,
             });
 
             toast({ title: "Produit créé !", description: "Votre nouveau produit est maintenant dans votre boutique." });
@@ -102,6 +106,30 @@ export default function CreerProduitPage() {
             <form onSubmit={handleSubmit(onSubmit)}>
                 <Card>
                     <CardContent className="pt-6 grid gap-6">
+                        <div className="space-y-2">
+                            <Controller
+                                name="isPremium"
+                                control={control}
+                                render={({ field }) => (
+                                    <div className="flex items-center justify-between rounded-lg border p-4">
+                                        <div className="space-y-0.5">
+                                            <Label htmlFor="premium-switch" className="text-base flex items-center">
+                                                <Star className="mr-2 h-4 w-4 text-primary" />
+                                                Contenu Premium
+                                            </Label>
+                                            <p className="text-sm text-muted-foreground">
+                                               Cochez pour rendre ce produit visible uniquement par les membres Premium.
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            id="premium-switch"
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </div>
+                                )}
+                            />
+                        </div>
                         <div className="space-y-2">
                             <Label htmlFor="title">Titre du produit</Label>
                             <Input id="title" {...register('title')} placeholder="Ex: Vidéo exclusive, Lingerie dédicacée..." />
@@ -186,3 +214,5 @@ export default function CreerProduitPage() {
         </div>
     );
 }
+
+    

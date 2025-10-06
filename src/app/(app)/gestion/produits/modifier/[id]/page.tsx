@@ -15,13 +15,14 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Loader2, Save, Upload } from 'lucide-react';
+import { Loader2, Save, Upload, Star } from 'lucide-react';
 import PageHeader from '@/components/shared/page-header';
 import { uploadFile } from '@/lib/storage';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Product, ProductType } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Switch } from '@/components/ui/switch';
 
 const productSchema = z.object({
   title: z.string().min(5, "Le titre doit faire au moins 5 caractères."),
@@ -29,6 +30,7 @@ const productSchema = z.object({
   price: z.coerce.number().min(1, "Le prix doit être supérieur à 0."),
   productType: z.enum(['digital', 'physique'], { required_error: 'Veuillez sélectionner un type de produit.'}),
   image: z.any().optional(),
+  isPremium: z.boolean().default(false),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -57,6 +59,7 @@ export default function ModifierProduitPage({ params }: { params: { id: string }
                 description: product.description,
                 price: product.price,
                 productType: product.productType,
+                isPremium: product.isPremium || false,
             });
             setImagePreview(product.imageUrl);
         }
@@ -90,6 +93,7 @@ export default function ModifierProduitPage({ params }: { params: { id: string }
                 productType: data.productType as ProductType,
                 imageUrl: imageUrl,
                 updatedAt: serverTimestamp(),
+                isPremium: data.isPremium,
             });
 
             toast({ title: "Produit modifié !", description: "Votre produit a été mis à jour." });
@@ -140,6 +144,30 @@ export default function ModifierProduitPage({ params }: { params: { id: string }
             <form onSubmit={handleSubmit(onSubmit)}>
                 <Card>
                     <CardContent className="pt-6 grid gap-6">
+                        <div className="space-y-2">
+                            <Controller
+                                name="isPremium"
+                                control={control}
+                                render={({ field }) => (
+                                    <div className="flex items-center justify-between rounded-lg border p-4">
+                                        <div className="space-y-0.5">
+                                            <Label htmlFor="premium-switch" className="text-base flex items-center">
+                                                <Star className="mr-2 h-4 w-4 text-primary" />
+                                                Contenu Premium
+                                            </Label>
+                                            <p className="text-sm text-muted-foreground">
+                                               Cochez pour rendre ce produit visible uniquement par les membres Premium.
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            id="premium-switch"
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </div>
+                                )}
+                            />
+                        </div>
                         <div className="space-y-2">
                             <Label htmlFor="title">Titre du produit</Label>
                             <Input id="title" {...register('title')} />
@@ -224,3 +252,5 @@ export default function ModifierProduitPage({ params }: { params: { id: string }
         </div>
     );
 }
+
+    
