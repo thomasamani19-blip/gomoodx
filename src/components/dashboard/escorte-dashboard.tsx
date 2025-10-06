@@ -3,7 +3,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User as UserIcon, BookText, PenSquare, Sparkles, ShoppingBag, Newspaper, Bot } from "lucide-react";
+import { User as UserIcon, BookText, PenSquare, Sparkles, ShoppingBag, Newspaper, Bot, Film } from "lucide-react";
 import Link from 'next/link';
 import type { User, CreatorStats } from "@/lib/types";
 import PageHeader from "../shared/page-header";
@@ -51,6 +51,7 @@ const aiTools = [
     { title: "Studio IA Créatif", description: "Générez images, vidéos et voix par IA.", href: "/outils-ia/studio", icon: Sparkles },
     { title: "Générateur d'Article", description: "Rédigez des articles de blog en un clic.", href: "/outils-ia/generer-article", icon: BookText },
     { title: "Générateur de Bio", description: "Créez une biographie captivante et unique.", href: "/outils-ia/generer-bio", icon: PenSquare },
+    { title: "Générateur de Scénario", description: "Écrivez un scénario pour votre prochaine vidéo.", href: "/outils-ia/generer-scenario", icon: Film },
     { title: "Idées de Contenu", description: "Trouvez l'inspiration pour vos prochaines publications.", href: "/outils-ia/idees-contenu", icon: Bot },
     { title: "Suggestions de Posts", description: "Générez des publications engageantes pour vos fans.", href: "/outils-ia/posts-sociaux", icon: Bot },
 ];

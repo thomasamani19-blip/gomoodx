@@ -35,6 +35,7 @@ import {
   Building,
   FileText,
   Settings,
+  Film,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -70,6 +71,7 @@ const toolsNav = [
     { title: 'Studio IA Créatif', href: '/outils-ia/studio', icon: Sparkles },
     { title: 'Générateur d\'Article', href: '/outils-ia/generer-article', icon: BookText },
     { title: 'Générateur de Bio', href: '/outils-ia/generer-bio', icon: PenSquare },
+    { title: 'Générateur de Scénario', href: '/outils-ia/generer-scenario', icon: Film },
     { title: 'Idées de Contenu', href: '/outils-ia/idees-contenu', icon: Bot },
     { title: 'Posts pour Réseaux', href: '/outils-ia/posts-sociaux', icon: Bot },
 ];
