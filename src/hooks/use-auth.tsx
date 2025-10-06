@@ -2,7 +2,7 @@
 
 'use client';
 
-import type { UserRole } from '@/lib/types';
+import type { UserRole, PartnerType } from '@/lib/types';
 import { createContext, useContext, ReactNode, useMemo } from 'react';
 import { useUser as useFirebaseUserHook, useAuth as useFirebaseAuthHook } from '@/firebase';
 import type { User as FirebaseUser } from 'firebase/auth';
@@ -20,14 +20,14 @@ interface AuthContextType {
   firebaseUser: FirebaseUser | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
-  signup: (email: string, pass: string, name: string, role: UserRole) => Promise<void>;
+  signup: (email: string, pass: string, name: string, role: UserRole, partnerType?: PartnerType) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { user, firebaseUser, loading } = useFirebaseUserHook();
+  const { user, loading } = useFirebaseUserHook();
   const auth = useFirebaseAuthHook();
   const firestore = useFirestore();
   
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signInWithEmailAndPassword(auth, email, pass);
   };
 
-  const signup = async (email: string, pass: string, name: string, role: UserRole) => {
+  const signup = async (email: string, pass: string, name: string, role: UserRole, partnerType?: PartnerType) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
     const fbUser = userCredential.user;
 
@@ -57,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       lastLogin: serverTimestamp() as Timestamp,
       referralCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
       favorites: [],
+      ...(role === 'partenaire' && { partnerType }),
     };
     batch.set(userRef, newUser);
 
@@ -79,12 +80,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({ 
       user: user as User | null, 
-      firebaseUser,
+      firebaseUser: user as unknown as FirebaseUser | null,
       loading, 
       login, 
       signup,
       logout, 
-    }), [user, firebaseUser, loading]);
+    }), [user, loading]);
 
   return (
     <AuthContext.Provider value={value}>
@@ -100,5 +101,3 @@ export function useAuth() {
   }
   return context;
 }
-
-    

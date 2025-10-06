@@ -6,6 +6,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, setDoc, Timestamp } from 'firebase/firestore';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import type { PartnerType } from './types';
 
 // IMPORTANT: Replace with your Firebase config from the Firebase console
 const firebaseConfig = {
@@ -59,8 +60,20 @@ const USERS_TO_CREATE = [
         email: 'partner@test.com',
         password: 'password123',
         data: {
-            displayName: 'Partenaire Hôtel Luxe',
+            displayName: 'Hôtel Plaza',
             role: 'partenaire',
+            partnerType: 'establishment',
+            profileImage: 'https://picsum.photos/seed/partner1/400/400'
+        }
+    },
+    {
+        email: 'producer@test.com',
+        password: 'password123',
+        data: {
+            displayName: 'Studio Vision',
+            role: 'partenaire',
+            partnerType: 'producer',
+            profileImage: 'https://picsum.photos/seed/producer1/400/400'
         }
     },
      {
@@ -87,7 +100,7 @@ async function seedDatabase() {
                 console.log(`User created with UID: ${uid}. Now creating Firestore document...`);
 
                 const userDocRef = doc(firestore, 'users', uid);
-                const baseData = {
+                const baseData: any = {
                     displayName: user.data.displayName,
                     email: user.email,
                     role: user.data.role,
@@ -104,6 +117,11 @@ async function seedDatabase() {
                     bio: 'Description de profil par défaut.',
                     favorites: [],
                 };
+
+                if (user.data.role === 'partenaire') {
+                    baseData.partnerType = (user.data as any).partnerType as PartnerType;
+                }
+
                 await setDoc(userDocRef, baseData);
 
                 // Create wallet for each user

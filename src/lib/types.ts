@@ -5,6 +5,8 @@ import type { Timestamp } from 'firebase/firestore';
 // Main User Roles
 export type UserRole = 'administrateur' | 'escorte' | 'client' | 'partenaire' | 'founder' | 'moderator';
 
+// Partner Types
+export type PartnerType = 'establishment' | 'producer';
 
 // User status
 export type UserStatus = 'active' | 'suspended';
@@ -18,6 +20,7 @@ export interface User {
   phone?: string;
   pseudo?: string;
   role: UserRole;
+  partnerType?: PartnerType; // New field for partner differentiation
   status: UserStatus;
   createdAt: Timestamp;
   updatedAt: Timestamp;

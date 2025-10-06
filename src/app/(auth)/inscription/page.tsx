@@ -19,11 +19,12 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import type { UserRole } from "@/lib/types";
+import type { UserRole, PartnerType } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 
 export default function InscriptionPage() {
     const [isLoading, setIsLoading] = useState(false);
+    const [role, setRole] = useState<UserRole>('client');
     const { signup } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
@@ -36,10 +37,11 @@ export default function InscriptionPage() {
         const name = formData.get('name') as string;
         const email = formData.get('email') as string;
         const password = formData.get('password') as string;
-        const role = formData.get('role') as UserRole;
+        const selectedRole = formData.get('role') as UserRole;
+        const partnerType = formData.get('partnerType') as PartnerType | undefined;
 
         try {
-            await signup(email, password, name, role);
+            await signup(email, password, name, selectedRole, partnerType);
             toast({
                 title: "Inscription réussie !",
                 description: "Vous allez être redirigé vers votre tableau de bord.",
@@ -69,7 +71,12 @@ export default function InscriptionPage() {
             <CardContent className="grid gap-4">
             <div className="grid gap-2">
                 <Label>Je suis un(e)...</Label>
-                <RadioGroup name="role" defaultValue="client" className="grid grid-cols-2 gap-4">
+                <RadioGroup 
+                    name="role" 
+                    defaultValue="client" 
+                    className="grid grid-cols-3 gap-4"
+                    onValueChange={(value) => setRole(value as UserRole)}
+                >
                     <div>
                         <RadioGroupItem value="client" id="client" className="peer sr-only" />
                         <Label
@@ -88,8 +95,38 @@ export default function InscriptionPage() {
                         Escorte
                         </Label>
                     </div>
+                     <div>
+                        <RadioGroupItem value="partenaire" id="partenaire" className="peer sr-only" />
+                        <Label
+                        htmlFor="partenaire"
+                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                        >
+                        Partenaire
+                        </Label>
+                    </div>
                 </RadioGroup>
             </div>
+
+            {role === 'partenaire' && (
+                 <div className="grid gap-2">
+                    <Label>Type de partenaire</Label>
+                    <RadioGroup name="partnerType" defaultValue="establishment" className="grid grid-cols-2 gap-4">
+                         <div>
+                            <RadioGroupItem value="establishment" id="establishment" className="peer sr-only" />
+                            <Label htmlFor="establishment" className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-3 text-sm hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                            Établissement
+                            </Label>
+                        </div>
+                        <div>
+                            <RadioGroupItem value="producer" id="producer" className="peer sr-only" />
+                            <Label htmlFor="producer" className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-3 text-sm hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                            Producteur
+                            </Label>
+                        </div>
+                    </RadioGroup>
+                </div>
+            )}
+
             <div className="grid gap-2">
                 <Label htmlFor="name">Nom d'affichage</Label>
                 <Input id="name" name="name" placeholder="Votre nom" required />
@@ -120,5 +157,3 @@ export default function InscriptionPage() {
     </div>
   )
 }
-
-    

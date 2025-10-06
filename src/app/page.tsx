@@ -9,6 +9,8 @@ import { Footer } from '@/components/layout/footer';
 import { CreatorCarousel } from '@/components/features/creators/creator-carousel';
 import { AnnonceCarousel } from '@/components/features/annonces/annonce-carousel';
 import { ProductCarousel } from '@/components/features/products/product-carousel';
+import { EstablishmentCarousel } from '@/components/features/partners/establishment-carousel';
+import { ProducerCarousel } from '@/components/features/partners/producer-carousel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Gift, Heart, Users, Search, ShieldCheck, Sparkles, BookOpen, ArrowRight } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -155,6 +157,20 @@ export default function Home() {
                 <h2 className="font-headline text-3xl md:text-4xl font-bold">Boutique Exclusive</h2>
             </div>
              <ProductCarousel />
+          </section>
+
+           <section className="container mx-auto px-4">
+             <div className="text-center mb-12">
+                <h2 className="font-headline text-3xl md:text-4xl font-bold">Établissements Partenaires</h2>
+            </div>
+             <EstablishmentCarousel />
+          </section>
+
+           <section className="container mx-auto px-4">
+             <div className="text-center mb-12">
+                <h2 className="font-headline text-3xl md:text-4xl font-bold">Producteurs Partenaires</h2>
+            </div>
+             <ProducerCarousel />
           </section>
           
            <section className="container mx-auto px-4">
