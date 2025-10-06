@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
@@ -61,7 +62,7 @@ export default function ProfilPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user || !storage) return;
+    if (!user || !storage || !firestore) return;
     
     setIsSaving(true);
 

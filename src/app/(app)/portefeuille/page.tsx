@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import PageHeader from '@/components/shared/page-header';
@@ -13,7 +14,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ArrowDownCircle, ArrowUpCircle, PlusCircle } from 'lucide-react';
 import { useMemo } from 'react';
-import { query, where, collection } from 'firebase/firestore';
+import Link from 'next/link';
 
 export default function PortefeuillePage() {
   const { user, loading: authLoading } = useAuth();
@@ -80,9 +81,11 @@ export default function PortefeuillePage() {
                 )}
             </CardContent>
             <CardFooter>
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4"/>
-                    Recharger le compte
+                <Button asChild>
+                    <Link href="/portefeuille/recharger">
+                        <PlusCircle className="mr-2 h-4 w-4"/>
+                        Recharger le compte
+                    </Link>
                 </Button>
             </CardFooter>
            </Card>
@@ -115,7 +118,7 @@ export default function PortefeuillePage() {
                                 {sortedHistory.map((tx) => (
                                     <TableRow key={tx.id}>
                                         <TableCell>{getTransactionIcon(tx.type)}</TableCell>
-                                        <TableCell className="font-medium capitalize">{tx.reference || tx.type}</TableCell>
+                                        <TableCell className="font-medium capitalize">{tx.description || tx.reference || tx.type}</TableCell>
                                         <TableCell className={`text-right font-semibold ${tx.type === 'deposit' || tx.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
                                             {tx.type === 'deposit' || tx.type === 'credit' ? '+' : '-'} {tx.amount.toFixed(2)} €
                                         </TableCell>

@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 import { useAuth as useFirebaseAuth } from '../provider';
-import type { User as AppUser, UserWithId } from '@/hooks/use-auth';
+import type { User as AppUser } from '@/lib/types';
 import { useDoc } from '../firestore/use-doc';
 
 // This hook is responsible for listening to Firebase Auth state changes

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -30,6 +31,7 @@ import {
   UserCircle,
   Users,
   ShieldCheck,
+  Heart,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -39,6 +41,7 @@ const clientNav = [
   { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
   { title: 'Annonces', href: '/annonces', icon: HeartHandshake },
   { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
+  { title: 'Favoris', href: '/favoris', icon: Heart },
   { title: 'Boutique', href: '/boutique', icon: ShoppingBag },
   { title: 'Live', href: '/live', icon: Clapperboard },
   { title: 'Blog', href: '/blog', icon: BookOpen },

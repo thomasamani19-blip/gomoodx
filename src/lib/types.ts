@@ -1,4 +1,5 @@
 
+
 import type { Timestamp } from 'firebase/firestore';
 
 // Main User Roles
@@ -29,6 +30,7 @@ export interface User {
   isVerified: boolean;
   onlineStatus: OnlineStatus;
   lastLogin: Timestamp;
+  favorites?: string[]; // Array of creator UIDs
 }
 
 // Wallet
@@ -93,17 +95,18 @@ export interface Message {
 }
 
 // Call (for WebRTC signaling)
-export type CallStatus = 'ongoing' | 'ended' | 'missed';
+export type CallStatus = 'pending' | 'ongoing' | 'ended' | 'missed' | 'declined';
 
 export interface Call {
   id: string;
   callerId: string;
   receiverId: string;
   type: 'voice' | 'video';
-  offer: Record<string, unknown>;
-  answer: Record<string, unknown>;
+  offer?: Record<string, unknown>;
+  answer?: Record<string, unknown>;
   status: CallStatus;
-  timestamp: Timestamp;
+  createdAt: Timestamp;
+  callerName?: string;
 }
 
 // Live Session

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -7,20 +8,22 @@ import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Search, Send } from 'lucide-react';
+import { MessageSquare, Search, Send, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Message, User } from '@/lib/types';
+import type { Message, User, Call } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore } from '@/firebase';
-import { addDoc, collection, serverTimestamp, query, where, orderBy, or, getDocs } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, query, where, orderBy, or, getDocs, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useRouter } from 'next/navigation';
 
 export default function MessageriePage() {
     const { user, loading: authLoading } = useAuth();
     const firestore = useFirestore();
+    const router = useRouter();
     const messageEndRef = useRef<HTMLDivElement>(null);
 
     const [selectedContact, setSelectedContact] = useState<User | null>(null);
@@ -151,6 +154,26 @@ export default function MessageriePage() {
         }
     };
     
+    const handleInitiateCall = async () => {
+        if (!user || !selectedContact || !firestore) return;
+
+        const callData: Omit<Call, 'id'> = {
+            callerId: user.id,
+            receiverId: selectedContact.id,
+            callerName: user.displayName,
+            status: 'pending',
+            type: 'video',
+            createdAt: serverTimestamp(),
+        };
+
+        try {
+            const callDocRef = await addDoc(collection(firestore, 'calls'), callData);
+            router.push(`/appels/${callDocRef.id}`);
+        } catch (error) {
+            console.error("Erreur lors de l'initiation de l'appel :", error);
+        }
+    };
+
     const loading = authLoading || contactsLoading;
 
     return (
@@ -209,12 +232,17 @@ export default function MessageriePage() {
         <div className="md:col-span-2 lg:col-span-3 flex flex-col h-full">
             {selectedContact ? (
                 <>
-                    <div className="p-4 border-b flex items-center gap-4">
-                        <Avatar>
-                            <AvatarImage src={selectedContact.profileImage} alt={selectedContact.displayName} />
-                            <AvatarFallback>{selectedContact.displayName?.charAt(0) ?? '?'}</AvatarFallback>
-                        </Avatar>
-                        <h2 className="font-semibold text-lg">{selectedContact.displayName}</h2>
+                    <div className="p-4 border-b flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <Avatar>
+                                <AvatarImage src={selectedContact.profileImage} alt={selectedContact.displayName} />
+                                <AvatarFallback>{selectedContact.displayName?.charAt(0) ?? '?'}</AvatarFallback>
+                            </Avatar>
+                            <h2 className="font-semibold text-lg">{selectedContact.displayName}</h2>
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={handleInitiateCall}>
+                            <Video className="h-5 w-5 text-primary" />
+                        </Button>
                     </div>
                     <ScrollArea className="flex-1 p-6 bg-muted/20">
                         <div className="space-y-6">

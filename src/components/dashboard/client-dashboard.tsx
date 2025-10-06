@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
@@ -9,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowRight, Heart, MessageSquare, Wallet } from "lucide-react";
 import type { User } from "@/lib/types";
 import Link from 'next/link';
-import { useCollection } from "@/firebase";
+import { useCollection, useDoc } from "@/firebase";
 import { limit, where } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 
@@ -26,6 +27,9 @@ export default function ClientDashboard({ user }: { user: User }) {
       constraints: [where('role', '==', 'escorte'), limit(4)],
     }
   );
+  
+  const { data: wallet, loading: walletLoading } = useDoc<any>(`wallets/${user.id}`);
+
 
   return (
     <div className="space-y-8">
@@ -41,7 +45,9 @@ export default function ClientDashboard({ user }: { user: User }) {
                     <Wallet className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">125.50 €</div>
+                    {walletLoading ? <Skeleton className="h-8 w-1/2" /> : (
+                        <div className="text-2xl font-bold">{wallet?.balance?.toFixed(2) || '0.00'} €</div>
+                    )}
                     <p className="text-xs text-muted-foreground">Disponible</p>
                 </CardContent>
             </Card>
@@ -51,8 +57,8 @@ export default function ClientDashboard({ user }: { user: User }) {
                     <Heart className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">12 Créateurs</div>
-                     <p className="text-xs text-muted-foreground">+2 depuis votre dernière visite</p>
+                    <div className="text-2xl font-bold">{user.favorites?.length || 0} Créateurs</div>
+                     <p className="text-xs text-muted-foreground">Vos créateurs préférés</p>
                 </CardContent>
             </Card>
             <Card>

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { UserRole } from '@/lib/types';
@@ -55,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       onlineStatus: 'offline',
       lastLogin: serverTimestamp() as Timestamp,
       referralCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
+      favorites: [],
     };
     batch.set(userRef, newUser);
 

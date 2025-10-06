@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from "@/components/ui/button"
 import {
@@ -37,7 +38,7 @@ export default function ConnexionPage() {
     } catch (error: any) {
        toast({
         title: "Erreur de connexion",
-        description: error.message || "Impossible de se connecter. Veuillez vérifier vos identifiants.",
+        description: "Impossible de se connecter. Veuillez vérifier vos identifiants.",
         variant: "destructive",
       });
     } finally {
