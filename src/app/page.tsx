@@ -11,8 +11,8 @@ import { AnnonceCarousel } from '@/components/features/annonces/annonce-carousel
 import { ProductCarousel } from '@/components/features/products/product-carousel';
 import { EstablishmentCarousel } from '@/components/features/partners/establishment-carousel';
 import { ProducerCarousel } from '@/components/features/partners/producer-carousel';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Gift, Heart, Users, Search, ShieldCheck, Sparkles, BookOpen, ArrowRight } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { ArrowRight } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useCollection, useFirestore } from '@/firebase';
 import type { BlogArticle } from '@/lib/types';
