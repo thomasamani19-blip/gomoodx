@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -93,12 +94,13 @@ export default function MessageriePage() {
         if (!newMessage.trim() || !user || !selectedContact || !firestore) return;
 
         const messageData = {
-            content: newMessage,
+            message: newMessage,
             senderId: user.id,
             receiverId: selectedContact.id,
             createdAt: serverTimestamp(),
-            read: false,
+            isRead: false,
             type: 'text',
+            callType: 'none',
         };
 
         try {
@@ -145,12 +147,12 @@ export default function MessageriePage() {
                         onClick={() => setSelectedContact(contact)}
                     >
                         <Avatar>
-                            <AvatarImage src={contact.avatarUrl} alt={contact.fullName} />
-                            <AvatarFallback>{contact.fullName?.charAt(0) ?? '?'}</AvatarFallback>
+                            <AvatarImage src={contact.profileImage} alt={contact.displayName} />
+                            <AvatarFallback>{contact.displayName?.charAt(0) ?? '?'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 overflow-hidden">
-                            <p className="font-semibold truncate">{contact.fullName}</p>
-                            <p className="text-sm text-muted-foreground truncate">{lastMessage.content}</p>
+                            <p className="font-semibold truncate">{contact.displayName}</p>
+                            <p className="text-sm text-muted-foreground truncate">{lastMessage.message}</p>
                         </div>
                          {lastMessage.createdAt && (
                            <span className="text-xs text-muted-foreground ml-auto whitespace-nowrap">
@@ -166,10 +168,10 @@ export default function MessageriePage() {
                 <>
                     <div className="p-4 border-b flex items-center gap-4">
                         <Avatar>
-                            <AvatarImage src={selectedContact.avatarUrl} alt={selectedContact.fullName} />
-                            <AvatarFallback>{selectedContact.fullName?.charAt(0) ?? '?'}</AvatarFallback>
+                            <AvatarImage src={selectedContact.profileImage} alt={selectedContact.displayName} />
+                            <AvatarFallback>{selectedContact.displayName?.charAt(0) ?? '?'}</AvatarFallback>
                         </Avatar>
-                        <h2 className="font-semibold text-lg">{selectedContact.fullName}</h2>
+                        <h2 className="font-semibold text-lg">{selectedContact.displayName}</h2>
                     </div>
                     <ScrollArea className="flex-1 p-6 bg-muted/20">
                         <div className="space-y-6">
@@ -178,20 +180,20 @@ export default function MessageriePage() {
                                 <div key={msg.id} className={cn("flex items-end gap-2", msg.senderId === user?.id ? 'justify-end' : '')}>
                                     {msg.senderId !== user?.id && (
                                         <Avatar className="h-8 w-8">
-                                            <AvatarImage src={selectedContact.avatarUrl} />
-                                            <AvatarFallback>{selectedContact.fullName?.charAt(0) ?? '?'}</AvatarFallback>
+                                            <AvatarImage src={selectedContact.profileImage} />
+                                            <AvatarFallback>{selectedContact.displayName?.charAt(0) ?? '?'}</AvatarFallback>
                                         </Avatar>
                                     )}
                                     <div className={cn(
                                         "rounded-lg px-4 py-2 max-w-sm break-words",
                                         msg.senderId === user?.id ? 'bg-primary text-primary-foreground' : 'bg-card border'
                                     )}>
-                                        <p>{msg.content}</p>
+                                        <p>{msg.message}</p>
                                     </div>
                                      {msg.senderId === user?.id && (
                                         <Avatar className="h-8 w-8">
-                                            <AvatarImage src={user.avatarUrl} />
-                                            <AvatarFallback>{user.fullName?.charAt(0) ?? '?'}</AvatarFallback>
+                                            <AvatarImage src={user.profileImage} />
+                                            <AvatarFallback>{user.displayName?.charAt(0) ?? '?'}</AvatarFallback>
                                         </Avatar>
                                     )}
                                 </div>

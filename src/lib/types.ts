@@ -1,129 +1,188 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
-export type UserRole = 'admin' | 'creator' | 'member' | 'partner' | 'escorte' | 'client' | 'administrateur';
+// Main User Roles
+export type UserRole = 'admin' | 'founder' | 'member' | 'creator' | 'partner' | 'moderator';
 
+// User status
+export type UserStatus = 'active' | 'suspended';
+export type OnlineStatus = 'online' | 'offline';
+
+// Base User structure
 export interface User {
   id: string; // Corresponds to Firebase Auth UID
-  fullName: string;
-  nom?: string; // For compatibility
+  displayName: string;
   email: string;
   phone?: string;
+  pseudo?: string;
   role: UserRole;
-  status: 'active' | 'suspended';
-  avatarUrl?: string;
-  avatar?: string; // For compatibility
+  status: UserStatus;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  bio?: string;
-  language: string;
-  walletBalance: number;
-  verified: boolean;
+  rewardPoints: number;
   referralCode: string;
   referredBy?: string;
-  rewardPoints: number;
-  totalVideoCalls: number;
-  totalPremiumSales: number;
-  totalReferredUsers: number;
-  pseudo?: string;
+  referralsCount: number;
+  profileImage?: string;
+  bio?: string;
+  isVerified: boolean;
+  onlineStatus: OnlineStatus;
+  lastLogin: Timestamp;
 }
 
-export interface Annonce {
-  id: string;
-  creatorId: string;
-  title: string;
-  description: string;
-  price: number;
-  currency: string;
-  category: string;
-  tags: string[];
-  location: string;
-  duration: string;
-  images: string[];
-  imageHints?: string[];
-  status: 'active' | 'pending' | 'archived';
-  rating: number;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-  imageUrl?: string; // for carousels
-  imageHint?: string; // for carousels
+// Wallet
+export interface Wallet {
+  id: string; // Same as user UID
+  balance: number;
+  currency: 'XOF';
+  totalEarned: number;
+  totalSpent: number;
+  status: 'active';
 }
 
-export interface Product {
-  id: string;
-  sellerId: string;
-  title: string;
-  name?: string; // for compatibility with existing components
-  description: string;
-  price: number;
-  currency: string;
-  stock: number;
-  images: string[];
-  imageHints?: string[];
-  type: 'digital' | 'physical';
-  status: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-  imageUrl?: string; // for carousels
-  imageHint?: string; // for carousels
-}
-
-export interface Reward {
-  id: string;
-  userId: string;
-  type: 'video_call' | 'premium_sale' | 'goal_reached';
-  pointsAwarded: number;
-  description: string;
-  createdAt: Timestamp;
-  status: 'granted' | 'pending';
-}
-
-export interface Referral {
-    id: string;
-    referrerId: string;
-    referredId: string;
-    bonusGiven: boolean;
-    createdAt: Timestamp;
-}
+// Transaction (subcollection of Wallet)
+export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase';
+export type TransactionStatus = 'pending' | 'success' | 'failed';
 
 export interface Transaction {
   id: string;
-  userId: string;
-  type: 'deposit' | 'withdraw' | 'purchase' | 'subscription' | 'credit' | 'debit';
   amount: number;
-  currency: string;
-  status: 'completed' | 'pending' | 'failed';
+  type: TransactionType;
+  date: Timestamp;
+  description: string;
+  status: TransactionStatus;
   reference: string;
-  createdAt: Timestamp;
-  description?: string; // Keep for compatibility if needed
-  date: string; // Keep for compatibility if needed
 }
+
+// Service (Annonce)
+export type ServiceStatus = 'active' | 'hidden';
+
+export interface Service {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  category: string;
+  imageUrl: string;
+  createdBy: string; // UID of creator
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  status: ServiceStatus;
+  location: string;
+  rating: number;
+  views: number;
+}
+
+// Message
+export type MessageType = 'text' | 'image' | 'audio';
+export type CallType = 'none' | 'voice' | 'video';
 
 export interface Message {
   id: string;
   senderId: string;
   receiverId: string;
-  content: string;
-  type: 'text' | 'image' | 'video';
-  read: boolean;
+  message: string;
+  type: MessageType;
   createdAt: Timestamp;
+  isRead: boolean;
+  callType: CallType;
 }
 
-export interface Wallet {
-  id: string; // same as userId
-  balance: number;
-  transactions: string[]; // array of transaction IDs
-  updatedAt: Timestamp;
+// Call (for WebRTC signaling)
+export type CallStatus = 'ongoing' | 'ended' | 'missed';
+
+export interface Call {
+  id: string;
+  callerId: string;
+  receiverId: string;
+  type: 'voice' | 'video';
+  offer: Record<string, unknown>;
+  answer: Record<string, unknown>;
+  status: CallStatus;
+  timestamp: Timestamp;
 }
 
-export interface Analytics {
+// Live Session
+export type LiveStatus = 'ongoing' | 'ended';
+
+export interface Live {
+    id: string;
+    hostId: string;
+    title: string;
+    description: string;
+    streamUrl: string;
+    isPublic: boolean;
+    startTime: Timestamp;
+    endTime: Timestamp;
+    viewersCount: number;
+    likes: number;
+    status: LiveStatus;
+}
+
+// Reward
+export type RewardType = 'goal' | 'referral' | 'sale';
+
+export interface Reward {
     id: string;
     userId: string;
-    views: number;
-    clicks: number;
-    earnings: number;
-    engagementScore: number;
-    updatedAt: Timestamp;
+    type: RewardType;
+    points: number;
+    description: string;
+    createdAt: Timestamp;
 }
+
+// Referral
+export interface Referral {
+    id: string;
+    referrerId: string;
+    referredUserId: string;
+    date: Timestamp;
+    rewardPoints: number;
+}
+
+// Support Ticket
+export type SupportTicketStatus = 'open' | 'resolved' | 'closed';
+
+export interface SupportTicket {
+    id: string;
+    userId: string;
+    subject: string;
+    message: string;
+    status: SupportTicketStatus;
+    createdAt: Timestamp;
+    adminResponse?: string;
+}
+
+// Global Settings
+export interface Settings {
+    id: 'global';
+    appName: string;
+    version: string;
+    maintenanceMode: boolean;
+    supportEmail: string;
+    contactNumber: string;
+    privacyPolicyUrl: string;
+    termsUrl: string;
+}
+
+// AI Assistant Log
+export interface AIAssistant {
+    id: string;
+    userId: string;
+    prompt: string;
+    response: string;
+    createdAt: Timestamp;
+}
+
+
+// --- Compatibility Types for existing components ---
+// These can be phased out as components are updated.
+
+export type Annonce = Service & { imageUrl?: string; imageHint?: string };
+export type LiveSession = Live & { imageUrl: string; imageHint: string; creatorName: string; price_per_minute: number };
+export type Creator = User & { imageUrl: string; imageHint: string; name: string };
+export type Product = { id: string, name: string, imageUrl: string, imageHint: string, title: string, description: string, price: number };
+export type BlogArticle = { id: string, title: string, content: string, imageUrl: string, imageHint: string, date: string };
 
 export type CreatorStats = {
     id: string;
@@ -136,46 +195,6 @@ export type CreatorStats = {
 export type MonthlyRevenue = {
     month: string;
     revenue: number;
-}
-
-
-// These are kept for compatibility with existing components
-// They can be removed once components are updated
-export type Creator = {
-  id: string;
-  name: string;
-  bio: string;
-  imageUrl: string;
-  imageHint: string;
-}
-
-export type Service = {
-    id: string;
-    title: string;
-    description: string;
-    price?: number;
-    imageUrl: string;
-    imageHint: string;
-}
-
-export type BlogArticle = {
-    id: string;
-    title: string;
-    content: string;
-    imageUrl: string;
-    imageHint: string;
-    date: string;
-}
-
-export type LiveSession = {
-    id: string;
-    title: string;
-    price_per_minute: number;
-    status: 'scheduled' | 'live' | 'ended';
-    imageUrl: string;
-    imageHint: string;
-    creatorName: string;
-    creatorId: string;
 }
 
     

@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "user": {
@@ -5,126 +6,69 @@
       "description": "Represents a user in the system.",
       "type": "object",
       "properties": {
-        "fullName": {
-          "type": "string",
-          "description": "The user's full name."
-        },
-        "email": {
-          "type": "string",
-          "format": "email",
-          "description": "The user's email address."
-        },
-        "phone": {
-            "type": "string",
-            "description": "User's phone number"
-        },
-        "role": {
-          "type": "string",
-          "enum": ["admin", "creator", "member", "partner"],
-          "description": "The role of the user."
-        },
-        "status": {
-            "type": "string",
-            "enum": ["active", "suspended"]
-        },
-        "avatarUrl": {
-          "type": "string",
-          "format": "uri",
-          "description": "URL to the user's avatar image."
-        },
-        "createdAt": { "type": "string", "format": "date-time"},
-        "updatedAt": { "type": "string", "format": "date-time"},
-        "bio": { "type": "string" },
-        "language": { "type": "string", "default": "fr" },
-        "walletBalance": { "type": "number" },
-        "verified": { "type": "boolean" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "pseudo": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "founder", "member", "creator", "partner", "moderator"] },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "rewardPoints": { "type": "number" },
         "referralCode": { "type": "string" },
         "referredBy": { "type": "string" },
-        "rewardPoints": { "type": "number" },
-        "totalVideoCalls": { "type": "number" },
-        "totalPremiumSales": { "type": "number" },
-        "totalReferredUsers": { "type": "number" }
+        "referralsCount": { "type": "number" },
+        "profileImage": { "type": "string", "format": "uri" },
+        "bio": { "type": "string" },
+        "isVerified": { "type": "boolean" },
+        "onlineStatus": { "type": "string", "enum": ["online", "offline"] },
+        "lastLogin": { "type": "string", "format": "date-time" }
       },
-      "required": ["role", "email", "fullName"]
+      "required": ["displayName", "email", "role", "status", "createdAt", "updatedAt"]
     },
-    "annonce": {
-      "title": "Annonce",
-      "description": "An advertisement for a service.",
+    "wallet": {
+      "title": "Wallet",
       "type": "object",
       "properties": {
-        "creatorId": { "type": "string" },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "price": { "type": "number" },
+        "balance": { "type": "number" },
         "currency": { "type": "string" },
-        "category": { "type": "string" },
-        "tags": { "type": "array", "items": { "type": "string"}},
-        "location": { "type": "string" },
-        "duration": { "type": "string" },
-        "images": { "type": "array", "items": { "type": "string", "format": "uri" }},
-        "status": { "type": "string", "enum": ["active", "pending", "archived"]},
-        "rating": { "type": "number" },
-        "createdAt": { "type": "string", "format": "date-time"},
-        "updatedAt": { "type": "string", "format": "date-time"}
+        "totalEarned": { "type": "number" },
+        "totalSpent": { "type": "number" },
+        "status": { "type": "string", "enum": ["active"] }
       },
-      "required": ["creatorId", "title", "price", "currency"]
-    },
-    "product": {
-      "title": "Product",
-      "description": "A product sold in the shop.",
-      "type": "object",
-      "properties": {
-        "sellerId": { "type": "string" },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "price": { "type": "number" },
-        "currency": { "type": "string" },
-        "stock": { "type": "number" },
-        "images": { "type": "array", "items": { "type": "string", "format": "uri" }},
-        "type": { "type": "string", "enum": ["digital", "physical"]},
-        "status": { "type": "string"},
-        "createdAt": { "type": "string", "format": "date-time"},
-        "updatedAt": { "type": "string", "format": "date-time"}
-      },
-      "required": ["sellerId", "title", "price"]
-    },
-    "reward": {
-        "title": "Reward",
-        "type": "object",
-        "properties": {
-            "userId": { "type": "string" },
-            "type": { "type": "string", "enum": ["video_call", "premium_sale", "goal_reached"]},
-            "pointsAwarded": { "type": "number"},
-            "description": { "type": "string" },
-            "createdAt": { "type": "string", "format": "date-time"},
-            "status": { "type": "string", "enum": ["granted", "pending"]}
-        },
-        "required": ["userId", "type", "pointsAwarded"]
-    },
-    "referral": {
-        "title": "Referral",
-        "type": "object",
-        "properties": {
-            "referrerId": { "type": "string" },
-            "referredId": { "type": "string" },
-            "bonusGiven": { "type": "boolean" },
-            "createdAt": { "type": "string", "format": "date-time"}
-        },
-        "required": ["referrerId", "referredId"]
+      "required": ["balance", "currency", "status"]
     },
     "transaction": {
       "title": "Transaction",
       "type": "object",
       "properties": {
-        "userId": { "type": "string" },
-        "type": { "type": "string", "enum": ["deposit", "withdraw", "purchase", "subscription"] },
         "amount": { "type": "number" },
-        "currency": { "type": "string" },
-        "status": { "type": "string", "enum": ["completed", "pending", "failed"]},
-        "reference": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time"}
+        "type": { "type": "string", "enum": ["deposit", "withdrawal", "reward", "purchase"] },
+        "date": { "type": "string", "format": "date-time" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "success", "failed"] },
+        "reference": { "type": "string" }
       },
-      "required": ["userId", "amount", "type", "createdAt"]
+      "required": ["amount", "type", "date", "status"]
+    },
+    "service": {
+      "title": "Service (Annonce)",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "hidden"] },
+        "location": { "type": "string" },
+        "rating": { "type": "number" },
+        "views": { "type": "number" }
+      },
+      "required": ["title", "price", "createdBy", "createdAt"]
     },
     "message": {
       "title": "Message",
@@ -132,33 +76,102 @@
       "properties": {
         "senderId": { "type": "string" },
         "receiverId": { "type": "string" },
-        "content": { "type": "string" },
-        "type": { "type": "string", "enum": ["text", "image", "video"]},
-        "read": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time"}
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["text", "image", "audio"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isRead": { "type": "boolean" },
+        "callType": { "type": "string", "enum": ["none", "voice", "video"]}
       },
-      "required": ["senderId", "receiverId", "content", "createdAt"]
+      "required": ["senderId", "receiverId", "message", "createdAt"]
     },
-    "wallet": {
-      "title": "Wallet",
-      "type": "object",
-      "properties": {
-        "balance": { "type": "number" },
-        "transactions": { "type": "array", "items": { "type": "string"}},
-        "updatedAt": { "type": "string", "format": "date-time"}
-      },
-      "required": ["balance"]
+    "call": {
+        "title": "Call",
+        "type": "object",
+        "properties": {
+            "callerId": { "type": "string" },
+            "receiverId": { "type": "string" },
+            "type": { "type": "string", "enum": ["voice", "video"]},
+            "offer": { "type": "object" },
+            "answer": { "type": "object" },
+            "status": { "type": "string", "enum": ["ongoing", "ended", "missed"]},
+            "timestamp": { "type": "string", "format": "date-time" }
+        },
+        "required": ["callerId", "receiverId", "type", "status"]
     },
-    "analytics": {
-        "title": "Analytics",
+    "live": {
+        "title": "Live",
+        "type": "object",
+        "properties": {
+            "hostId": { "type": "string" },
+            "title": { "type": "string" },
+            "description": { "type": "string" },
+            "streamUrl": { "type": "string", "format": "uri" },
+            "isPublic": { "type": "boolean" },
+            "startTime": { "type": "string", "format": "date-time" },
+            "endTime": { "type": "string", "format": "date-time" },
+            "viewersCount": { "type": "number" },
+            "likes": { "type": "number" },
+            "status": { "type": "string", "enum": ["ongoing", "ended"] }
+        },
+        "required": ["hostId", "title"]
+    },
+    "reward": {
+        "title": "Reward",
         "type": "object",
         "properties": {
             "userId": { "type": "string" },
-            "views": { "type": "number" },
-            "clicks": { "type": "number" },
-            "earnings": { "type": "number" },
-            "engagementScore": { "type": "number" },
-            "updatedAt": { "type": "string", "format": "date-time"}
+            "type": { "type": "string", "enum": ["goal", "referral", "sale"]},
+            "points": { "type": "number"},
+            "description": { "type": "string" },
+            "createdAt": { "type": "string", "format": "date-time"}
+        },
+        "required": ["userId", "type", "points"]
+    },
+    "referral": {
+        "title": "Referral",
+        "type": "object",
+        "properties": {
+            "referrerId": { "type": "string" },
+            "referredUserId": { "type": "string" },
+            "date": { "type": "string", "format": "date-time"},
+            "rewardPoints": { "type": "number" }
+        },
+        "required": ["referrerId", "referredUserId"]
+    },
+    "supportTicket": {
+        "title": "Support Ticket",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "subject": { "type": "string" },
+            "message": { "type": "string" },
+            "status": { "type": "string", "enum": ["open", "resolved", "closed"]},
+            "createdAt": { "type": "string", "format": "date-time"},
+            "adminResponse": { "type": "string" }
+        },
+        "required": ["userId", "subject", "message", "status"]
+    },
+    "settings": {
+        "title": "Settings",
+        "type": "object",
+        "properties": {
+            "appName": { "type": "string" },
+            "version": { "type": "string" },
+            "maintenanceMode": { "type": "boolean" },
+            "supportEmail": { "type": "string", "format": "email" },
+            "contactNumber": { "type": "string" },
+            "privacyPolicyUrl": { "type": "string", "format": "uri" },
+            "termsUrl": { "type": "string", "format": "uri" }
+        }
+    },
+    "aiAssistant": {
+        "title": "AI Assistant",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "prompt": { "type": "string" },
+            "response": { "type": "string" },
+            "createdAt": { "type": "string", "format": "date-time"}
         }
     }
   },
@@ -170,13 +183,29 @@
       "schema": { "$ref": "#/entities/user" },
       "description": "Stores user profile information."
     },
-    "/annonces/{annonceId}": {
-      "schema": { "$ref": "#/entities/annonce" },
-      "description": "Collection of all service advertisements."
+    "/wallets/{walletId}": {
+      "schema": { "$ref": "#/entities/wallet" },
+      "description": "User wallets, where walletId is the same as userId."
     },
-    "/products/{productId}": {
-      "schema": { "$ref": "#/entities/product" },
-      "description": "Collection of all products."
+    "/wallets/{walletId}/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/transaction" },
+      "description": "Subcollection for wallet transactions."
+    },
+    "/services/{serviceId}": {
+      "schema": { "$ref": "#/entities/service" },
+      "description": "Collection of all service advertisements (annonces)."
+    },
+    "/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/message" },
+      "description": "Stores all chat messages."
+    },
+    "/calls/{callId}": {
+      "schema": { "$ref": "#/entities/call" },
+      "description": "WebRTC signaling server calls."
+    },
+    "/lives/{liveId}": {
+      "schema": { "$ref": "#/entities/live" },
+      "description": "Live streaming sessions."
     },
     "/rewards/{rewardId}": {
       "schema": { "$ref": "#/entities/reward" },
@@ -186,21 +215,17 @@
       "schema": { "$ref": "#/entities/referral" },
       "description": "Tracks user referrals."
     },
-    "/transactions/{transactionId}": {
-      "schema": { "$ref": "#/entities/transaction" },
-      "description": "Global list of all transactions."
+    "/supportTickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/supportTicket" },
+      "description": "Support tickets from users."
     },
-    "/messages/{messageId}": {
-      "schema": { "$ref": "#/entities/message" },
-      "description": "Stores all chat messages."
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/settings" },
+      "description": "Global application settings."
     },
-    "/wallets/{walletId}": {
-      "schema": { "$ref": "#/entities/wallet" },
-      "description": "User wallets, where walletId is the same as userId."
-    },
-    "/analytics/{analyticId}": {
-      "schema": { "$ref": "#/entities/analytics" },
-      "description": "User-specific analytics data."
+    "/aiAssistant/{assistantId}": {
+      "schema": { "$ref": "#/entities/aiAssistant" },
+      "description": "Logs of AI assistant interactions."
     }
   }
 }

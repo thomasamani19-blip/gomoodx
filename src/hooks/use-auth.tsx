@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { UserRole } from '@/lib/types';
@@ -9,21 +10,14 @@ import {
     signInWithEmailAndPassword, 
     signOut 
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, writeBatch, type Timestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
+import type { User } from '@/lib/types';
 
-export interface User {
-  id: string;
-  nom: string;
-  email: string;
-  role: UserRole;
-  avatar?: string;
-  pseudo?: string;
-}
-
+export interface AppUser extends User {}
 
 interface AuthContextType {
-  user: User | null;
+  user: AppUser | null;
   firebaseUser: FirebaseUser | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
@@ -44,17 +38,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (email: string, pass: string, name: string, role: UserRole) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-    const firebaseUser = userCredential.user;
+    const fbUser = userCredential.user;
 
-    // Create user document in Firestore
-    const userRef = doc(firestore, 'users', firebaseUser.uid);
-    await setDoc(userRef, {
-        nom: name,
-        email: email,
-        role: role,
-        // Default avatar for new users
-        avatar: `https://avatar.vercel.sh/${firebaseUser.uid}.png`
+    const batch = writeBatch(firestore);
+
+    // 1. Create user document
+    const userRef = doc(firestore, 'users', fbUser.uid);
+    const newUser: Partial<User> = {
+      displayName: name,
+      email: email,
+      role: role,
+      status: 'active',
+      createdAt: serverTimestamp() as Timestamp,
+      updatedAt: serverTimestamp() as Timestamp,
+      rewardPoints: 0,
+      referralsCount: 0,
+      isVerified: false, // Or true if email verification is implemented and successful
+      onlineStatus: 'offline',
+      referralCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
+    };
+    batch.set(userRef, newUser);
+
+    // 2. Create wallet document
+    const walletRef = doc(firestore, 'wallets', fbUser.uid);
+    batch.set(walletRef, {
+        balance: 0,
+        currency: 'XOF',
+        totalEarned: 0,
+        totalSpent: 0,
+        status: 'active'
     });
+
+    await batch.commit();
   }
 
   const logout = () => {
@@ -62,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo(() => ({ 
-      user: user as User | null, 
+      user: user as AppUser | null, 
       firebaseUser,
       loading, 
       login, 
@@ -84,3 +99,5 @@ export function useAuth() {
   }
   return context;
 }
+
+    
