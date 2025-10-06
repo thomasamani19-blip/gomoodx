@@ -27,7 +27,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { user, loading } = useFirebaseUserHook();
+  const { user, firebaseUser: fbUser, loading } = useFirebaseUserHook();
   const auth = useFirebaseAuthHook();
   const firestore = useFirestore();
   
@@ -65,10 +65,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const walletRef = doc(firestore, 'wallets', fbUser.uid);
     batch.set(walletRef, {
         balance: 0,
-        currency: 'XOF',
+        currency: 'EUR',
         totalEarned: 0,
         totalSpent: 0,
-        status: 'active'
+        status: 'active',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
     });
 
     await batch.commit();
@@ -80,12 +82,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({ 
       user: user as User | null, 
-      firebaseUser: user as unknown as FirebaseUser | null,
+      firebaseUser: fbUser as FirebaseUser | null,
       loading, 
       login, 
       signup,
       logout, 
-    }), [user, loading]);
+    }), [user, fbUser, loading]);
 
   return (
     <AuthContext.Provider value={value}>

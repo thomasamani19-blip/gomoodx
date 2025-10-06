@@ -44,8 +44,8 @@ export interface Wallet {
   totalEarned: number;
   totalSpent: number;
   status: 'active';
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
 }
 
 // Transaction (subcollection of Wallet)
