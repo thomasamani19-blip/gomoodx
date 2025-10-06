@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, MessageCircle, Video, Phone, ChevronDown, Star } from 'lucide-react';
+import { Heart, MessageCircle, Video, Phone, ChevronDown, Star, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { doc, updateDoc, arrayUnion, arrayRemove, addDoc, collection, serverTimestamp, query, where, limit } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
 
 // StarRating component copied from annonces/page.tsx
@@ -127,9 +128,11 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
     const router = useRouter();
     const { toast } = useToast();
     const isFavorite = currentUser?.favorites?.includes(user.id);
-    const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null, isFree?: boolean, price?: number }>({ show: false, type: null, isFree: false, price: 0 });
     
-    // Fetch global settings for platform call rates
+    const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null, isFree?: boolean, price?: number }>({ show: false, type: null, isFree: false, price: 0 });
+    const [showContactPassDialog, setShowContactPassDialog] = useState(false);
+    const [isBuyingPass, setIsBuyingPass] = useState(false);
+    
     const settingsRef = useMemo(() => firestore ? doc(firestore, 'settings', 'global') : null, [firestore]);
     const { data: globalSettings } = useDoc<Settings>(settingsRef);
 
@@ -188,8 +191,6 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         let isFree = false;
         
         if (type === 'video') {
-            // Video calls to Escorts are priced by the Escort.
-            // Video calls to Producers are priced by the Platform.
             if (user.role === 'escorte') {
                 price = user.rates?.videoCallPerMinute || 0;
             } else if (user.role === 'partenaire' && user.partnerType === 'producer') {
@@ -208,13 +209,52 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
             if (quotaUsed < FREE_QUOTA_MINUTES) {
                 isFree = true;
             } else {
-                // If quota is exceeded, use platform price
                 price = globalSettings?.callRates?.voicePerMinute || 0;
             }
         }
         
         setCallConfirmation({ show: true, type, isFree, price });
     };
+    
+    const handleContact = () => {
+        if (!currentUser || !user) {
+            toast({ title: 'Connexion requise', variant: 'destructive' });
+            router.push('/connexion');
+            return;
+        }
+        if (currentUser.unlockedContacts?.includes(user.id)) {
+            router.push(`/messagerie?contact=${user.id}`);
+        } else {
+            setShowContactPassDialog(true);
+        }
+    };
+    
+    const handleBuyContactPass = async () => {
+        if (!currentUser || !user) return;
+        setIsBuyingPass(true);
+        try {
+            const response = await fetch('/api/products/purchase-contact-pass', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUser.id, sellerId: user.id })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                toast({ title: "Contact débloqué !", description: "Vous pouvez maintenant envoyer un message." });
+                router.push(`/messagerie?contact=${user.id}`);
+            } else {
+                throw new Error(result.message || "Une erreur est survenue.");
+            }
+        } catch (error: any) {
+            toast({ title: "Erreur d'achat", description: error.message, variant: "destructive" });
+        } finally {
+            setIsBuyingPass(false);
+            setShowContactPassDialog(false);
+        }
+    };
+    
+    const contactPassPrice = globalSettings?.passContact?.price || 5;
+    const hasUnlockedContact = !!(currentUser && user && currentUser.unlockedContacts?.includes(user.id));
 
     return (
         <>
@@ -248,10 +288,9 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                             <Heart className="mr-2 h-4 w-4" /> 
                             {isFavorite ? 'Retiré des favoris' : 'Ajouter aux favoris'}
                         </Button>
-                        <Button variant="outline" asChild>
-                          <Link href={`/messagerie?contact=${user.id}`}>
-                            <MessageCircle className="mr-2 h-4 w-4" /> Message
-                          </Link>
+                         <Button variant="outline" onClick={handleContact}>
+                            {hasUnlockedContact ? <CheckCircle className="mr-2 h-4 w-4"/> : <MessageCircle className="mr-2 h-4 w-4" />}
+                            Message
                         </Button>
                          {(user.role === 'escorte' || user.partnerType === 'producer') && (
                             <DropdownMenu>
@@ -323,6 +362,26 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                 <AlertDialogFooter>
                     <AlertDialogCancel>Annuler</AlertDialogCancel>
                     <AlertDialogAction onClick={handleInitiateCall}>Confirmer</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        
+        <AlertDialog open={showContactPassDialog} onOpenChange={setShowContactPassDialog}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Débloquer le Contact</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Pour envoyer un message à ce créateur, vous devez acheter un "Pass Contact". Ce pass, d'un montant de <span className="font-bold">{contactPassPrice.toFixed(2)}€</span>, vous donnera un accès permanent à la messagerie privée avec cette personne.
+                        <br/><br/>
+                        Ce montant est facturé par la plateforme pour la mise en relation.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isBuyingPass}>Annuler</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleBuyContactPass} disabled={isBuyingPass}>
+                        {isBuyingPass && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Payer le Pass et Contacter
+                    </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

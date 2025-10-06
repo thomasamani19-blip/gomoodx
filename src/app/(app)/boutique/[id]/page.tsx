@@ -101,10 +101,25 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const handleBuyContactPass = async () => {
     if (!user || !creator) return;
     setIsBuyingPass(true);
-    // TODO: Implement API call to /api/products/purchase-contact-pass
-    toast({ title: 'Fonctionnalité en cours de développement', description: "L'API pour acheter le pass contact sera bientôt prête."});
-    setShowContactPassDialog(false);
-    setIsBuyingPass(false);
+    try {
+        const response = await fetch('/api/products/purchase-contact-pass', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id, sellerId: creator.id })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            toast({ title: "Contact débloqué !", description: "Vous pouvez maintenant envoyer un message." });
+            router.push(`/messagerie?contact=${creator.id}`);
+        } else {
+            throw new Error(result.message || "Une erreur est survenue.");
+        }
+    } catch (error: any) {
+        toast({ title: "Erreur d'achat", description: error.message, variant: "destructive" });
+    } finally {
+        setIsBuyingPass(false);
+        setShowContactPassDialog(false);
+    }
   }
 
   const handleContactSeller = () => {

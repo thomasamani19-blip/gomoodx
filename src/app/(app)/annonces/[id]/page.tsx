@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useCollection, useDoc, useFirestore } from '@/firebase';
-import type { Annonce, User, Review } from '@/lib/types';
+import { useCollection, useDoc, useFirestore, useUser } from '@/firebase';
+import type { Annonce, User, Review, Settings } from '@/lib/types';
 import { doc, collection, query, orderBy, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import { Star, MessageCircle, Heart, Share2, Send, Loader2 } from 'lucide-react';
+import { Star, MessageCircle, Heart, Share2, Send, Loader2, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
@@ -19,8 +19,17 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-// Copié depuis annonces/page.tsx
 const StarRating = ({ rating, ratingCount, className }: { rating: number, ratingCount?: number, className?: string }) => {
     const totalStars = 5;
     const fullStars = Math.floor(rating);
@@ -99,13 +108,11 @@ const ReviewForm = ({ annonceId }: { annonceId: string }) => {
                 const newTotalRating = (currentRating * currentRatingCount) + rating;
                 const newAverageRating = newTotalRating / newRatingCount;
 
-                // Mettre à jour l'annonce
                  transaction.update(annonceRef, {
                     rating: newAverageRating,
                     ratingCount: newRatingCount
                 });
                 
-                // Créer le nouvel avis
                 const reviewData = {
                     authorId: user.id,
                     authorName: user.displayName,
@@ -266,16 +273,21 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
   const router = useRouter();
   const { toast } = useToast();
   const [isReserving, setIsReserving] = useState(false);
-
+  
+  const [showContactPassDialog, setShowContactPassDialog] = useState(false);
+  const [isBuyingPass, setIsBuyingPass] = useState(false);
 
   const annonceRef = useMemo(() => firestore ? doc(firestore, 'services', params.id) : null, [firestore, params.id]);
   const { data: annonce, loading: annonceLoading } = useDoc<Annonce>(annonceRef);
   
-  // Fetch creator info once we have the annonce data
   const creatorRef = useMemo(() => (annonce?.createdBy && firestore) ? doc(firestore, 'users', annonce.createdBy) : null, [annonce, firestore]);
   const { data: creator, loading: creatorLoading } = useDoc<User>(creatorRef);
-
-  const loading = annonceLoading || creatorLoading;
+  
+  const settingsRef = useMemo(() => firestore ? doc(firestore, 'settings', 'global') : null, [firestore]);
+  const { data: settings, loading: settingsLoading } = useDoc<Settings>(settingsRef);
+  
+  const loading = annonceLoading || creatorLoading || settingsLoading;
+  const canReserve = creator?.partnerType === 'establishment';
   
   const handleReservation = async () => {
     if (!user) {
@@ -283,14 +295,11 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
         router.push('/connexion');
         return;
     }
-
     if (user.id === annonce?.createdBy) {
         toast({ title: 'Action impossible', description: 'Vous ne pouvez pas réserver votre propre service.', variant: 'destructive'});
         return;
     }
-
     setIsReserving(true);
-
     try {
         const response = await fetch('/api/reservations/create', {
             method: 'POST',
@@ -301,20 +310,15 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                 reservationDate: new Date().toISOString(), // Using current date as a placeholder
             }),
         });
-
         const result = await response.json();
-
         if (response.ok) {
             toast({
                 title: 'Réservation confirmée !',
                 description: "Votre réservation a été effectuée avec succès.",
             });
-            // Optionnel: rediriger vers une page "Mes réservations"
-            // router.push('/mes-reservations');
         } else {
             throw new Error(result.message || 'Une erreur est survenue.');
         }
-
     } catch (error: any) {
         toast({
             title: 'Échec de la réservation',
@@ -324,9 +328,45 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
     } finally {
         setIsReserving(false);
     }
-};
+  };
 
-
+  const handleContact = () => {
+    if (!user || !creator) {
+        toast({ title: 'Connexion requise', variant: 'destructive' });
+        router.push('/connexion');
+        return;
+    }
+    if (user.unlockedContacts?.includes(creator.id)) {
+        router.push(`/messagerie?contact=${creator.id}`);
+    } else {
+        setShowContactPassDialog(true);
+    }
+  }
+  
+  const handleBuyContactPass = async () => {
+    if (!user || !creator) return;
+    setIsBuyingPass(true);
+    try {
+        const response = await fetch('/api/products/purchase-contact-pass', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id, sellerId: creator.id })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            toast({ title: "Contact débloqué !", description: "Vous pouvez maintenant envoyer un message." });
+            router.push(`/messagerie?contact=${creator.id}`);
+        } else {
+            throw new Error(result.message || "Une erreur est survenue.");
+        }
+    } catch (error: any) {
+        toast({ title: "Erreur d'achat", description: error.message, variant: "destructive" });
+    } finally {
+        setIsBuyingPass(false);
+        setShowContactPassDialog(false);
+    }
+  }
+  
   if (loading) {
     return (
         <div className="space-y-8">
@@ -356,11 +396,12 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
       </div>
     );
   }
-  
-  const canReserve = creator?.partnerType === 'establishment';
 
+  const contactPassPrice = settings?.passContact?.price || 5;
+  const hasUnlockedContact = !!(user && creator && user.unlockedContacts?.includes(creator.id));
 
   return (
+    <>
     <div className="space-y-8">
         <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden">
              <Image
@@ -387,12 +428,10 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                         <p className="text-muted-foreground">{annonce.description}</p>
                     </CardContent>
                 </Card>
-
                 <div className="space-y-6">
                     <ReviewForm annonceId={params.id} />
                     <ReviewList annonceId={params.id} />
                 </div>
-
             </div>
             <div className="md:col-span-1 space-y-6">
                  <Card>
@@ -406,10 +445,9 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                                 {isReserving ? 'Réservation en cours...' : 'Réserver maintenant'}
                             </Button>
                         ) : (
-                             <Button size="lg" asChild>
-                                <Link href={`/messagerie?contact=${creator?.id}`}>
-                                    <MessageCircle className="mr-2 h-4 w-4" /> Contacter
-                                </Link>
+                             <Button size="lg" onClick={handleContact}>
+                                {hasUnlockedContact ? <CheckCircle className="mr-2 h-4 w-4"/> : <MessageCircle className="mr-2 h-4 w-4" />}
+                                {hasUnlockedContact ? 'Contacter' : 'Contacter pour réserver'}
                             </Button>
                         )}
                     </CardContent>
@@ -440,5 +478,25 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
             </div>
         </div>
     </div>
+    <AlertDialog open={showContactPassDialog} onOpenChange={setShowContactPassDialog}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Débloquer le Contact</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Pour contacter ce créateur, vous devez acheter un "Pass Contact". Ce pass, d'un montant de <span className="font-bold">{contactPassPrice.toFixed(2)}€</span>, vous donnera accès à la messagerie privée avec ce créateur.
+                    <br/><br/>
+                    Ce montant est facturé par la plateforme pour la mise en relation.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel disabled={isBuyingPass}>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleBuyContactPass} disabled={isBuyingPass}>
+                    {isBuyingPass && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Payer le Pass et Contacter
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
