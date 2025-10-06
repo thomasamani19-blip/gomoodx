@@ -9,18 +9,20 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import PageHeader from '@/components/shared/page-header';
 import { genererArticleBlog, type GenererArticleBlogOutput } from '@/ai/flows/generer-article-blog';
-import { Loader2, Wand2, Save, Copy } from 'lucide-react';
+import { Loader2, Wand2, Save, Copy, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
 import { useFirestore } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import { Switch } from '@/components/ui/switch';
 
 export default function GenererArticlePage() {
   const [result, setResult] = useState<GenererArticleBlogOutput | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const firestore = useFirestore();
@@ -76,6 +78,7 @@ export default function GenererArticlePage() {
             date: serverTimestamp(),
             imageUrl: `https://picsum.photos/seed/${Date.now()}/800/600`,
             imageHint: 'abstract background',
+            isPremium: isPremium,
         });
         toast({ title: "Article Enregistré !", description: "Votre article a été ajouté à votre blog."});
         router.push('/gestion/articles');
@@ -142,15 +145,24 @@ export default function GenererArticlePage() {
         <Card className="min-h-[400px]">
           <CardHeader>
             {result && (
-                <div className="flex gap-2">
-                    <Button onClick={handleSaveArticle} disabled={isSaving || authLoading}>
-                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                        Enregistrer l'Article
-                    </Button>
-                     <Button variant="outline" onClick={handleCopy}>
-                        <Copy className="mr-2 h-4 w-4" />
-                        Copier
-                    </Button>
+                <div className="flex justify-between items-center">
+                    <div className="flex gap-2">
+                        <Button onClick={handleSaveArticle} disabled={isSaving || authLoading}>
+                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                            Enregistrer
+                        </Button>
+                         <Button variant="outline" onClick={handleCopy}>
+                            <Copy className="mr-2 h-4 w-4" />
+                            Copier
+                        </Button>
+                    </div>
+                     <div className="flex items-center space-x-2">
+                        <Switch id="premium-article" checked={isPremium} onCheckedChange={setIsPremium} />
+                        <Label htmlFor="premium-article" className="flex items-center gap-1">
+                            <Star className="h-4 w-4 text-primary" />
+                            Premium
+                        </Label>
+                    </div>
                 </div>
             )}
           </CardHeader>

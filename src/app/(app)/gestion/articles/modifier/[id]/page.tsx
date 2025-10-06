@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
@@ -15,17 +15,19 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Loader2, Save, Upload } from 'lucide-react';
+import { Loader2, Save, Upload, Star } from 'lucide-react';
 import PageHeader from '@/components/shared/page-header';
 import { uploadFile } from '@/lib/storage';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { BlogArticle } from '@/lib/types';
+import { Switch } from '@/components/ui/switch';
 
 const articleSchema = z.object({
   title: z.string().min(5, "Le titre doit faire au moins 5 caractères."),
   content: z.string().min(50, "L'article doit contenir au moins 50 caractères."),
-  image: z.any().optional(), // Image is optional on update
+  image: z.any().optional(),
+  isPremium: z.boolean().default(false),
 });
 
 type ArticleFormValues = z.infer<typeof articleSchema>;
@@ -43,7 +45,7 @@ export default function ModifierArticlePage({ params }: { params: { id: string }
     const [isLoading, setIsLoading] = useState(false);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-    const { register, handleSubmit, formState: { errors }, setValue, reset } = useForm<ArticleFormValues>({
+    const { register, handleSubmit, control, formState: { errors }, setValue, reset } = useForm<ArticleFormValues>({
         resolver: zodResolver(articleSchema),
     });
 
@@ -52,6 +54,7 @@ export default function ModifierArticlePage({ params }: { params: { id: string }
             reset({
                 title: article.title,
                 content: article.content,
+                isPremium: article.isPremium || false,
             });
             setImagePreview(article.imageUrl);
         }
@@ -77,7 +80,8 @@ export default function ModifierArticlePage({ params }: { params: { id: string }
                 title: data.title,
                 content: data.content,
                 imageUrl: imageUrl,
-                date: serverTimestamp(), // Update the date to reflect modification
+                date: serverTimestamp(),
+                isPremium: data.isPremium,
             });
 
             toast({ title: "Article modifié !", description: "Votre article a été mis à jour." });
@@ -128,6 +132,30 @@ export default function ModifierArticlePage({ params }: { params: { id: string }
             <form onSubmit={handleSubmit(onSubmit)}>
                 <Card>
                     <CardContent className="pt-6 grid gap-6">
+                        <div className="space-y-2">
+                             <Controller
+                                name="isPremium"
+                                control={control}
+                                render={({ field }) => (
+                                    <div className="flex items-center justify-between rounded-lg border p-4">
+                                        <div className="space-y-0.5">
+                                            <Label htmlFor="premium-switch" className="text-base flex items-center">
+                                                <Star className="mr-2 h-4 w-4 text-primary" />
+                                                Article Premium
+                                            </Label>
+                                            <p className="text-sm text-muted-foreground">
+                                               Cochez pour rendre cet article visible uniquement par les membres Premium.
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            id="premium-switch"
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </div>
+                                )}
+                            />
+                        </div>
                         <div className="space-y-2">
                             <Label>Image de l'article</Label>
                             <div>
