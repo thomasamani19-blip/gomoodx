@@ -6,20 +6,30 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { CreatorCarousel } from '@/components/features/creators/creator-carousel';
-import { ProductCarousel } from '@/components/features/products/product-carousel';
 import { AnnonceCarousel } from '@/components/features/annonces/annonce-carousel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Gift, Heart, Users } from 'lucide-react';
+import { Gift, Heart, Users, Search, ShieldCheck, Sparkles } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const TestimonialCard = ({ quote, author, role }: { quote: string, author: string, role: string }) => (
-    <Card className="bg-card/50 border-primary/20">
+    <Card className="bg-card/50 border-primary/20 flex flex-col justify-between">
         <CardContent className="pt-6">
             <blockquote className="text-lg italic">"{quote}"</blockquote>
             <p className="mt-4 font-bold text-right text-primary">~ {author}, <span className="font-normal text-sm text-foreground">{role}</span></p>
         </CardContent>
     </Card>
 )
+
+const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
+    <div className="flex flex-col items-center text-center gap-4">
+        <div className="bg-primary/10 p-4 rounded-full border-2 border-primary/30">
+            <Icon className="h-8 w-8 text-primary" />
+        </div>
+        <h3 className="font-headline text-xl font-semibold">{title}</h3>
+        <p className="text-muted-foreground">{description}</p>
+    </div>
+)
+
 
 export default function Home() {
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-main');
@@ -28,76 +38,95 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-black via-background to-background">
       <Header />
       <main className="flex-1">
-        <section className="relative h-[70vh] w-full">
+        <section className="relative h-[80vh] w-full">
           {heroImage && (
             <Image
               src={heroImage.imageUrl}
               alt={heroImage.description}
               fill
-              className="object-cover opacity-50"
+              className="object-cover opacity-40"
               data-ai-hint={heroImage.imageHint}
               priority
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
             <h1 className="font-headline text-5xl md:text-7xl font-bold drop-shadow-[0_2px_2px_rgba(255,190,0,0.5)] text-transparent bg-clip-text bg-gradient-to-br from-yellow-300 to-amber-500">
               GoMoodX
             </h1>
             <p className="mt-4 max-w-2xl text-lg md:text-xl drop-shadow-md">
-              Rejoignez la communauté la plus sensuelle du web.
+              La destination privilégiée pour des rencontres et des contenus exclusifs.
             </p>
-            <Button asChild size="lg" className="mt-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105">
-              <Link href="/inscription">Devenez Membre</Link>
-            </Button>
+            <div className="flex gap-4 mt-8">
+                <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105">
+                  <Link href="/inscription">Devenir Membre</Link>
+                </Button>
+                 <Button asChild size="lg" variant="outline" className="bg-transparent hover:bg-white/10 text-white border-white/50 transition-all hover:scale-105">
+                  <Link href="/inscription">Devenir Créateur</Link>
+                </Button>
+            </div>
           </div>
         </section>
 
-        <div className="space-y-24 py-16">
+        <div className="space-y-24 py-16 md:py-32">
+        
           <section className="container mx-auto px-4">
-            <h2 className="font-headline text-3xl md:text-4xl font-bold mb-8 text-center">Créateurs Populaires</h2>
+             <div className="text-center mb-12">
+                <h2 className="font-headline text-3xl md:text-4xl font-bold mb-4">Comment ça marche ?</h2>
+                <p className="text-muted-foreground max-w-2xl mx-auto">Découvrez, connectez-vous et profitez en quelques étapes simples.</p>
+             </div>
+             <div className="grid md:grid-cols-3 gap-8 md:gap-12">
+                <FeatureCard icon={Search} title="1. Découvrez" description="Explorez une sélection exclusive de profils, de contenus et de services proposés par nos créateurs vérifiés."/>
+                <FeatureCard icon={Heart} title="2. Connectez" description="Interagissez via la messagerie privée, les appels vidéo ou en rejoignant des sessions live uniques."/>
+                <FeatureCard icon={Gift} title="3. Profitez" description="Achetez du contenu premium, réservez des expériences inoubliables et soutenez vos créateurs favoris."/>
+             </div>
+          </section>
+
+
+          <section className="container mx-auto px-4">
+            <div className="text-center mb-12">
+                <h2 className="font-headline text-3xl md:text-4xl font-bold">Créateurs à la Une</h2>
+            </div>
             <CreatorCarousel />
           </section>
 
           <section className="container mx-auto px-4">
-            <h2 className="font-headline text-3xl md:text-4xl font-bold mb-8 text-center">Annonces à la Une</h2>
+             <div className="text-center mb-12">
+                <h2 className="font-headline text-3xl md:text-4xl font-bold">Annonces Populaires</h2>
+            </div>
              <AnnonceCarousel />
           </section>
-
-           <section className="container mx-auto px-4">
-            <h2 className="font-headline text-3xl md:text-4xl font-bold mb-8 text-center">Boutique Tendance</h2>
-            <ProductCarousel />
-          </section>
           
-          <section className="container mx-auto px-4">
-             <h2 className="font-headline text-3xl md:text-4xl font-bold mb-8 text-center">Récompenses & Parrainage</h2>
+           <section className="container mx-auto px-4">
+             <div className="text-center mb-12">
+                <h2 className="font-headline text-3xl md:text-4xl font-bold mb-8">Pourquoi nous choisir ?</h2>
+                <p className="text-muted-foreground max-w-2xl mx-auto">Nous offrons une plateforme sûre, innovante et gratifiante pour les créateurs et les membres.</p>
+             </div>
              <Card className="bg-gradient-to-br from-card to-background border-primary/30">
-                <CardHeader>
-                    <CardTitle>Boostez Vos Gains</CardTitle>
-                    <CardDescription>Notre programme de récompenses et de parrainage est conçu pour valoriser votre activité sur GoMoodX.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid md:grid-cols-3 gap-6 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                        <Gift className="h-10 w-10 text-primary" />
-                        <h3 className="font-semibold text-lg">Gagnez des Points</h3>
-                        <p className="text-sm text-muted-foreground">Recevez des points pour chaque vente, chaque appel vidéo et chaque objectif atteint.</p>
-                    </div>
+                <CardContent className="grid md:grid-cols-3 gap-6 text-center p-8 md:p-12">
                     <div className="flex flex-col items-center gap-2">
                         <Users className="h-10 w-10 text-primary" />
-                        <h3 className="font-semibold text-lg">Parrainez vos Amis</h3>
-                        <p className="text-sm text-muted-foreground">Invitez de nouveaux membres et gagnez des bonus pour vous et vos filleuls.</p>
+                        <h3 className="font-semibold text-lg">Communauté Exclusive</h3>
+                        <p className="text-sm text-muted-foreground">Accédez à un cercle privé de créateurs et de membres partageant les mêmes idées, où la qualité prime sur la quantité.</p>
                     </div>
                     <div className="flex flex-col items-center gap-2">
-                        <Heart className="h-10 w-10 text-primary" />
-                        <h3 className="font-semibold text-lg">Profitez des Avantages</h3>
-                        <p className="text-sm text-muted-foreground">Convertissez vos points en crédits, en cadeaux ou en boost de visibilité.</p>
+                        <ShieldCheck className="h-10 w-10 text-primary" />
+                        <h3 className="font-semibold text-lg">Sécurité & Discrétion</h3>
+                        <p className="text-sm text-muted-foreground">Votre vie privée est notre priorité. Profitez de transactions sécurisées et d'échanges confidentiels.</p>
+                    </div>
+                    <div className="flex flex-col items-center gap-2">
+                        <Sparkles className="h-10 w-10 text-primary" />
+                        <h3 className="font-semibold text-lg">Outils IA Innovants</h3>
+                        <p className="text-sm text-muted-foreground">Nous équipons nos créateurs d'outils d'IA pour booster leur créativité et leur productivité.</p>
                     </div>
                 </CardContent>
              </Card>
           </section>
 
           <section className="container mx-auto px-4">
-            <h2 className="font-headline text-3xl md:text-4xl font-bold mb-8 text-center">Témoignages</h2>
+            <div className="text-center mb-12">
+                <h2 className="font-headline text-3xl md:text-4xl font-bold">Ce qu'ils en disent</h2>
+            </div>
             <div className="grid md:grid-cols-2 gap-8">
                 <TestimonialCard 
                     quote="GoMoodX a transformé ma façon de créer du contenu. La plateforme est intuitive et les outils IA sont incroyables."
