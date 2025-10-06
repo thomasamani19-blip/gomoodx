@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef, Suspense } from 'react';
@@ -12,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Message, User, Call, CallType } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore, useDoc } from '@/firebase';
-import { addDoc, collection, serverTimestamp, query, where, orderBy, or, getDocs, doc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, query, where, orderBy, or, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -144,18 +145,20 @@ function MessagerieContent() {
     const activeMessagesQuery = useMemo(() => {
         if (!user || !selectedContact || !firestore) return null;
         
-        return query(
+        const q = query(
             collection(firestore, 'messages'),
             or(
-              where('senderId', '==', user.id),
-              where('receiverId', '==', user.id)
+                where('senderId', '==', user.id),
+                where('receiverId', '==', user.id)
             ),
             orderBy('createdAt', 'asc')
         );
 
+        return q;
+
     }, [user, selectedContact, firestore]);
     
-    const { data: activeMessages, loading: messagesLoading } = useCollection<Message>(
+    const { data: activeMessages, loading: messagesLoading, setData: setActiveMessages } = useCollection<Message>(
         activeMessagesQuery
     );
 
@@ -169,10 +172,22 @@ function MessagerieContent() {
     }, [activeMessages, user, selectedContact]);
 
 
-    // Scroll to the bottom of the messages when a new message is added
+    // Scroll to the bottom of the messages when a new message is added and mark as read
     useEffect(() => {
         messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [filteredActiveMessages]);
+
+        if (firestore && user && filteredActiveMessages.length > 0) {
+            const unreadMessages = filteredActiveMessages.filter(
+                (msg) => msg.receiverId === user.id && !msg.isRead
+            );
+            if (unreadMessages.length > 0) {
+                unreadMessages.forEach(async (msg) => {
+                    const msgRef = doc(firestore, 'messages', msg.id);
+                    await updateDoc(msgRef, { isRead: true });
+                });
+            }
+        }
+    }, [filteredActiveMessages, firestore, user]);
 
 
     const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -183,7 +198,7 @@ function MessagerieContent() {
             message: newMessage,
             senderId: user.id,
             receiverId: selectedContact.id,
-            createdAt: serverTimestamp(),
+            createdAt: serverTimestamp() as any,
             isRead: false,
             type: 'text',
         };
@@ -207,10 +222,10 @@ function MessagerieContent() {
         const callData: Omit<Call, 'id'> = {
             callerId: user.id,
             receiverId: selectedContact.id,
-            callerName: user.displayName,
+            callerName: user.displayName || 'Utilisateur',
             status: 'pending',
             type: type,
-            createdAt: serverTimestamp(),
+            createdAt: serverTimestamp() as any,
         };
 
         try {
@@ -271,7 +286,7 @@ function MessagerieContent() {
                         </div>
                          {lastMessage?.createdAt && (
                            <span className="text-xs text-muted-foreground ml-auto whitespace-nowrap">
-                            {formatDistanceToNow(lastMessage.createdAt.toDate(), { addSuffix: true, locale: fr })}
+                            {lastMessage.createdAt.toDate ? formatDistanceToNow(lastMessage.createdAt.toDate(), { addSuffix: true, locale: fr }) : ''}
                            </span>
                         )}
                     </button>

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useCollection, useDoc, useFirestore } from '@/firebase';
@@ -144,10 +143,10 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         const callData: Omit<Call, 'id'> = {
             callerId: currentUser.id,
             receiverId: user.id,
-            callerName: currentUser.displayName,
+            callerName: currentUser.displayName || 'Utilisateur',
             status: 'pending',
             type: type,
-            createdAt: serverTimestamp(),
+            createdAt: serverTimestamp() as any,
         };
         try {
             const callDocRef = await addDoc(collection(firestore, 'calls'), callData);
