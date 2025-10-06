@@ -158,19 +158,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerPartner = async (form: any) => {
     const {
-      partnerType, // "establishment" ou "producer"
-      displayName, // companyName
-      email, // companyEmail
+      partnerType,
+      companyName,
+      registerNumber,
+      country,
+      city,
+      address,
+      companyEmail,
       phone,
+      website,
+      description,
+      managerName,
+      managerEmail,
+      managerPhone
     } = form;
   
     const uid = crypto.randomUUID(); // Génère un ID unique pour la demande
   
     await setDoc(doc(firestore, "partnerRequests", uid), {
       type: partnerType,
-      companyName: displayName,
-      companyEmail: email,
+      companyName: companyName,
+      registerNumber: registerNumber || null,
+      country: country || null,
+      city: city || null,
+      address: address || null,
+      companyEmail: companyEmail,
       phone: phone,
+      website: website || null,
+      description: description || null,
+      managerName: managerName || null,
+      managerEmail: managerEmail || null,
+      managerPhone: managerPhone || null,
       status: "pending",
       reviewedBy: null,
       createdAt: serverTimestamp(),

@@ -65,48 +65,88 @@ export default function InscriptionPartenairePage() {
             <CardDescription>Rejoignez le réseau de partenaires GoMoodX et développez votre activité.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-6">
-            <div className="grid gap-2">
-                <Label>Vous êtes un...</Label>
-                <RadioGroup name="partnerType" defaultValue="establishment" className="grid grid-cols-2 gap-4">
-                     <div>
-                        <RadioGroupItem value="establishment" id="establishment" className="peer sr-only" />
-                        <Label htmlFor="establishment" className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-4 text-sm hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                        Établissement (Hôtel, Club, ...)
-                        </Label>
-                    </div>
-                    <div>
-                        <RadioGroupItem value="producer" id="producer" className="peer sr-only" />
-                        <Label htmlFor="producer" className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-4 text-sm hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                        Producteur (Photographe, ...)
-                        </Label>
-                    </div>
-                </RadioGroup>
-            </div>
+                <div className="grid gap-2">
+                    <Label>Vous êtes un...</Label>
+                    <RadioGroup name="partnerType" defaultValue="establishment" className="grid grid-cols-2 gap-4">
+                        <div>
+                            <RadioGroupItem value="establishment" id="establishment" className="peer sr-only" />
+                            <Label htmlFor="establishment" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 text-sm hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                            Établissement
+                            <span className="font-normal text-xs text-muted-foreground">(Hôtel, Club, ...)</span>
+                            </Label>
+                        </div>
+                        <div>
+                            <RadioGroupItem value="producer" id="producer" className="peer sr-only" />
+                            <Label htmlFor="producer" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 text-sm hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                            Producteur
+                             <span className="font-normal text-xs text-muted-foreground">(Photographe, ...)</span>
+                            </Label>
+                        </div>
+                    </RadioGroup>
+                </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="companyName">Nom de l'entreprise</Label>
+                        <Input id="companyName" name="companyName" placeholder="Le nom de votre société" required />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="registerNumber">Numéro de registre (Optionnel)</Label>
+                        <Input id="registerNumber" name="registerNumber" placeholder="Ex: SIRET" />
+                    </div>
+                </div>
+
                 <div className="grid gap-2">
-                    <Label htmlFor="displayName">Nom de l'entreprise</Label>
-                    <Input id="displayName" name="displayName" placeholder="Le nom de votre société" required />
+                    <Label htmlFor="address">Adresse</Label>
+                    <Input id="address" name="address" placeholder="123 Rue de la République" />
                 </div>
-                 <div className="grid gap-2">
-                    <Label htmlFor="registerNumber">Numéro de registre (Optionnel)</Label>
-                    <Input id="registerNumber" name="registerNumber" placeholder="Ex: SIRET" />
+
+                 <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="city">Ville</Label>
+                        <Input id="city" name="city" placeholder="Paris" />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="country">Pays</Label>
+                        <Input id="country" name="country" placeholder="France" />
+                    </div>
                 </div>
-            </div>
-             <div className="grid md:grid-cols-2 gap-4">
+
+                <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="companyEmail">Email de l'entreprise</Label>
+                        <Input id="companyEmail" name="companyEmail" type="email" placeholder="contact@exemple.com" required />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="phone">Téléphone</Label>
+                        <Input id="phone" name="phone" type="tel" placeholder="+33 6 12 34 56 78" required/>
+                    </div>
+                </div>
+
                 <div className="grid gap-2">
-                    <Label htmlFor="companyEmail">Email de l'entreprise</Label>
-                    <Input id="companyEmail" name="email" type="email" placeholder="contact@exemple.com" required />
+                    <Label htmlFor="website">Site Web (Optionnel)</Label>
+                    <Input id="website" name="website" placeholder="https://mon-site.com" />
                 </div>
+                
                 <div className="grid gap-2">
-                    <Label htmlFor="phone">Téléphone</Label>
-                    <Input id="phone" name="phone" type="tel" placeholder="+33 6 12 34 56 78" required/>
+                    <Label htmlFor="description">Décrivez votre activité</Label>
+                    <Textarea id="description" name="description" placeholder="Présentez votre entreprise et ce que vous proposez en quelques mots..." />
                 </div>
-            </div>
-             <div className="grid gap-2">
-                <Label htmlFor="description">Décrivez votre activité</Label>
-                <Textarea id="description" name="description" placeholder="Présentez votre entreprise et ce que vous proposez en quelques mots..." />
-            </div>
+
+                 <div>
+                    <h3 className="text-base font-medium mb-4 mt-2">Personne de contact</h3>
+                     <div className="grid md:grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="managerName">Nom du contact</Label>
+                            <Input id="managerName" name="managerName" placeholder="Jean Dupont" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="managerEmail">Email du contact</Label>
+                            <Input id="managerEmail" name="managerEmail" type="email" placeholder="jean@exemple.com" />
+                        </div>
+                    </div>
+                 </div>
+
 
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
