@@ -14,6 +14,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { uploadAvatar } from '@/lib/storage';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function ProfilPage() {
   const { user, loading: authLoading } = useAuth();
@@ -25,7 +27,9 @@ export default function ProfilPage() {
   const [nom, setNom] = useState('');
   const [pseudo, setPseudo] = useState('');
   const [email, setEmail] = useState('');
+  const [bio, setBio] = useState('');
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -33,16 +37,18 @@ export default function ProfilPage() {
       router.push('/connexion');
     }
     if (user) {
-      setNom(user.nom || '');
+      setNom(user.nom || user.fullName || '');
       setPseudo(user.pseudo || '');
       setEmail(user.email || '');
-      setAvatarPreview(user.avatar || null);
+      setBio(user.bio || '');
+      setAvatarPreview(user.avatarUrl || user.avatar || null);
     }
   }, [user, authLoading, router]);
   
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setAvatarFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatarPreview(reader.result as string);
@@ -57,26 +63,34 @@ export default function ProfilPage() {
     
     setIsSaving(true);
 
-    const updatedData: { nom: string; pseudo: string; email: string; avatar?: string } = {
-      nom,
-      pseudo,
-      email,
-    };
-    
-    // NOTE: L'upload de l'avatar n'est pas implémenté.
-    // L'URL de l'avatar (avatarPreview) n'est donc pas sauvegardée pour l'instant.
-    // Il faudrait ici une logique pour uploader l'image vers un service de stockage
-    // (ex: Firebase Storage) et obtenir une URL publique.
-
     try {
+      let avatarUrl = user.avatarUrl;
+
+      if (avatarFile) {
+        avatarUrl = await uploadAvatar(user.id, avatarFile);
+      }
+
+      const updatedData = {
+        nom,
+        pseudo,
+        email,
+        bio,
+        avatarUrl,
+        avatar: avatarUrl, // for compatibility
+      };
+
       updateUserProfile(firestore, user.id, updatedData);
       toast({
         title: 'Profil mis à jour',
-        description: 'Vos informations ont été enregistrées avec succès. La mise à jour de l\'avatar n\'est pas encore fonctionnelle.',
+        description: 'Vos informations ont été enregistrées avec succès.',
       });
     } catch (error) {
-       // La gestion d'erreur est faite dans la fonction updateUserProfile,
-       // qui émet un événement intercepté par le listener global.
+       console.error("Erreur lors de la mise à jour du profil:", error);
+       toast({
+        title: 'Erreur',
+        description: 'Impossible de mettre à jour le profil. Veuillez réessayer.',
+        variant: 'destructive',
+       })
     } finally {
       setIsSaving(false);
     }
@@ -168,6 +182,16 @@ export default function ProfilPage() {
                     onChange={(e) => setPseudo(e.target.value)}
                     placeholder="Votre nom d'utilisateur public"
                 />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="bio">Biographie</Label>
+                    <Textarea
+                        id="bio"
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                        placeholder="Parlez un peu de vous..."
+                        rows={4}
+                    />
                 </div>
                 <div className="space-y-2">
                 <Label htmlFor="email">Adresse e-mail</Label>
