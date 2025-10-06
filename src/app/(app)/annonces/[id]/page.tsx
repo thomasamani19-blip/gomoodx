@@ -356,6 +356,9 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
       </div>
     );
   }
+  
+  const canReserve = creator?.partnerType === 'establishment';
+
 
   return (
     <div className="space-y-8">
@@ -397,11 +400,20 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                         <p className="text-4xl font-bold text-primary">{annonce.price} €</p>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
-                         <Button size="lg" onClick={handleReservation} disabled={isReserving}>
-                             {isReserving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                             {isReserving ? 'Réservation en cours...' : 'Réserver maintenant'}
-                         </Button>
-                         {creator && (
+                        {canReserve ? (
+                             <Button size="lg" onClick={handleReservation} disabled={isReserving}>
+                                {isReserving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {isReserving ? 'Réservation en cours...' : 'Réserver maintenant'}
+                            </Button>
+                        ) : (
+                             <Button size="lg" asChild>
+                                <Link href={`/messagerie?contact=${creator?.id}`}>
+                                    <MessageCircle className="mr-2 h-4 w-4" /> Contacter
+                                </Link>
+                            </Button>
+                        )}
+                         
+                         {creator && !canReserve && (
                             <Button size="lg" variant="outline" asChild>
                                 <Link href={`/messagerie?contact=${creator.id}`}>
                                     <MessageCircle className="mr-2 h-4 w-4" /> Contacter

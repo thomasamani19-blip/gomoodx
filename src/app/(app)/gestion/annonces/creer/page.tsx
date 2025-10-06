@@ -15,11 +15,10 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Loader2, PlusCircle, Upload, Star } from 'lucide-react';
+import { Loader2, PlusCircle, Upload } from 'lucide-react';
 import PageHeader from '@/components/shared/page-header';
 import { uploadFile } from '@/lib/storage';
 import Image from 'next/image';
-import { Switch } from '@/components/ui/switch';
 
 const annonceSchema = z.object({
   title: z.string().min(5, "Le titre doit faire au moins 5 caractères."),
@@ -28,7 +27,6 @@ const annonceSchema = z.object({
   category: z.string().min(3, "La catégorie est requise."),
   location: z.string().min(3, "La localisation est requise."),
   image: z.any().refine(file => file instanceof File, 'Une image est requise.'),
-  isPremium: z.boolean().default(false),
 });
 
 type AnnonceFormValues = z.infer<typeof annonceSchema>;
@@ -44,9 +42,6 @@ export default function CreerAnnoncePage() {
 
     const { register, handleSubmit, control, formState: { errors }, watch, setValue } = useForm<AnnonceFormValues>({
         resolver: zodResolver(annonceSchema),
-        defaultValues: {
-            isPremium: false,
-        }
     });
 
     const onSubmit = async (data: AnnonceFormValues) => {
@@ -78,7 +73,7 @@ export default function CreerAnnoncePage() {
                 views: 0,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
-                isPremium: data.isPremium,
+                isPremium: false, // Annonces are not premium as per new logic
             });
 
             toast({ title: "Annonce créée !", description: "Votre nouvelle annonce est maintenant en ligne." });
@@ -110,30 +105,6 @@ export default function CreerAnnoncePage() {
             <form onSubmit={handleSubmit(onSubmit)}>
                 <Card>
                     <CardContent className="pt-6 grid gap-6">
-                         <div className="space-y-2">
-                            <Controller
-                                name="isPremium"
-                                control={control}
-                                render={({ field }) => (
-                                    <div className="flex items-center justify-between rounded-lg border p-4">
-                                        <div className="space-y-0.5">
-                                            <Label htmlFor="premium-switch" className="text-base flex items-center">
-                                                <Star className="mr-2 h-4 w-4 text-primary" />
-                                                Contenu Premium
-                                            </Label>
-                                            <p className="text-sm text-muted-foreground">
-                                               Cochez pour rendre cette annonce visible uniquement par les membres Premium.
-                                            </p>
-                                        </div>
-                                        <Switch
-                                            id="premium-switch"
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                        />
-                                    </div>
-                                )}
-                            />
-                        </div>
                         <div className="space-y-2">
                             <Label htmlFor="title">Titre de l'annonce</Label>
                             <Input id="title" {...register('title')} placeholder="Ex: Soirée exclusive à Paris" />
