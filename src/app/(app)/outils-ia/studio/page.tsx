@@ -11,7 +11,7 @@ import PageHeader from '@/components/shared/page-header';
 import { genererImageIA, type GenererImageIAOutput } from '@/ai/flows/generer-image-ia';
 import { genererAudioTTS, type GenererAudioTTSOutput } from '@/ai/flows/generer-audio-tts';
 import { genererVideoIA, type GenererVideoIAOutput } from '@/ai/flows/generer-video-ia';
-import { Loader2, Wand2, Image as ImageIcon, Video, Mic, Upload, X } from 'lucide-react';
+import { Loader2, Wand2, Image as ImageIcon, Video, Mic, Upload, X, Clapperboard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Image from 'next/image';
@@ -208,20 +208,23 @@ function fileToDataUrl(file: File): Promise<string> {
 function VideoGeneratorTab() {
     const [result, setResult] = useState<GenererVideoIAOutput | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [images, setImages] = useState<string[]>([]);
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+    const [imageDataUrls, setImageDataUrls] = useState<string[]>([]);
     const { toast } = useToast();
 
     const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (files) {
             const fileArray = Array.from(files);
-            const dataUrls = await Promise.all(fileArray.map(fileToDataUrl));
-            setImages(prevImages => [...prevImages, ...dataUrls]);
+            setImagePreviews(fileArray.map(file => URL.createObjectURL(file))); // For quick preview
+            const dataUrls = await Promise.all(fileArray.map(fileToDataUrl)); // For sending to backend
+            setImageDataUrls(prevUrls => [...prevUrls, ...dataUrls]);
         }
     };
 
     const removeImage = (index: number) => {
-        setImages(prevImages => prevImages.filter((_, i) => i !== index));
+        setImagePreviews(prev => prev.filter((_, i) => i !== index));
+        setImageDataUrls(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -232,15 +235,15 @@ function VideoGeneratorTab() {
         const formData = new FormData(event.currentTarget);
         const input = {
             prompt: formData.get('prompt') as string,
-            imagesBase64: images,
+            imagesBase64: imageDataUrls, // Send the data URLs
             dureeSecondes: 5,
             format: '16:9' as '16:9' | '9:16'
         };
 
-        if (!input.prompt) {
+        if (!input.prompt && imageDataUrls.length === 0) {
             toast({
-                title: 'Champ requis',
-                description: 'Veuillez décrire la vidéo à générer.',
+                title: 'Entrée requise',
+                description: 'Veuillez décrire la vidéo ou fournir une image.',
                 variant: 'destructive',
             });
             setIsLoading(false);
@@ -254,7 +257,7 @@ function VideoGeneratorTab() {
             console.error(error);
             toast({
                 title: 'Erreur de Génération Vidéo',
-                description: "La génération a échoué. Cela peut être dû à une forte demande. Veuillez réessayer dans quelques instants.",
+                description: "La génération a échoué. Cela peut être dû à une forte demande ou à une erreur de configuration. Veuillez réessayer.",
                 variant: 'destructive',
             });
         } finally {
@@ -272,21 +275,26 @@ function VideoGeneratorTab() {
                             <CardDescription>Créez une courte vidéo à partir d'un texte et/ou d'images. Cette fonctionnalité est expérimentale.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-0 space-y-4">
-                             <div className="space-y-2">
+                            <div className="space-y-2">
                                 <Label htmlFor="prompt-video">Description (Prompt)</Label>
-                                <Textarea name="prompt" id="prompt-video" placeholder="Ex: crée une courte promo avec une musique entraînante..." rows={3} />
+                                <Textarea name="prompt" id="prompt-video" placeholder="Ex: un clin d'œil et un sourire, dans un style cinématique..." rows={3} required />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="images-video">Images de référence (optionnel)</Label>
-                                <Input id="images-video" type="file" multiple accept="image/*" onChange={handleImageUpload} />
-                                <p className="text-xs text-muted-foreground">Téléchargez une ou plusieurs images pour créer un montage.</p>
+                                <Label>Images de référence (optionnel)</Label>
+                                <Card className="border-2 border-dashed p-4 text-center hover:border-primary">
+                                    <Input id="images-video" type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} />
+                                    <Label htmlFor="images-video" className="cursor-pointer">
+                                        <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                                        <p className="text-sm text-muted-foreground">Cliquez ou glissez-déposez des images ici</p>
+                                    </Label>
+                                </Card>
                             </div>
 
-                            {images.length > 0 && (
+                            {imagePreviews.length > 0 && (
                                 <div className="grid grid-cols-3 gap-2">
-                                    {images.map((img, index) => (
+                                    {imagePreviews.map((imgSrc, index) => (
                                         <div key={index} className="relative group">
-                                            <Image src={img} alt={`Aperçu ${index + 1}`} width={100} height={100} className="rounded-md object-cover w-full aspect-square" />
+                                            <Image src={imgSrc} alt={`Aperçu ${index + 1}`} width={100} height={100} className="rounded-md object-cover w-full aspect-square" />
                                             <Button
                                                 type="button"
                                                 variant="destructive"
@@ -313,7 +321,7 @@ function VideoGeneratorTab() {
             </div>
             <div>
                 <Card className="min-h-[400px] flex items-center justify-center">
-                    <CardContent className="pt-6 w-full h-full">
+                    <CardContent className="pt-6 w-full h-full flex flex-col">
                         {isLoading && (
                             <div className="flex flex-col items-center justify-center h-full text-center p-4">
                                 <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
@@ -322,10 +330,16 @@ function VideoGeneratorTab() {
                             </div>
                         )}
                         {result?.videoUrl && (
-                            <div className="relative aspect-video w-full h-full">
-                                <video controls autoPlay loop muted src={result.videoUrl} className="rounded-md object-contain w-full h-full">
-                                    Votre navigateur ne supporte pas la lecture de vidéos.
-                                </video>
+                            <div className="flex flex-col items-center justify-center h-full w-full gap-4">
+                                <div className="relative aspect-video w-full">
+                                    <video controls autoPlay loop muted src={result.videoUrl} className="rounded-md object-contain w-full h-full">
+                                        Votre navigateur ne supporte pas la lecture de vidéos.
+                                    </video>
+                                </div>
+                                <Button>
+                                    <Clapperboard className="mr-2 h-4 w-4" />
+                                    Lancer en Live (Simulé)
+                                </Button>
                             </div>
                         )}
                         {!isLoading && !result && (

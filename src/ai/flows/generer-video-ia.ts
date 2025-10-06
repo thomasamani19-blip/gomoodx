@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Flow Genkit pour générer des vidéos à l'aide de l'IA (Veo).
@@ -43,6 +42,10 @@ const genererVideoIAFlow = ai.defineFlow(
     name: 'genererVideoIAFlow',
     inputSchema: GenererVideoIAInputSchema,
     outputSchema: GenererVideoIAOutputSchema,
+    // Augmenter le timeout pour la génération de vidéo
+    config: {
+        timeout: 120, 
+    }
   },
   async (input) => {
 
@@ -52,8 +55,8 @@ const genererVideoIAFlow = ai.defineFlow(
     
     if (input.imagesBase64 && input.imagesBase64.length > 0) {
       input.imagesBase64.forEach(imageBase64 => {
-        const mimeType = imageBase64.substring(5, imageBase64.indexOf(';'));
-        promptParts.push(genkitMedia({ url: imageBase64, contentType: mimeType }));
+        // Le `genkitMedia` helper déduit le contentType de l'URL data, pas besoin de le parser manuellement
+        promptParts.push(genkitMedia({ url: imageBase64 }));
       });
     }
 
@@ -61,8 +64,9 @@ const genererVideoIAFlow = ai.defineFlow(
         model: googleAI.model('veo-2.0-generate-001'),
         prompt: promptParts as any,
         config: {
-          durationSeconds: input.dureeSecondes,
+          durationSeconds: Math.max(5, Math.min(input.dureeSecondes || 5, 8)), // S'assurer que la durée est dans les limites
           aspectRatio: input.format,
+          personGeneration: 'allow_adult',
         },
     });
 
