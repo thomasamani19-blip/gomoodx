@@ -1,7 +1,7 @@
 'use client';
 
-import { useDoc, useFirestore } from '@/firebase';
-import type { User } from '@/lib/types';
+import { useDoc, useFirestore, useCollection } from '@/firebase';
+import type { User, Annonce } from '@/lib/types';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,11 +9,71 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageCircle, MapPin } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { doc } from 'firebase/firestore';
+import { doc, collection, query, where, limit } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useMemo } from 'react';
+import { Star } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+// StarRating component copied from annonces/page.tsx
+const StarRating = ({ rating, ratingCount, className }: { rating: number, ratingCount?: number, className?: string }) => {
+    const totalStars = 5;
+    const fullStars = Math.floor(rating);
+    const halfStar = rating % 1 !== 0;
+    const emptyStars = totalStars - fullStars - (halfStar ? 1 : 0);
+
+    return (
+        <div className={cn("flex items-center gap-1", className)}>
+            {[...Array(fullStars)].map((_, i) => (
+                <Star key={`full-${i}`} className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+            ))}
+            {halfStar && <Star key="half" className="h-4 w-4 text-yellow-400" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
+            {[...Array(emptyStars)].map((_, i) => (
+                <Star key={`empty-${i}`} className="h-4 w-4 text-gray-300" />
+            ))}
+             {ratingCount !== undefined && (
+                <span className="text-xs text-muted-foreground ml-1">({ratingCount})</span>
+            )}
+        </div>
+    );
+};
+
+
+const EstablishmentAnnonces = ({ partnerId, name }: { partnerId: string, name: string }) => {
+    const firestore = useFirestore();
+    const annoncesQuery = useMemo(() => firestore ? query(collection(firestore, 'services'), where('createdBy', '==', partnerId), limit(6)) : null, [firestore, partnerId]);
+    const { data: annonces, loading } = useCollection<Annonce>(annoncesQuery);
+
+    if (loading) return <Skeleton className="h-48 w-full" />;
+    if (!annonces || annonces.length === 0) return null;
+
+    return (
+        <Card>
+            <CardHeader><CardTitle>Services proposés par {name}</CardTitle></CardHeader>
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {annonces.map(annonce => (
+                    <Card key={annonce.id} className="overflow-hidden group">
+                        <Link href={`/annonces/${annonce.id}`} className="block">
+                            <div className="relative aspect-video">
+                                <Image src={annonce.imageUrl || ''} alt={annonce.title} fill className="object-cover transition-transform group-hover:scale-105" />
+                            </div>
+                            <div className="p-3">
+                                <h4 className="font-semibold truncate">{annonce.title}</h4>
+                                <div className="flex items-center justify-between mt-2">
+                                    <span className="font-bold text-primary">{annonce.price} €</span>
+                                    <StarRating rating={annonce.rating} ratingCount={annonce.ratingCount} />
+                                </div>
+                            </div>
+                        </Link>
+                    </Card>
+                ))}
+            </CardContent>
+        </Card>
+    )
+}
 
 export default function PartnerProfilePage({ params }: { params: { id: string } }) {
   const { user: currentUser, loading: authLoading } = useAuth();
@@ -109,6 +169,9 @@ export default function PartnerProfilePage({ params }: { params: { id: string } 
                         <p className="text-muted-foreground whitespace-pre-wrap">{user.bio || "Aucune description n'a été ajoutée pour le moment."}</p>
                     </CardContent>
                 </Card>
+
+                {user.partnerType === 'establishment' && <EstablishmentAnnonces partnerId={user.id} name={user.displayName} />}
+
                  <Card>
                     <CardHeader>
                         <CardTitle>Galerie</CardTitle>
