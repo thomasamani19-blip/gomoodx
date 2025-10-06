@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -9,9 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, MessageCircle, MapPin } from 'lucide-react';
+import { MessageCircle, MapPin } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';

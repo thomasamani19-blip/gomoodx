@@ -27,7 +27,6 @@ function fileToDataUrl(file: File): Promise<string> {
     });
 }
 
-// Renamed from ProfilPage to avoid conflicts
 export default function GestionEtablissementPage() {
   const { user, loading: authLoading } = useAuth();
   const firestore = useFirestore();
@@ -106,7 +105,6 @@ export default function GestionEtablissementPage() {
     const removedPreview = galleryPreviews[index];
     const newPreviews = galleryPreviews.filter((_, i) => i !== index);
     
-    // Check if the image to be removed is one of the new files (by checking if its preview is a data URL)
     if (removedPreview.startsWith('data:')) {
         let fileIndexToRemove = -1;
         let dataUrlCount = 0;
@@ -117,13 +115,10 @@ export default function GestionEtablissementPage() {
         }
         fileIndexToRemove = dataUrlCount - 1;
         
-        // Remove from both files and previews state
         setGalleryFiles(prevFiles => prevFiles.filter((_, i) => i !== fileIndexToRemove));
         setGalleryPreviews(newPreviews);
 
     } else {
-        // If it's an existing URL, just remove it from previews.
-        // The final list will be constructed from the remaining previews upon saving.
         setGalleryPreviews(newPreviews);
     }
   };
@@ -148,7 +143,6 @@ export default function GestionEtablissementPage() {
         bannerUrl = await uploadFile(storage, storagePath, bannerFile);
       }
 
-      // Upload new gallery files
       const newGalleryUrls = await Promise.all(
         galleryFiles.map(file => {
             const storagePath = `galleries/${user.id}/${Date.now()}_${file.name}`;
@@ -156,7 +150,6 @@ export default function GestionEtablissementPage() {
         })
       );
       
-      // Keep only URLs that are still in the preview list
       const finalGalleryUrls = galleryPreviews.filter(url => !url.startsWith('data:'));
 
       
@@ -175,7 +168,7 @@ export default function GestionEtablissementPage() {
         title: 'Profil mis à jour',
         description: 'Vos informations ont été enregistrées avec succès.',
       });
-      setGalleryFiles([]); // Clear file queue after upload
+      setGalleryFiles([]); 
     } catch (error) {
        console.error("Erreur lors de la mise à jour du profil:", error);
        toast({

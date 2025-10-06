@@ -12,7 +12,7 @@ export default function PartenaireDashboard({ user }: { user: User }) {
 
   const managementTools = [
     { 
-        title: "Gérer le Profil de l'Établissement", 
+        title: "Gérer le Profil Partenaire", 
         description: "Modifiez les informations, la galerie et les détails de votre profil.", 
         href: "/gestion/etablissement", 
         icon: Building,
@@ -30,7 +30,7 @@ export default function PartenaireDashboard({ user }: { user: User }) {
         description: "Ajoutez ou mettez à jour les articles de votre boutique (pour les producteurs).",
         href: "/gestion/produits",
         icon: ShoppingBag,
-        show: isProducer,
+        show: isProducer, // Show for producers
     }
 ];
 

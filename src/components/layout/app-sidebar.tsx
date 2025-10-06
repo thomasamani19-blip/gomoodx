@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import {
@@ -61,8 +59,9 @@ const escorteNav = [
 
 const partenaireNav = [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'Profil Établissement', href: '/gestion/etablissement', icon: Building },
+    { title: 'Profil Partenaire', href: '/gestion/etablissement', icon: Building },
     { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
+    { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
 ];
 
 const toolsNav = [
