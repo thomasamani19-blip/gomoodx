@@ -69,7 +69,7 @@ export interface Wallet {
 }
 
 // Transaction (subcollection of Wallet)
-export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'call_fee';
+export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'call_fee' | 'platform_fee' | 'commission';
 
 export type TransactionStatus = 'pending' | 'success' | 'failed';
 
@@ -249,7 +249,8 @@ export interface Settings {
     callRates?: {
         voicePerMinute: number;
         videoToProducerPerMinute: number;
-    }
+    };
+    platformCommissionRate?: number;
 }
 
 // AI Assistant Log

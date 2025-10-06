@@ -112,9 +112,22 @@ async function seedDatabase() {
             callRates: {
                 voicePerMinute: 1.5, // 1.5€ / minute for voice calls after quota
                 videoToProducerPerMinute: 8 // 8€ / minute for video calls to producers
-            }
+            },
+            platformCommissionRate: 0.20 // 20% commission
         });
         console.log('Global settings seeded.');
+
+        // --- SEED PLATFORM WALLET ---
+        const platformWalletRef = doc(firestore, 'wallets', 'platform_wallet');
+        console.log('Seeding platform wallet...');
+        await setDoc(platformWalletRef, {
+            balance: 0,
+            currency: 'EUR',
+            totalEarned: 0,
+            status: 'active',
+            createdAt: Timestamp.now(),
+        });
+        console.log('Platform wallet seeded.');
 
 
         for (const user of USERS_TO_CREATE) {
