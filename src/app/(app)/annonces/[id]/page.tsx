@@ -3,7 +3,7 @@
 
 import { useCollection, useDoc, useFirestore } from '@/firebase';
 import type { Annonce, User, Review } from '@/lib/types';
-import { doc, collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, collection, query, orderBy, addDoc, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Star, MessageCircle, Heart, Share2, Send, Loader2 } from 'lucide-react';
@@ -81,19 +81,41 @@ const ReviewForm = ({ annonceId }: { annonceId: string }) => {
             if (!firestore) {
                 throw new Error("Firestore is not initialized");
             }
-            const reviewData = {
-                authorId: user.id,
-                authorName: user.displayName,
-                authorImage: user.profileImage || '',
-                rating,
-                comment,
-                createdAt: serverTimestamp(),
-            };
-
-            const reviewsCollectionRef = collection(firestore, 'services', annonceId, 'reviews');
-            await addDoc(reviewsCollectionRef, reviewData);
             
-            // TODO: In a future step, trigger a cloud function to update the average rating on the annonce document.
+            const annonceRef = doc(firestore, 'services', annonceId);
+            const reviewRef = doc(collection(annonceRef, 'reviews'));
+
+            await runTransaction(firestore, async (transaction) => {
+                 const annonceDoc = await transaction.get(annonceRef);
+                if (!annonceDoc.exists()) {
+                    throw new Error("Cette annonce n'existe plus !");
+                }
+                
+                const currentData = annonceDoc.data() as Annonce;
+                const currentRating = currentData.rating || 0;
+                const currentRatingCount = currentData.ratingCount || 0;
+
+                const newRatingCount = currentRatingCount + 1;
+                const newTotalRating = (currentRating * currentRatingCount) + rating;
+                const newAverageRating = newTotalRating / newRatingCount;
+
+                // Mettre à jour l'annonce
+                 transaction.update(annonceRef, {
+                    rating: newAverageRating,
+                    ratingCount: newRatingCount
+                });
+                
+                // Créer le nouvel avis
+                const reviewData = {
+                    authorId: user.id,
+                    authorName: user.displayName,
+                    authorImage: user.profileImage || '',
+                    rating,
+                    comment,
+                    createdAt: serverTimestamp(),
+                };
+                transaction.set(reviewRef, reviewData);
+            });
             
             toast({
                 title: "Avis publié !",
