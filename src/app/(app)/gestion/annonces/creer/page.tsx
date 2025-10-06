@@ -40,7 +40,7 @@ export default function CreerAnnoncePage() {
     const [isLoading, setIsLoading] = useState(false);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-    const { register, handleSubmit, control, formState: { errors } } = useForm<AnnonceFormValues>({
+    const { register, handleSubmit, control, formState: { errors }, watch, setValue } = useForm<AnnonceFormValues>({
         resolver: zodResolver(annonceSchema),
     });
 
@@ -89,6 +89,7 @@ export default function CreerAnnoncePage() {
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            setValue('image', file, { shouldValidate: true });
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImagePreview(reader.result as string);
@@ -123,20 +124,13 @@ export default function CreerAnnoncePage() {
                                 render={({ field }) => (
                                     <div>
                                         <Input
-                                            id="image"
+                                            id="image-upload"
                                             type="file"
                                             accept="image/png, image/jpeg, image/webp"
                                             className="hidden"
-                                            onChange={(e) => {
-                                                const file = e.target.files?.[0];
-                                                if(file) {
-                                                    field.onChange(file);
-                                                    handleImageChange(e);
-                                                }
-                                            }}
-                                            ref={field.ref}
+                                            onChange={handleImageChange}
                                         />
-                                        <label htmlFor="image" className="cursor-pointer">
+                                        <label htmlFor="image-upload" className="cursor-pointer">
                                             <Card className="aspect-video w-full max-w-sm hover:bg-muted/50 transition-colors flex items-center justify-center">
                                                 {imagePreview ? (
                                                     <Image src={imagePreview} alt="Aperçu" width={400} height={225} className="object-cover rounded-md" />

@@ -109,6 +109,12 @@ export default function GestionAnnoncesPage() {
           {!loading && (!annonces || annonces.length === 0) && (
             <div className="text-center py-12 text-muted-foreground">
               <p>Vous n'avez créé aucune annonce pour le moment.</p>
+               <Button asChild className="mt-4">
+                    <Link href="/gestion/annonces/creer">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Créer ma première annonce
+                    </Link>
+                </Button>
             </div>
           )}
         </CardContent>
