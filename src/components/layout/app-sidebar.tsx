@@ -33,6 +33,7 @@ import {
   BookText,
   Building,
   FileText,
+  Settings,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -88,7 +89,7 @@ export function AppSidebar() {
         <SidebarMenuItem key={item.href}>
           <Link href={item.href} passHref legacyBehavior>
             <SidebarMenuButton
-              isActive={pathname.startsWith(item.href)}
+              isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
               tooltip={item.title}
               asChild
             >
@@ -164,9 +165,16 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                     </Link>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <Link href="/parametres" passHref legacyBehavior>
+                    <SidebarMenuButton tooltip="Paramètres" isActive={pathname.startsWith('/parametres')} asChild>
+                      <a><Settings /><span>Paramètres</span></a>
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
               <SidebarMenuItem>
                 <Link href="/profil" passHref legacyBehavior>
-                  <SidebarMenuButton tooltip="Profil & Paramètres" isActive={pathname.startsWith('/profil')} asChild>
+                  <SidebarMenuButton tooltip="Profil" isActive={pathname.startsWith('/profil')} asChild>
                     <a><UserCircle /><span>Profil</span></a>
                   </SidebarMenuButton>
                 </Link>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -11,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, Settings, User as UserIcon, ShoppingCart } from 'lucide-react';
+import { LogOut, Settings, User as UserIcon, Wallet } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
@@ -34,9 +33,9 @@ export function AppHeader() {
         </div>
         <ThemeSwitcher />
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/boutique">
-              <ShoppingCart className="h-5 w-5" />
-              <span className="sr-only">Panier</span>
+          <Link href="/portefeuille">
+              <Wallet className="h-5 w-5" />
+              <span className="sr-only">Portefeuille</span>
           </Link>
         </Button>
         <DropdownMenu>
@@ -62,9 +61,11 @@ export function AppHeader() {
                 <span>Profil</span>
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Paramètres</span>
+            <DropdownMenuItem asChild>
+              <Link href="/parametres">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Paramètres</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => logout()}>
