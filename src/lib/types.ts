@@ -48,7 +48,7 @@ export interface User {
   // Rates for creators
   rates?: {
     videoCallPerMinute?: number;
-    voiceCallPerMinute?: number; // For when quota is exceeded
+    voiceCallPerMinute?: number; // Kept for potential future use by escorts
   };
   // Quotas for clients
   dailyVoiceCallQuota?: {
@@ -240,13 +240,17 @@ export interface SupportTicket {
 // Global Settings
 export interface Settings {
     id: 'global';
-    appName: string;
-    version: string;
-    maintenanceMode: boolean;
-    supportEmail: string;
-    contactNumber: string;
-    privacyPolicyUrl: string;
-    termsUrl: string;
+    appName?: string;
+    version?: string;
+    maintenanceMode?: boolean;
+    supportEmail?: string;
+    contactNumber?: string;
+    privacyPolicyUrl?: string;
+    termsUrl?: string;
+    callRates?: {
+        voicePerMinute: number;
+        videoToProducerPerMinute: number;
+    }
 }
 
 // AI Assistant Log

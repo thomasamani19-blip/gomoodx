@@ -12,6 +12,9 @@ if (!getApps().length) {
 }
 const db = getFirestore();
 
+// ID du portefeuille de la plateforme (à créer dans Firestore)
+const PLATFORM_WALLET_ID = 'platform_wallet';
+
 export async function POST(request: Request) {
     try {
         const { callId, duration } = await request.json() as { callId: string, duration: number };
@@ -38,19 +41,10 @@ export async function POST(request: Request) {
             const totalCost = minutesBilled * callData.pricePerMinute;
 
             const callerWalletRef = db.collection('wallets').doc(callData.callerId);
-            const receiverWalletRef = db.collection('wallets').doc(callData.receiverId);
-            
-            const [callerWalletDoc, receiverWalletDoc] = await Promise.all([
-                t.get(callerWalletRef),
-                t.get(receiverWalletRef)
-            ]);
-
+            const callerWalletDoc = await t.get(callerWalletRef);
             if (!callerWalletDoc.exists) throw new Error("Portefeuille de l'appelant introuvable.");
-            if (!receiverWalletDoc.exists) throw new Error("Portefeuille du destinataire introuvable.");
-
             const callerWallet = callerWalletDoc.data() as Wallet;
             if (callerWallet.balance < totalCost) {
-                // This is a fallback; primary checks should be on the client.
                 throw new Error("Solde insuffisant pour la durée de l'appel.");
             }
 
@@ -60,14 +54,7 @@ export async function POST(request: Request) {
                 totalSpent: (callerWallet.totalSpent || 0) + totalCost,
             });
 
-            // Créditer le destinataire
-            const receiverWallet = receiverWalletDoc.data() as Wallet;
-            t.update(receiverWalletRef, {
-                balance: receiverWallet.balance + totalCost,
-                totalEarned: (receiverWallet.totalEarned || 0) + totalCost,
-            });
-
-            // Créer une transaction de débit pour l'appelant
+            // Créer la transaction de débit pour l'appelant
             const debitTxRef = callerWalletRef.collection('transactions').doc();
             const debitTx: Omit<Transaction, 'id'> = {
                 amount: totalCost,
@@ -79,13 +66,53 @@ export async function POST(request: Request) {
             };
             t.set(debitTxRef, debitTx);
 
-            // Créer une transaction de crédit pour le destinataire
-            const creditTxRef = receiverWalletRef.collection('transactions').doc();
-             const creditTx: Omit<Transaction, 'id'> = {
+            // Fetch receiver's user data to check their role
+            const receiverUserRef = db.collection('users').doc(callData.receiverId);
+            const receiverUserDoc = await t.get(receiverUserRef);
+            if (!receiverUserDoc.exists) throw new Error("Le destinataire de l'appel est introuvable.");
+            const receiverUser = receiverUserDoc.data() as User;
+            
+            let finalReceiverWalletRef;
+
+            // Déterminer qui reçoit les fonds
+            if (callData.type === 'voice' || (callData.type === 'video' && receiverUser.role === 'partenaire' && receiverUser.partnerType === 'producer')) {
+                // Les revenus vont à la plateforme
+                finalReceiverWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
+            } else {
+                // Les revenus vont au destinataire (cas normal: appel vidéo à une escorte)
+                finalReceiverWalletRef = db.collection('wallets').doc(callData.receiverId);
+            }
+
+            const finalReceiverWalletDoc = await t.get(finalReceiverWalletRef);
+             if (!finalReceiverWalletDoc.exists) {
+                // Si le portefeuille de la plateforme n'existe pas, on le crée
+                 if (finalReceiverWalletRef.id === PLATFORM_WALLET_ID) {
+                    t.set(finalReceiverWalletRef, {
+                        balance: totalCost,
+                        currency: 'EUR',
+                        totalEarned: totalCost,
+                        totalSpent: 0,
+                        status: 'active',
+                        createdAt: Timestamp.now(),
+                    });
+                 } else {
+                    throw new Error(`Portefeuille du destinataire final (${finalReceiverWalletRef.id}) introuvable.`);
+                 }
+            } else {
+                const finalReceiverWallet = finalReceiverWalletDoc.data() as Wallet;
+                 t.update(finalReceiverWalletRef, {
+                    balance: finalReceiverWallet.balance + totalCost,
+                    totalEarned: (finalReceiverWallet.totalEarned || 0) + totalCost,
+                });
+            }
+
+            // Créer une transaction de crédit pour le destinataire final (plateforme ou créateur)
+            const creditTxRef = finalReceiverWalletRef.collection('transactions').doc();
+            const creditTx: Omit<Transaction, 'id'> = {
                 amount: totalCost,
                 type: 'credit',
                 createdAt: Timestamp.now(),
-                description: `Revenu appel ${callData.type} (${minutesBilled} min)`,
+                description: `Revenu appel ${callData.type} de ${callData.callerName}`,
                 status: 'success',
                 reference: callId,
             };

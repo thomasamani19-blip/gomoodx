@@ -2,7 +2,7 @@
 'use client';
 
 import { useCollection, useDoc, useFirestore } from '@/firebase';
-import type { User, Call, CallType, Annonce, Product } from '@/lib/types';
+import type { User, Call, CallType, Annonce, Product, Settings } from '@/lib/types';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -127,7 +127,11 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
     const router = useRouter();
     const { toast } = useToast();
     const isFavorite = currentUser?.favorites?.includes(user.id);
-    const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null, isFree?: boolean }>({ show: false, type: null, isFree: false });
+    const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null, isFree?: boolean, price?: number }>({ show: false, type: null, isFree: false, price: 0 });
+    
+    // Fetch global settings for platform call rates
+    const settingsRef = useMemo(() => firestore ? doc(firestore, 'settings', 'global') : null, [firestore]);
+    const { data: globalSettings } = useDoc<Settings>(settingsRef);
 
     const handleToggleFavorite = async () => {
         if (!currentUser || !firestore) {
@@ -154,16 +158,10 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         if (!currentUser || !user || !firestore || !callConfirmation.type) return;
 
         const callType = callConfirmation.type;
-        const isFreeCall = callConfirmation.isFree;
         setCallConfirmation({ show: false, type: null });
 
         toast({ title: "Initiation de l'appel...", description: `Appel ${callType === 'video' ? 'vidéo' : 'vocal'} avec ${user.displayName} en cours de préparation.` });
         
-        let pricePerMinute;
-        if (!isFreeCall) {
-             pricePerMinute = callType === 'video' ? user.rates?.videoCallPerMinute : user.rates?.voiceCallPerMinute;
-        }
-
         const callData: Omit<Call, 'id'> = {
             callerId: currentUser.id,
             receiverId: user.id,
@@ -171,8 +169,8 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
             status: 'pending',
             type: callType,
             createdAt: serverTimestamp() as any,
-            isFreeCall: isFreeCall,
-            ...(pricePerMinute && { pricePerMinute }),
+            isFreeCall: callConfirmation.isFree,
+            pricePerMinute: callConfirmation.price,
         };
         try {
             const callDocRef = await addDoc(collection(firestore, 'calls'), callData);
@@ -184,26 +182,39 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
     };
 
     const confirmCall = (type: CallType) => {
-        const FREE_QUOTA_MINUTES = 60; // Example quota
-        const lastReset = currentUser?.dailyVoiceCallQuota?.lastReset.toDate();
-        const now = new Date();
-        let quotaUsed = currentUser?.dailyVoiceCallQuota?.minutesUsed || 0;
+        if (!currentUser) return;
+        
+        let price = 0;
+        let isFree = false;
+        
+        if (type === 'video') {
+            // Video calls to Escorts are priced by the Escort.
+            // Video calls to Producers are priced by the Platform.
+            if (user.role === 'escorte') {
+                price = user.rates?.videoCallPerMinute || 0;
+            } else if (user.role === 'partenaire' && user.partnerType === 'producer') {
+                price = globalSettings?.callRates?.videoToProducerPerMinute || 0;
+            }
+        } else if (type === 'voice') {
+            const FREE_QUOTA_MINUTES = 60; 
+            const lastReset = currentUser.dailyVoiceCallQuota?.lastReset.toDate();
+            const now = new Date();
+            let quotaUsed = currentUser.dailyVoiceCallQuota?.minutesUsed || 0;
+            
+            if (!lastReset || now.toDateString() !== lastReset.toDateString()) {
+                quotaUsed = 0;
+            }
 
-        let isQuotaExceeded = false;
-        if (lastReset && now.toDateString() === lastReset.toDateString()) {
-             isQuotaExceeded = quotaUsed >= FREE_QUOTA_MINUTES;
-        } else {
-            // Reset quota if it's a new day
-            quotaUsed = 0;
+            if (quotaUsed < FREE_QUOTA_MINUTES) {
+                isFree = true;
+            } else {
+                // If quota is exceeded, use platform price
+                price = globalSettings?.callRates?.voicePerMinute || 0;
+            }
         }
         
-        const isFree = type === 'voice' && !isQuotaExceeded;
-        setCallConfirmation({ show: true, type, isFree });
-    }
-
-    const videoCallRate = user.rates?.videoCallPerMinute;
-    const voiceCallRate = user.rates?.voiceCallPerMinute;
-
+        setCallConfirmation({ show: true, type, isFree, price });
+    };
 
     return (
         <>
@@ -242,7 +253,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                             <MessageCircle className="mr-2 h-4 w-4" /> Message
                           </Link>
                         </Button>
-                         {user.role === 'escorte' && (
+                         {(user.role === 'escorte' || user.partnerType === 'producer') && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline">
@@ -252,7 +263,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                                 <DropdownMenuContent>
                                     <DropdownMenuItem onClick={() => confirmCall('video')}>
                                         <Video className="mr-2 h-4 w-4" />
-                                        Appel Vidéo {videoCallRate && `(${videoCallRate}€/min)`}
+                                        Appel Vidéo
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => confirmCall('voice')}>
                                         <Phone className="mr-2 h-4 w-4" />
@@ -303,11 +314,9 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                 <AlertDialogHeader>
                     <AlertDialogTitle>Confirmer l'appel</AlertDialogTitle>
                     <AlertDialogDescription>
-                        {callConfirmation.type === 'video' && videoCallRate ? 
-                        `Lancer un appel vidéo avec ${user.displayName} ? Cet appel sera facturé ${videoCallRate}€ par minute.` :
-                        callConfirmation.type === 'voice' && callConfirmation.isFree ?
-                        `Lancer un appel vocal gratuit avec ${user.displayName} ?` :
-                        `Votre quota d'appels vocaux gratuits est épuisé. Cet appel sera facturé ${voiceCallRate || 'au tarif en vigueur'}€ par minute. Continuer ?`
+                        {callConfirmation.isFree ?
+                            `Lancer un appel vocal gratuit avec ${user.displayName} ?` :
+                            `Lancer un appel ${callConfirmation.type === 'video' ? 'vidéo' : 'vocal'} avec ${user.displayName} ? Cet appel sera facturé ${callConfirmation.price}€ par minute.`
                         }
                     </AlertDialogDescription>
                 </AlertDialogHeader>
@@ -372,7 +381,7 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   }
 
   // Handle partners redirecting to their specific profile page
-  if (user.role === 'partenaire') {
+  if (user.role === 'partenaire' && user.partnerType !== 'producer') {
       router.replace(`/partenaire/${user.id}`);
       return (
          <div className="space-y-8">
@@ -391,6 +400,6 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
     return <MemberProfile user={user} isOwnProfile={isOwnProfile} />;
   }
   
-  // Default to creator profile view
+  // Default to creator/producer profile view
   return <CreatorProfile user={user} isOwnProfile={isOwnProfile} />;
 }

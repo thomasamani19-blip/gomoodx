@@ -140,7 +140,7 @@
       },
       {
         "path": "/settings/global",
-        "description": "Stores global application settings."
+        "description": "Stores global application settings, including platform-wide call rates."
       }
     ]
   }
