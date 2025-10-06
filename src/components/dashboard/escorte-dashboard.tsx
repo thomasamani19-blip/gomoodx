@@ -3,7 +3,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart, Users, TrendingUp, Sparkles, User as UserIcon } from "lucide-react";
+import { BarChart, Users, TrendingUp, Sparkles, User as UserIcon, BookText } from "lucide-react";
 import Link from 'next/link';
 import type { User, CreatorStats } from "@/lib/types";
 import PageHeader from "../shared/page-header";
@@ -46,10 +46,11 @@ const StatCard = ({ title, value, change, icon: Icon, loading }: { title: string
 
 
 const aiTools = [
+    { title: "Studio IA Créatif", description: "Générez images, vidéos et voix par IA.", href: "/outils-ia/studio", icon: Sparkles },
+    { title: "Générateur d'Article", description: "Rédigez des articles de blog en un clic.", href: "/outils-ia/generer-article", icon: BookText },
     { title: "Générateur de Bio", description: "Créez une biographie captivante et unique.", href: "/outils-ia/generer-bio" },
     { title: "Idées de Contenu", description: "Trouvez l'inspiration pour vos prochaines publications.", href: "/outils-ia/idees-contenu" },
     { title: "Suggestions de Posts", description: "Générez des publications engageantes pour vos fans.", href: "/outils-ia/posts-sociaux" },
-    { title: "Studio IA Créatif", description: "Générez images, vidéos et voix par IA.", href: "/outils-ia/studio", icon: Sparkles },
 ]
 
 export default function EscorteDashboard({ user }: { user: User }) {

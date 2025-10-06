@@ -1,3 +1,4 @@
+
 'use server';
 import { config } from 'dotenv';
 config();
@@ -9,3 +10,4 @@ import '@/ai/flows/suggere-publication-reseaux-sociaux';
 import '@/ai/flows/generer-image-ia';
 import '@/ai/flows/generer-audio-tts';
 import '@/ai/flows/generer-video-ia';
+import '@/ai/flows/generer-article-blog';
