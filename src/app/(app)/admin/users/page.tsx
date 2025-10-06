@@ -17,7 +17,7 @@ import { MoreHorizontal } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const roleVariantMap: { [key in User['role']]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
     founder: 'destructive',
@@ -38,23 +38,31 @@ export default function AdminUsersPage() {
     const { user: currentUser, loading: authLoading } = useAuth();
     const router = useRouter();
     const firestore = useFirestore();
-    const usersQuery = query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
-    const { data: users, loading: usersLoading } = useCollection<User>(usersQuery);
-
-    const loading = authLoading || usersLoading;
+    const [isAllowed, setIsAllowed] = useState(false);
 
     useEffect(() => {
         if (!authLoading && currentUser) {
             const isAdmin = ['founder', 'administrateur', 'moderator'].includes(currentUser.role);
-            if (!isAdmin) {
+            if (isAdmin) {
+                setIsAllowed(true);
+            } else {
                 router.push('/dashboard');
             }
         } else if (!authLoading && !currentUser) {
             router.push('/connexion');
         }
     }, [currentUser, authLoading, router]);
+    
+    const usersQuery = useMemo(() => {
+        if (!isAllowed) return null;
+        return query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
+    }, [isAllowed, firestore]);
+    
+    const { data: users, loading: usersLoading } = useCollection<User>(usersQuery);
 
-    if (loading || !currentUser) {
+    const loading = authLoading || (isAllowed && usersLoading);
+
+    if (!isAllowed) {
         return (
             <div>
                 <PageHeader title="Gestion des Utilisateurs" description="Supervisez et gérez tous les comptes de la plateforme." />
@@ -63,10 +71,8 @@ export default function AdminUsersPage() {
                         <Skeleton className="h-6 w-48" />
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-4">
-                            <Skeleton className="h-10 w-full" />
-                            <Skeleton className="h-10 w-full" />
-                            <Skeleton className="h-10 w-full" />
+                        <div className="flex items-center justify-center h-40">
+                             <p className="text-muted-foreground">Vérification des permissions...</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -84,10 +90,17 @@ export default function AdminUsersPage() {
                 <CardHeader>
                     <CardTitle>Liste des utilisateurs</CardTitle>
                     <CardDescription>
-                        {`Il y a actuellement ${users?.length || 0} utilisateurs enregistrés.`}
+                        {loading ? 'Chargement...' : `Il y a actuellement ${users?.length || 0} utilisateurs enregistrés.`}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
+                   {loading ? (
+                        <div className="space-y-4">
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                    ) : (
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -140,6 +153,7 @@ export default function AdminUsersPage() {
                             ))}
                         </TableBody>
                     </Table>
+                    )}
                     {!loading && (!users || users.length === 0) && (
                         <p className="text-center text-muted-foreground py-8">Aucun utilisateur trouvé.</p>
                     )}
