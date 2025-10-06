@@ -16,6 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function GestionProduitsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -41,9 +42,11 @@ export default function GestionProduitsPage() {
           title="Gérer mes Produits"
           description="Créez et gérez les articles de votre boutique."
         />
-        <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Créer un produit
+        <Button asChild>
+            <Link href="/gestion/produits/creer">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Créer un produit
+            </Link>
         </Button>
       </div>
 
@@ -111,6 +114,12 @@ export default function GestionProduitsPage() {
           {!loading && (!produits || produits.length === 0) && (
             <div className="text-center py-12 text-muted-foreground">
               <p>Vous n'avez mis aucun produit en vente pour le moment.</p>
+              <Button asChild className="mt-4">
+                    <Link href="/gestion/produits/creer">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Créer mon premier produit
+                    </Link>
+                </Button>
             </div>
           )}
         </CardContent>
