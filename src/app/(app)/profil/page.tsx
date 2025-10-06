@@ -100,25 +100,20 @@ export default function ProfilPage() {
 
   const removeGalleryImage = (index: number) => {
     const removedPreview = galleryPreviews[index];
-    const newPreviews = galleryPreviews.filter((_, i) => i !== index);
     
-    // Check if the removed image was from the newly added files
-    const fileIndex = galleryPreviews.slice(0, index).filter(p => !user?.galleryImages?.includes(p)).length;
-    
-    const isNewFile = galleryFiles.some(f => {
-        const objectURL = URL.createObjectURL(f);
-        const match = objectURL === removedPreview;
-        URL.revokeObjectURL(objectURL);
-        return match;
-    });
+    // Check if the image to be removed is one of the new files (by checking if its preview is a data URL)
+    if (removedPreview.startsWith('data:')) {
+        const fileIndexToRemove = galleryPreviews.slice(0, index).filter(p => p.startsWith('data:')).length;
+        
+        // Remove from both files and previews state
+        setGalleryFiles(prevFiles => prevFiles.filter((_, i) => i !== fileIndexToRemove));
+        setGalleryPreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
 
-    if (fileIndex < galleryFiles.length && removedPreview.startsWith('data:')) {
-      const newFiles = [...galleryFiles];
-      newFiles.splice(fileIndex, 1);
-      setGalleryFiles(newFiles);
+    } else {
+        // If it's an existing URL, just remove it from previews.
+        // It will be filtered out from the final list upon saving.
+        setGalleryPreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
     }
-
-    setGalleryPreviews(newPreviews);
   };
 
 
