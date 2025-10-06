@@ -2,25 +2,41 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useStorage } from '@/firebase';
 import type { BlogArticle } from '@/lib/types';
-import { collection, query, orderBy } from 'firebase/firestore';
-import { useMemo } from 'react';
+import { collection, query, orderBy, doc, deleteDoc } from 'firebase/firestore';
+import { ref, deleteObject } from 'firebase/storage';
+import { useMemo, useState } from 'react';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, PlusCircle, Trash2, Loader2, Pencil } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 export default function GestionArticlesPage() {
   const { user, loading: authLoading } = useAuth();
   const firestore = useFirestore();
+  const storage = useStorage();
+  const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [articleToDelete, setArticleToDelete] = useState<BlogArticle | null>(null);
 
   // Pour l'instant, on récupère tous les articles. On pourra filtrer par auteur plus tard.
   const articlesQuery = useMemo(() => {
@@ -34,6 +50,44 @@ export default function GestionArticlesPage() {
   const { data: articles, loading: articlesLoading } = useCollection<BlogArticle>(articlesQuery);
 
   const loading = authLoading || articlesLoading;
+
+  const handleDelete = async () => {
+    if (!articleToDelete || !firestore || !storage) return;
+
+    setIsDeleting(true);
+    try {
+      // Delete Firestore document
+      await deleteDoc(doc(firestore, 'blog', articleToDelete.id));
+
+      // Delete image from Storage if it exists and is not a placeholder
+      if (articleToDelete.imageUrl && !articleToDelete.imageUrl.includes('picsum.photos')) {
+        try {
+            const imageRef = ref(storage, articleToDelete.imageUrl);
+            await deleteObject(imageRef);
+        } catch (storageError: any) {
+            if (storageError.code !== 'storage/object-not-found') {
+                console.warn("Could not delete image from storage:", storageError.message);
+            }
+        }
+      }
+
+      toast({
+        title: "Article supprimé",
+        description: "L'article a été supprimé avec succès.",
+      });
+
+    } catch (error) {
+      console.error("Error deleting article:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'article.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setArticleToDelete(null);
+    }
+  };
 
   return (
     <div>
@@ -99,8 +153,15 @@ export default function GestionArticlesPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          <DropdownMenuItem>Modifier</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">Supprimer</DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Modifier
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive" onClick={() => setArticleToDelete(article)}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Supprimer
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -122,6 +183,24 @@ export default function GestionArticlesPage() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!articleToDelete} onOpenChange={(open) => !open && setArticleToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. L'article "{articleToDelete?.title}" sera définitivement supprimé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
