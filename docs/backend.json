@@ -310,6 +310,11 @@
           "type": "string",
           "description": "URL de l'image du produit",
           "format": "uri"
+        },
+        "productType": {
+          "type": "string",
+          "description": "Le type de produit : digital (contenu premium) ou physique (jouet, etc.).",
+          "enum": ["digital", "physique"]
         }
       },
       "required": [
@@ -318,7 +323,8 @@
         "nom",
         "description",
         "prix",
-        "imageURL"
+        "imageURL",
+        "productType"
       ]
     },
     "Reservation": {

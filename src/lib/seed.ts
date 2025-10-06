@@ -228,6 +228,19 @@ async function seedDatabase() {
             imageHint: 'massage candle',
             createdBy: creatorUid,
             createdAt: Timestamp.now(),
+            productType: 'physique',
+        });
+
+        const product2Ref = doc(collection(firestore, 'products'));
+        await setDoc(product2Ref, {
+            title: 'Vidéo Exclusive "Secrets de Nuit"',
+            description: 'Un court-métrage artistique et sensuel à regarder en privé.',
+            price: 25,
+            imageUrl: 'https://picsum.photos/seed/secret-video/600/400',
+            imageHint: 'sensual video',
+            createdBy: creatorUid,
+            createdAt: Timestamp.now(),
+            productType: 'digital',
         });
 
         // Example blog post

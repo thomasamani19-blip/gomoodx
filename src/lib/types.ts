@@ -235,6 +235,7 @@ export interface AIAssistant {
 
 
 // --- Compatibility Types for existing components ---
+export type ProductType = 'digital' | 'physique';
 
 export interface Product {
     id: string;
@@ -245,6 +246,7 @@ export interface Product {
     imageHint?: string;
     createdBy: string; // creator or partner UID
     createdAt: Timestamp;
+    productType: ProductType;
 }
 
 export interface BlogArticle {

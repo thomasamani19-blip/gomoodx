@@ -6,7 +6,7 @@ import type { Product, User } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import { MessageCircle, Heart, Loader2 } from 'lucide-react';
+import { MessageCircle, Heart, Loader2, Package, Film } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
@@ -111,6 +112,8 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
       </div>
     );
   }
+  
+  const isPhysical = product.productType === 'physique';
 
   return (
     <div className="space-y-8">
@@ -130,7 +133,13 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
             <div className="md:col-span-2 space-y-6">
                 <Card className="bg-card/80 backdrop-blur-sm">
                     <CardHeader>
-                        <CardTitle className="text-3xl lg:text-4xl font-headline">{product.title}</CardTitle>
+                        <div className="flex items-start justify-between">
+                            <CardTitle className="text-3xl lg:text-4xl font-headline">{product.title}</CardTitle>
+                            <Badge variant={isPhysical ? "secondary" : "default"}>
+                                {isPhysical ? <Package className="mr-2 h-4 w-4" /> : <Film className="mr-2 h-4 w-4" />}
+                                {isPhysical ? 'Produit Physique' : 'Contenu Digital'}
+                            </Badge>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">{product.description}</p>
@@ -141,12 +150,21 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                  <Card>
                     <CardHeader className="text-center">
                         <p className="text-4xl font-bold text-primary">{product.price} €</p>
+                         {isPhysical && <p className="text-xs text-muted-foreground">Livraison à organiser avec le vendeur.</p>}
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
-                         <Button size="lg" onClick={handlePurchase} disabled={isPurchasing}>
-                             {isPurchasing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                             {isPurchasing ? 'Achat en cours...' : 'Acheter maintenant'}
-                         </Button>
+                        {isPhysical && creator ? (
+                             <Button size="lg" asChild>
+                                 <Link href={`/messagerie?contact=${creator.id}`}>
+                                    <MessageCircle className="mr-2 h-4 w-4" /> Contacter pour acheter
+                                 </Link>
+                             </Button>
+                        ) : (
+                             <Button size="lg" onClick={handlePurchase} disabled={isPurchasing}>
+                                 {isPurchasing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                 {isPurchasing ? 'Achat en cours...' : 'Acheter maintenant'}
+                             </Button>
+                        )}
                          <Button size="lg" variant="outline">
                             <Heart className="mr-2 h-4 w-4" /> Ajouter aux favoris
                          </Button>
@@ -176,4 +194,3 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     </div>
   );
 }
-
