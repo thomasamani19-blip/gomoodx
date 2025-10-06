@@ -8,8 +8,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
-export default function ServicesPage() {
-  const { data: annonces, loading } = useCollection<Annonce>('annonces');
+export default function AnnoncesPage() {
+  const { data: annonces, loading } = useCollection<Annonce>('services');
 
   return (
     <div>

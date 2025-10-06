@@ -11,9 +11,8 @@ import { ThemeSwitcher } from '../theme-switcher';
 
 const navItems = [
   { label: 'Accueil', href: '/' },
-  { label: 'Annonces', href: '/annonces' }, // Updated from Services
-  { label: 'Produits', href: '/boutique' }, // Updated from Boutique
-  { label: 'Créateurs', href: '/creators' },
+  { label: 'Annonces', href: '/annonces' },
+  { label: 'Boutique', href: '/boutique' },
   { label: 'Live', href: '/live' },
   { label: 'Blog', href: '/blog' },
 ];

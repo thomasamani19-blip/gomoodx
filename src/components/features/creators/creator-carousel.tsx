@@ -9,12 +9,20 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import Image from 'next/image';
 import { useCollection } from '@/firebase';
-import type { Creator } from '@/lib/types';
+import type { User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useMemo } from 'react';
+import { query, where } from 'firebase/firestore';
 
 
 export function CreatorCarousel() {
-  const { data: creators, loading } = useCollection<Creator>('creators');
+    const creatorsQuery = useMemo(() => {
+        return query(where('role', '==', 'escorte'));
+    }, []);
+
+  const { data: creators, loading } = useCollection<User>('users', {
+      constraints: creatorsQuery ? [creatorsQuery] : undefined
+  });
 
   if (loading) {
     return (
@@ -41,16 +49,15 @@ export function CreatorCarousel() {
               <Card className="overflow-hidden transition-shadow duration-300 hover:shadow-xl">
                 <CardContent className="flex aspect-[3/4] items-center justify-center p-0 relative">
                   <Image
-                    src={creator.imageUrl}
-                    alt={creator.name}
+                    src={creator.profileImage || `https://picsum.photos/seed/${creator.id}/400/600`}
+                    alt={creator.displayName}
                     fill
                     className="object-cover"
-                    data-ai-hint={creator.imageHint}
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                   <span className="absolute bottom-4 left-4 font-headline text-2xl text-white drop-shadow-md">
-                    {creator.name}
+                    {creator.displayName}
                   </span>
                 </CardContent>
               </Card>

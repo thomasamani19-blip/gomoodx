@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 
 export function AnnonceCarousel() {
-  const { data: annonces, loading } = useCollection<Annonce>('annonces');
+  const { data: annonces, loading } = useCollection<Annonce>('services');
 
   if (loading) {
     return (

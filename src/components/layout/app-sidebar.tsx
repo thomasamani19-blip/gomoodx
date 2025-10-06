@@ -44,7 +44,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const navConfig: Record<UserRole, { title: string; href: string; icon: React.ElementType }[]> = {
   client: [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'Annonces', href: '/services', icon: HeartHandshake },
+    { title: 'Annonces', href: '/annonces', icon: HeartHandshake },
     { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
     { title: 'Boutique', href: '/boutique', icon: ShoppingBag },
     { title: 'Live', href: '/live', icon: Clapperboard },
