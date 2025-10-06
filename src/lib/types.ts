@@ -141,13 +141,14 @@ export interface Message {
 
 // Call (for WebRTC signaling)
 export type CallStatus = 'pending' | 'ongoing' | 'ended' | 'missed' | 'declined';
+export type CallType = 'video' | 'voice';
 
 export interface Call {
   id: string;
   callerId: string;
   receiverId: string;
   callerName: string;
-  type: 'voice' | 'video';
+  type: CallType;
   offer?: Record<string, unknown>;
   answer?: Record<string, unknown>;
   status: CallStatus;

@@ -8,10 +8,10 @@ import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Search, Send, Video } from 'lucide-react';
+import { MessageSquare, Search, Send, Video, Phone, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Message, User, Call } from '@/lib/types';
+import type { Message, User, Call, CallType } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore, useDoc } from '@/firebase';
 import { addDoc, collection, serverTimestamp, query, where, orderBy, or, getDocs, doc } from 'firebase/firestore';
@@ -21,6 +21,7 @@ import { fr } from 'date-fns/locale';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 function MessagerieContent() {
     const { user, loading: authLoading } = useAuth();
@@ -197,30 +198,28 @@ function MessagerieContent() {
         }
     };
     
-    const handleInitiateCall = async () => {
+    const handleInitiateCall = async (type: CallType) => {
         if (!user || !selectedContact || !firestore) return;
 
         toast({
             title: "Initiation de l'appel...",
-            description: `Appel avec ${selectedContact.displayName} en cours de préparation.`
+            description: `Appel ${type === 'video' ? 'vidéo' : 'vocal'} avec ${selectedContact.displayName} en cours de préparation.`
         });
         
-        // Create a new call document in Firestore
         const callData: Omit<Call, 'id'> = {
             callerId: user.id,
             receiverId: selectedContact.id,
             callerName: user.displayName,
             status: 'pending',
-            type: 'video',
+            type: type,
             createdAt: serverTimestamp(),
         };
 
         try {
             const callDocRef = await addDoc(collection(firestore, 'calls'), callData);
-            // Redirect to the call page
             router.push(`/appels/${callDocRef.id}`);
         } catch (error) {
-            console.error("Erreur lors de l'initiation de l'appel :", error);
+            console.error(`Erreur lors de l'initiation de l'appel ${type}:`, error);
             toast({
                 title: "Erreur d'appel",
                 description: "Impossible de démarrer l'appel. Veuillez réessayer.",
@@ -296,9 +295,24 @@ function MessagerieContent() {
                             <h2 className="font-semibold text-lg group-hover:underline">{selectedContact.displayName}</h2>
                         </Link>
                         {selectedContact.role === 'escorte' && (
-                            <Button variant="ghost" size="icon" onClick={handleInitiateCall} title={`Démarrer un appel vidéo avec ${selectedContact.displayName}`}>
-                                <Video className="h-5 w-5 text-primary" />
-                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <Phone className="h-5 w-5 text-primary" />
+                                        <ChevronDown className="h-4 w-4 text-primary/70" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => handleInitiateCall('video')}>
+                                        <Video className="mr-2 h-4 w-4" />
+                                        Appel Vidéo
+                                    </DropdownMenuItem>
+                                     <DropdownMenuItem onClick={() => handleInitiateCall('voice')}>
+                                        <Phone className="mr-2 h-4 w-4" />
+                                        Appel Vocal
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         )}
                     </div>
                     <ScrollArea className="flex-1 p-6 bg-muted/20">
