@@ -239,7 +239,12 @@ function ReviewList({ annonceId }: { annonceId: string }) {
 }
 
 export default function AnnonceDetailPage({ params }: { params: { id: string } }) {
+  const { user } = useAuth();
   const firestore = useFirestore();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isReserving, setIsReserving] = useState(false);
+
 
   const annonceRef = useMemo(() => firestore ? doc(firestore, 'services', params.id) : null, [firestore, params.id]);
   const { data: annonce, loading: annonceLoading } = useDoc<Annonce>(annonceRef);
@@ -249,6 +254,56 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
   const { data: creator, loading: creatorLoading } = useDoc<User>(creatorRef);
 
   const loading = annonceLoading || creatorLoading;
+  
+  const handleReservation = async () => {
+    if (!user) {
+        toast({ title: 'Connexion requise', description: 'Vous devez être connecté pour réserver.', variant: 'destructive'});
+        router.push('/connexion');
+        return;
+    }
+
+    if (user.id === annonce?.createdBy) {
+        toast({ title: 'Action impossible', description: 'Vous ne pouvez pas réserver votre propre service.', variant: 'destructive'});
+        return;
+    }
+
+    setIsReserving(true);
+
+    try {
+        const response = await fetch('/api/reservations/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                memberId: user.id,
+                annonceId: params.id,
+                reservationDate: new Date().toISOString(), // Using current date as a placeholder
+            }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            toast({
+                title: 'Réservation confirmée !',
+                description: "Votre réservation a été effectuée avec succès.",
+            });
+            // Optionnel: rediriger vers une page "Mes réservations"
+            // router.push('/mes-reservations');
+        } else {
+            throw new Error(result.message || 'Une erreur est survenue.');
+        }
+
+    } catch (error: any) {
+        toast({
+            title: 'Échec de la réservation',
+            description: error.message || "Impossible de finaliser la réservation. Veuillez réessayer.",
+            variant: 'destructive',
+        });
+    } finally {
+        setIsReserving(false);
+    }
+};
+
 
   if (loading) {
     return (
@@ -320,7 +375,10 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                         <p className="text-4xl font-bold text-primary">{annonce.price} €</p>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
-                         <Button size="lg">Réserver maintenant</Button>
+                         <Button size="lg" onClick={handleReservation} disabled={isReserving}>
+                             {isReserving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                             {isReserving ? 'Réservation en cours...' : 'Réserver maintenant'}
+                         </Button>
                          {creator && (
                             <Button size="lg" variant="outline" asChild>
                                 <Link href={`/messagerie?contact=${creator.id}`}>
@@ -358,5 +416,3 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
     </div>
   );
 }
-
-    
