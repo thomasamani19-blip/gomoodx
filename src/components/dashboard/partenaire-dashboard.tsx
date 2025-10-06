@@ -12,22 +12,22 @@ export default function PartenaireDashboard({ user }: { user: User }) {
 
   const managementTools = [
     { 
-        title: "Gérer mon profil", 
+        title: "Gérer le Profil de l'Établissement", 
         description: "Modifiez les informations, la galerie et les détails de votre profil.", 
         href: "/gestion/etablissement", 
         icon: Building,
         show: true,
     },
     {
-        title: "Gérer mes annonces",
-        description: "Créez et gérez les services que vous proposez.",
+        title: "Gérer mes Annonces/Services",
+        description: "Créez et gérez les services que votre établissement propose.",
         href: "/gestion/annonces",
         icon: Newspaper,
-        show: true,
+        show: !isProducer, // Show for establishments
     },
     {
-        title: "Gérer mes produits",
-        description: "Ajoutez ou mettez à jour les articles de votre boutique.",
+        title: "Gérer mes Produits",
+        description: "Ajoutez ou mettez à jour les articles de votre boutique (pour les producteurs).",
         href: "/gestion/produits",
         icon: ShoppingBag,
         show: isProducer,

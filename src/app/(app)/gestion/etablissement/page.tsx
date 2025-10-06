@@ -199,13 +199,13 @@ export default function GestionEtablissementPage() {
 
   return (
     <div>
-      <PageHeader title="Gérer mon Profil" description="Consultez et modifiez les informations publiques de votre établissement ou studio." />
+      <PageHeader title="Gérer le Profil Partenaire" description="Consultez et modifiez les informations publiques de votre établissement ou studio." />
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
             <CardTitle>Apparence du Profil</CardTitle>
             <CardDescription>
-              Personnalisez l'apparence de votre profil public.
+              Personnalisez l'apparence de votre page partenaire.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -258,7 +258,7 @@ export default function GestionEtablissementPage() {
         
         <Card className="mt-8">
             <CardHeader>
-                <CardTitle>Galerie du Profil</CardTitle>
+                <CardTitle>Galerie</CardTitle>
                 <CardDescription>Ajoutez des photos de votre établissement, vos produits ou vos réalisations.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -303,13 +303,13 @@ export default function GestionEtablissementPage() {
               <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Ex: Paris, France"/>
             </div>
              <div className="space-y-2">
-                <Label htmlFor="bio">Description</Label>
+                <Label htmlFor="bio">Description de l'activité</Label>
                 <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Décrivez votre activité..." rows={4} />
             </div>
              <div className="space-y-2">
                 <Label htmlFor="email">Adresse e-mail de contact</Label>
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                <p className="text-xs text-muted-foreground">Cette adresse sera publique. L'e-mail de connexion est différent et reste privé.</p>
+                <p className="text-xs text-muted-foreground">Cette adresse sera publique sur votre profil. L'e-mail de connexion est différent et reste privé.</p>
             </div>
           </CardContent>
           <CardFooter>
