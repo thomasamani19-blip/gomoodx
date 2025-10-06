@@ -89,7 +89,7 @@ export default function RechargerPage() {
     customizations: {
       title: 'GoMoodX - Rechargement',
       description: `Rechargement de ${amount} € pour votre portefeuille.`,
-      logo: 'https://www.gomoodx.com/logo.png', // TODO: Replace with your actual logo URL
+      logo: 'https://placehold.co/100x100/EAB308/000000?text=GMX', // TODO: Replace with your actual logo URL
     },
   };
 
@@ -131,7 +131,7 @@ export default function RechargerPage() {
             <FlutterWaveButton
                 {...config}
                 className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                disabled={isLoading || !fwPublicKey}
+                disabled={isLoading || !fwPublicKey || !user}
                 onClick={() => setIsLoading(true)}
                 callback={handleSuccess}
                 onClose={handleClose}

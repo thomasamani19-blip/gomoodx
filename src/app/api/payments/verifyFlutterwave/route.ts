@@ -15,6 +15,7 @@ try {
     // initializeApp({ credential: cert(serviceAccount) });
     
     // For environments like Google Cloud Run/Functions, it might be auto-initialized
+    // This will use Application Default Credentials
     initializeApp();
   }
 } catch (e) {
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
     const { transaction_id, tx_ref, user_id, amount, currency } = await request.json();
 
     if (!transaction_id || !tx_ref || !user_id || !amount || !currency) {
-      return NextResponse.json({ error: 'Des champs obligatoires sont manquants.' }, { status: 400 });
+      return NextResponse.json({ status: 'error', message: 'Des champs obligatoires sont manquants.' }, { status: 400 });
     }
 
     if (!FLUTTERWAVE_SECRET_KEY) {
@@ -106,6 +107,6 @@ export async function POST(request: Request) {
     }
   } catch (error: any) {
     console.error('Erreur lors de la vérification du paiement Flutterwave:', error);
-    return NextResponse.json({ error: 'Erreur Interne du Serveur', message: error.message }, { status: 500 });
+    return NextResponse.json({ status: 'error', message: error.message || 'Erreur Interne du Serveur' }, { status: 500 });
   }
 }
