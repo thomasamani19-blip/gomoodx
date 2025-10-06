@@ -2,7 +2,7 @@
 
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent } from '@/components/ui/card';
-import { useCollection } from '@/firebase/firestore/use-collection';
+import { useCollection } from '@/firebase';
 import type { Annonce } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';

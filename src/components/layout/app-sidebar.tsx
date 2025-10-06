@@ -41,7 +41,7 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 
-const navConfig: Record<UserRole, { title: string; href: string; icon: React.ElementType }[]> = {
+const navConfig: Record<string, { title: string; href: string; icon: React.ElementType }[]> = {
   client: [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
     { title: 'Annonces', href: '/annonces', icon: HeartHandshake },
