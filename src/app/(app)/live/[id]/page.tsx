@@ -36,16 +36,32 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
     );
   }
 
+  // Check if the streamUrl is a data URL (AI generated video)
+  const isAiGenerated = session.streamUrl?.startsWith('data:video');
+
   return (
     <div>
       <PageHeader title={session.title} description={`En direct avec ${session.creatorName || 'un créateur'}`} />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
             <div className="aspect-video bg-black rounded-lg flex items-center justify-center text-white text-center">
-                <div>
-                    <h3 className="text-xl font-bold">Lecteur Vidéo</h3>
-                    <p className="text-muted-foreground">Ici s'intégrerait un lecteur vidéo (Mux, Agora, etc.)</p>
-                </div>
+                {isAiGenerated ? (
+                  <video 
+                    src={session.streamUrl} 
+                    controls 
+                    autoPlay 
+                    loop 
+                    muted 
+                    className="w-full h-full rounded-lg object-cover"
+                  >
+                    Votre navigateur ne supporte pas la lecture de vidéos.
+                  </video>
+                ) : (
+                  <div>
+                      <h3 className="text-xl font-bold">Lecteur Vidéo</h3>
+                      <p className="text-muted-foreground">Ici s'intégrerait un lecteur vidéo (Mux, Agora, etc.)</p>
+                  </div>
+                )}
             </div>
         </div>
         <div className="lg:col-span-1">
@@ -64,3 +80,5 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
     </div>
   );
 }
+
+    

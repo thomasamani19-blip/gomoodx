@@ -15,6 +15,10 @@ import { Loader2, Wand2, Image as ImageIcon, Video, Mic, Upload, X, Clapperboard
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Image from 'next/image';
+import { useAuth } from '@/hooks/use-auth';
+import { useFirestore } from '@/firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 
 function ImageGeneratorTab() {
   const [result, setResult] = useState<GenererImageIAOutput | null>(null);
@@ -211,18 +215,28 @@ function VideoGeneratorTab() {
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [imageDataUrls, setImageDataUrls] = useState<string[]>([]);
     const { toast } = useToast();
+    const [isSavingLive, setIsSavingLive] = useState(false);
+
+    const { user } = useAuth();
+    const firestore = useFirestore();
+    const router = useRouter();
+
 
     const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (files) {
             const fileArray = Array.from(files);
-            setImagePreviews(fileArray.map(file => URL.createObjectURL(file))); // For quick preview
-            const dataUrls = await Promise.all(fileArray.map(fileToDataUrl)); // For sending to backend
+            const newPreviews = fileArray.map(file => URL.createObjectURL(file));
+            setImagePreviews(prev => [...prev, ...newPreviews]); 
+            const dataUrls = await Promise.all(fileArray.map(fileToDataUrl)); 
             setImageDataUrls(prevUrls => [...prevUrls, ...dataUrls]);
         }
     };
 
     const removeImage = (index: number) => {
+        const urlToRemove = imagePreviews[index];
+        URL.revokeObjectURL(urlToRemove);
+
         setImagePreviews(prev => prev.filter((_, i) => i !== index));
         setImageDataUrls(prev => prev.filter((_, i) => i !== index));
     };
@@ -235,7 +249,7 @@ function VideoGeneratorTab() {
         const formData = new FormData(event.currentTarget);
         const input = {
             prompt: formData.get('prompt') as string,
-            imagesBase64: imageDataUrls, // Send the data URLs
+            imagesBase64: imageDataUrls,
             dureeSecondes: 5,
             format: '16:9' as '16:9' | '9:16'
         };
@@ -262,6 +276,38 @@ function VideoGeneratorTab() {
             });
         } finally {
             setIsLoading(false);
+        }
+    };
+    
+    const handleLaunchLive = async () => {
+        if (!result?.videoUrl || !user || !firestore) {
+            toast({ title: "Erreur", description: "Aucune vidéo à lancer en live.", variant: "destructive" });
+            return;
+        }
+        setIsSavingLive(true);
+        try {
+            const liveSessionData = {
+                title: `Live de ${user.displayName}`,
+                description: 'Session live générée par IA.',
+                hostId: user.id,
+                creatorName: user.displayName,
+                isPublic: true,
+                startTime: serverTimestamp(),
+                status: 'live',
+                streamUrl: result.videoUrl, // Use the generated video data URL
+                imageUrl: user.profileImage || `https://picsum.photos/seed/${user.id}/600/400`,
+                viewersCount: 0,
+                likes: 0,
+            };
+            const docRef = await addDoc(collection(firestore, 'lives'), liveSessionData);
+            toast({ title: "Live lancé !", description: "Votre session de live simulé est maintenant visible." });
+            router.push(`/live/${docRef.id}`);
+
+        } catch(error) {
+            console.error("Error launching live session:", error);
+            toast({ title: "Erreur", description: "Impossible de lancer la session live.", variant: "destructive" });
+        } finally {
+            setIsSavingLive(false);
         }
     };
 
@@ -336,8 +382,8 @@ function VideoGeneratorTab() {
                                         Votre navigateur ne supporte pas la lecture de vidéos.
                                     </video>
                                 </div>
-                                <Button>
-                                    <Clapperboard className="mr-2 h-4 w-4" />
+                                <Button onClick={handleLaunchLive} disabled={isSavingLive}>
+                                    {isSavingLive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Clapperboard className="mr-2 h-4 w-4" />}
                                     Lancer en Live (Simulé)
                                 </Button>
                             </div>
@@ -382,3 +428,5 @@ export default function StudioIAPage() {
     </div>
   );
 }
+
+    
