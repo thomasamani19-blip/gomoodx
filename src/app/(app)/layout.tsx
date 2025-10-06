@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { AppSidebar } from '@/components/layout/app-sidebar';
@@ -20,7 +21,7 @@ function CallListener() {
 
   // Query for incoming calls for the current user
   const callsQuery = useMemo(() => {
-    if (!user || loading) return null;
+    if (!user || loading || !firestore) return null;
     return query(
       collection(firestore, 'calls'),
       where('receiverId', '==', user.id),

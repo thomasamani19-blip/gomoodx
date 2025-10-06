@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -22,8 +23,8 @@ export default function FavorisPage() {
 
   // Query to fetch the full profiles of favorite creators.
   const favoriteCreatorsQuery = useMemo(() => {
-    // The 'in' query requires a non-empty array.
-    if (!favoriteIds) return null;
+    // The 'in' query requires a non-empty array and Firestore instance.
+    if (!favoriteIds || !firestore) return null;
     return query(collection(firestore, 'users'), where('__name__', 'in', favoriteIds));
   }, [favoriteIds, firestore]);
 

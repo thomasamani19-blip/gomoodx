@@ -93,7 +93,7 @@ const StatsPage = () => {
     const firestore = useFirestore();
 
     const statsRef = useMemo(() => {
-        if (!user) return null;
+        if (!user || !firestore) return null;
         // Assuming stats for a creator are stored in a document named after their user ID
         return doc(firestore, `creators/${user.id}/stats/main`);
     }, [user, firestore]);
