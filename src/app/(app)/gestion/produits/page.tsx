@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore, useStorage } from '@/firebase';
 import type { Product } from '@/lib/types';
-import { collection, query, where, orderBy, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { useMemo, useState } from 'react';
 import PageHeader from '@/components/shared/page-header';
@@ -12,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MoreHorizontal, PlusCircle, Trash2, Loader2, Pencil } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Loader2, Pencil, Star } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -36,6 +35,7 @@ export default function GestionProduitsPage() {
   const storage = useStorage();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [sponsoringState, setSponsoringState] = useState<{[key: string]: boolean}>({});
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   const produitsQuery = useMemo(() => {
@@ -87,6 +87,25 @@ export default function GestionProduitsPage() {
     }
   };
 
+  const handleToggleSponsor = async (produit: Product) => {
+    if (!firestore) return;
+    setSponsoringState(prev => ({ ...prev, [produit.id]: true }));
+    try {
+      const productRef = doc(firestore, 'products', produit.id);
+      const newSponsorState = !produit.isSponsored;
+      await updateDoc(productRef, { isSponsored: newSponsorState });
+      toast({
+        title: newSponsorState ? "Produit Sponsorisé !" : "Sponsoring retiré",
+        description: `Votre produit est maintenant ${newSponsorState ? 'mis en avant' : 'standard'}.`,
+      });
+    } catch (error) {
+       console.error("Error updating sponsor status:", error);
+       toast({ title: "Erreur", description: "Impossible de modifier le statut de sponsoring.", variant: "destructive" });
+    } finally {
+      setSponsoringState(prev => ({ ...prev, [produit.id]: false }));
+    }
+  };
+
   return (
     <div>
       <div className="flex justify-between items-start mb-8">
@@ -128,9 +147,10 @@ export default function GestionProduitsPage() {
               </TableHeader>
               <TableBody>
                 {produits && produits.map(produit => (
-                  <TableRow key={produit.id}>
+                  <TableRow key={produit.id} data-state={produit.isSponsored ? 'selected' : ''}>
                     <TableCell className="font-medium">
                         <div className="flex items-center gap-3">
+                            {produit.isSponsored && <Star className="h-4 w-4 text-primary" />}
                             <Image 
                                 src={produit.imageUrl || `https://picsum.photos/seed/${produit.id}/50/50`}
                                 alt={produit.title}
@@ -148,11 +168,15 @@ export default function GestionProduitsPage() {
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
+                           <Button variant="ghost" size="icon" disabled={sponsoringState[produit.id]}>
+                             {sponsoringState[produit.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
+                          <DropdownMenuItem onClick={() => handleToggleSponsor(produit)}>
+                              <Star className="mr-2 h-4 w-4" />
+                              {produit.isSponsored ? 'Retirer le sponsoring' : 'Sponsoriser'}
+                          </DropdownMenuItem>
                            <DropdownMenuItem asChild>
                              <Link href={`/gestion/produits/modifier/${produit.id}`}>
                                 <Pencil className="mr-2 h-4 w-4" />
@@ -189,7 +213,7 @@ export default function GestionProduitsPage() {
       <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+            <AlertDialogTitle>Êtes-vous absolutely sûr ?</AlertDialogTitle>
             <AlertDialogDescription>
               Cette action est irréversible. Le produit "{productToDelete?.title}" sera définitivement supprimé.
             </AlertDialogDescription>
