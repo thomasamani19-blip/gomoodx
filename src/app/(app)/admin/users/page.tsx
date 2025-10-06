@@ -5,7 +5,7 @@ import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useCollection, useFirestore } from '@/firebase';
-import type { User } from '@/lib/types';
+import type { User, UserRole, UserStatus } from '@/lib/types';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -19,7 +19,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
-const roleVariantMap: { [key in User['role']]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
+const roleVariantMap: { [key in UserRole]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
     founder: 'destructive',
     administrateur: 'secondary',
     moderator: 'secondary',
@@ -28,7 +28,7 @@ const roleVariantMap: { [key in User['role']]: 'default' | 'secondary' | 'destru
     client: 'outline',
 };
 
-const statusVariantMap: { [key in User['status']]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
+const statusVariantMap: { [key in UserStatus]: 'default' | 'destructive' } = {
     active: 'default',
     suspended: 'destructive',
 };
