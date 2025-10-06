@@ -1,7 +1,7 @@
 
 'use client';
 import { AreaChart, BarChart, FileSearch, TrendingUp, Users } from 'lucide-react';
-import { Area, Bar, CartesianGrid, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, Bar, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -11,6 +11,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { useDoc, useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { doc } from 'firebase/firestore';
+import { useMemo } from 'react';
+import { LineChart, Line } from 'recharts';
 
 
 const chartData: MonthlyRevenue[] = [
@@ -89,8 +91,14 @@ const StatCard = ({ title, value, change, icon: Icon, loading }: { title: string
 const StatsPage = () => {
     const { user, loading: authLoading } = useAuth();
     const firestore = useFirestore();
-    const statsPath = user ? doc(firestore, `/creators/${user.id}/stats/main`) : null;
-    const { data: stats, loading: statsLoading } = useDoc<CreatorStats>(statsPath);
+
+    const statsRef = useMemo(() => {
+        if (!user) return null;
+        // Assuming stats for a creator are stored in a document named after their user ID
+        return doc(firestore, `creators/${user.id}/stats/main`);
+    }, [user, firestore]);
+    
+    const { data: stats, loading: statsLoading } = useDoc<CreatorStats>(statsRef);
 
     const loading = authLoading || statsLoading;
 
@@ -184,7 +192,7 @@ const StatsPage = () => {
                         <XAxis dataKey="date" />
                         <YAxis />
                         <Tooltip content={<ChartTooltipContent indicator='line'/>} />
-                        <Area type="monotone" dataKey="views" name="Vues de profil" stroke="var(--color-views)" fill="var(--color-views)" fillOpacity={0.3} />
+                        <Area type="monotone" dataKey="views" stroke="var(--color-views)" fill="var(--color-views)" fillOpacity={0.3} />
                     </AreaChart>
                 </ResponsiveContainer>
             </ChartContainer>

@@ -3,13 +3,14 @@
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart, Users, TrendingUp, Sparkles, User as UserIcon, BookText, PenSquare, ImageIcon, Bot, ShoppingBag, Newspaper } from "lucide-react";
+import { User as UserIcon, BookText, PenSquare, Sparkles, ShoppingBag, Newspaper } from "lucide-react";
 import Link from 'next/link';
 import type { User, CreatorStats } from "@/lib/types";
 import PageHeader from "../shared/page-header";
 import { useDoc, useFirestore } from "@/firebase";
 import { Skeleton } from "../ui/skeleton";
 import { doc } from "firebase/firestore";
+import { BarChart, TrendingUp, Users } from "lucide-react";
 
 
 const StatCard = ({ title, value, change, icon: Icon, loading }: { title: string, value: string, change: string, icon: React.ElementType, loading: boolean}) => {
@@ -28,7 +29,7 @@ const StatCard = ({ title, value, change, icon: Icon, loading }: { title: string
         );
     }
 
-    const changeIsPositive = !change.startsWith('-');
+    const changeIsPositive = change.startsWith('+');
 
     return (
         <Card>
@@ -70,7 +71,7 @@ export default function EscorteDashboard({ user }: { user: User }) {
             title={`Bienvenue, ${user?.displayName || '...'}`}
             description="Voici un aperçu de votre activité sur GoMoodX."
         />
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
             title="Revenus (30j)"
             value={stats?.monthlyRevenue?.value ? `${stats.monthlyRevenue.value.toLocaleString('fr-FR')} €` : 'N/A'}
@@ -92,6 +93,14 @@ export default function EscorteDashboard({ user }: { user: User }) {
             icon={UserIcon}
             loading={statsLoading}
         />
+        <Card className="flex flex-col justify-center items-center">
+            <CardContent className="pt-6 text-center">
+                 <p className="text-sm font-medium">Statistiques Détaillées</p>
+                 <Button variant="link" asChild className="mt-2">
+                     <Link href="/statistiques">Voir plus</Link>
+                 </Button>
+            </CardContent>
+        </Card>
       </div>
 
        <Card>
