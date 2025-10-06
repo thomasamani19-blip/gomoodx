@@ -13,6 +13,7 @@ import { useCollection, useFirestore } from '@/firebase';
 import type { User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { query, where, limit, collection } from 'firebase/firestore';
+import Link from 'next/link';
 
 
 export function ProducerCarousel() {
@@ -49,21 +50,23 @@ export function ProducerCarousel() {
         {partners && partners.map((partner, index) => (
           <CarouselItem key={partner.id || index} className="md:basis-1/2 lg:basis-1/4">
             <div className="p-1">
-              <Card className="overflow-hidden transition-shadow duration-300 hover:shadow-xl">
-                <CardContent className="flex aspect-square items-center justify-center p-0 relative">
-                  <Image
-                    src={partner.profileImage || `https://picsum.photos/seed/${partner.id}/400/400`}
-                    alt={partner.displayName}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 25vw"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                  <span className="absolute bottom-4 left-4 font-headline text-2xl text-white drop-shadow-md">
-                    {partner.displayName}
-                  </span>
-                </CardContent>
-              </Card>
+              <Link href={`/partenaire/${partner.id}`}>
+                <Card className="overflow-hidden transition-shadow duration-300 hover:shadow-xl group">
+                  <CardContent className="flex aspect-square items-center justify-center p-0 relative">
+                    <Image
+                      src={partner.profileImage || `https://picsum.photos/seed/${partner.id}/400/400`}
+                      alt={partner.displayName}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 25vw"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                    <span className="absolute bottom-4 left-4 font-headline text-2xl text-white drop-shadow-md">
+                      {partner.displayName}
+                    </span>
+                  </CardContent>
+                </Card>
+              </Link>
             </div>
           </CarouselItem>
         ))}
