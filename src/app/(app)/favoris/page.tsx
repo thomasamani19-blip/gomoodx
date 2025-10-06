@@ -29,7 +29,7 @@ export default function FavorisPage() {
 
   
   const { data: favoriteCreators, loading: creatorsLoading } = useCollection<User>(
-    favoriteCreatorsQuery,
+    favoriteCreatorsQuery
   );
   
   // The overall loading state depends on auth and, if there are favorites, the creators query.

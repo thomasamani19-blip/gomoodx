@@ -11,8 +11,9 @@ import { ArrowRight, Heart, MessageSquare, Wallet } from "lucide-react";
 import type { User } from "@/lib/types";
 import Link from 'next/link';
 import { useCollection, useDoc, useFirestore } from "@/firebase";
-import { limit, where, query, collection } from "firebase/firestore";
+import { limit, where, query, collection, doc } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
+import { useMemo } from "react";
 
 const recentPurchases = [
     { id: 'p1', item: 'Vidéo "Nuit à Paris"', date: 'Il y a 2 jours', amount: '25.00 €' },
@@ -22,10 +23,15 @@ const recentPurchases = [
 
 export default function ClientDashboard({ user }: { user: User }) {
   const firestore = useFirestore();
-  const creatorsQuery = query(collection(firestore, 'users'), where('role', '==', 'escorte'), limit(4));
+
+  const creatorsQuery = useMemo(() => 
+    query(collection(firestore, 'users'), where('role', '==', 'escorte'), limit(4)),
+    [firestore]
+  );
   const { data: creators, loading: creatorsLoading } = useCollection<User>(creatorsQuery);
   
-  const { data: wallet, loading: walletLoading } = useDoc<any>(`wallets/${user.id}`);
+  const walletRef = useMemo(() => doc(firestore, 'wallets', user.id), [firestore, user.id]);
+  const { data: wallet, loading: walletLoading } = useDoc<any>(walletRef);
 
 
   return (

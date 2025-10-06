@@ -1,3 +1,4 @@
+
 'use client';
 import { AreaChart, BarChart, FileSearch, TrendingUp, Users } from 'lucide-react';
 import { Area, Bar, CartesianGrid, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';

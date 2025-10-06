@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Carousel,
@@ -8,12 +9,14 @@ import {
 } from '@/components/ui/carousel';
 import { Card, CardContent } from '@/components/ui/card';
 import Image from 'next/image';
-import { useCollection } from '@/firebase';
-import type { Service } from '@/lib/types';
+import { useCollection, useFirestore } from '@/firebase';
+import type { Annonce } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { collection } from 'firebase/firestore';
 
 export function ServiceCarousel() {
-  const { data: services, loading } = useCollection<Service>('services');
+  const firestore = useFirestore();
+  const { data: services, loading } = useCollection<Annonce>(collection(firestore, 'services'));
 
   if (loading) {
     return (

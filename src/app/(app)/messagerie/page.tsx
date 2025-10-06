@@ -101,13 +101,11 @@ export default function MessageriePage() {
     const activeMessagesQuery = useMemo(() => {
         if (!user || !selectedContact || !firestore) return null;
         
-        // This query is intentionally broad to listen for ANY new message for the user.
-        // The filtering happens client-side. This simplifies the real-time logic.
         return query(
             collection(firestore, 'messages'),
             or(
-                where('senderId', '==', user.id),
-                where('receiverId', '==', user.id)
+              where('senderId', '==', user.id),
+              where('receiverId', '==', user.id)
             ),
             orderBy('createdAt', 'asc')
         );
@@ -299,5 +297,3 @@ export default function MessageriePage() {
     </div>
     );
 }
-
-

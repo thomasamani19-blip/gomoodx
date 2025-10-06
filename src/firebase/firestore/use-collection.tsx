@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,10 +9,6 @@ import {
   FirestoreError,
   QuerySnapshot,
   CollectionReference,
-  query as firestoreQuery,
-  where,
-  limit,
-  orderBy
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -24,9 +21,9 @@ export type WithId<T> = T & { id: string };
  * @template T Type of the document data.
  */
 export interface UseCollectionResult<T> {
-  data: WithId<T>[] | null; // Document data with ID, or null.
-  isLoading: boolean;       // True if loading.
-  error: FirestoreError | Error | null; // Error object, or null.
+  data: WithId<T>[] | null;
+  isLoading: boolean;
+  error: FirestoreError | Error | null;
 }
 
 /* Internal implementation of Query:
@@ -45,10 +42,8 @@ export interface InternalQuery extends Query<DocumentData> {
  * React hook to subscribe to a Firestore collection or query in real-time.
  * Handles nullable references/queries.
  * 
- *
- * IMPORTANT! YOU MUST MEMOIZE the inputted memoizedTargetRefOrQuery or BAD THINGS WILL HAPPEN
- * use useMemo to memoize it per React guidence.  Also make sure that it's dependencies are stable
- * references
+ * IMPORTANT! YOU MUST MEMOIZE the inputted targetRefOrQuery or bad things will happen.
+ * Use useMemo to memoize it per React guidance. Also make sure that its dependencies are stable references.
  *  
  * @template T Optional type for document data. Defaults to any.
  * @param {CollectionReference<DocumentData> | Query<DocumentData> | null | undefined} targetRefOrQuery -
@@ -62,7 +57,7 @@ export function useCollection<T = any>(
   type StateDataType = ResultItemType[] | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
@@ -76,41 +71,34 @@ export function useCollection<T = any>(
     setIsLoading(true);
     setError(null);
 
-    // Directly use targetRefOrQuery as it's assumed to be the final query
     const unsubscribe = onSnapshot(
       targetRefOrQuery,
       (snapshot: QuerySnapshot<DocumentData>) => {
-        const results: ResultItemType[] = [];
-        for (const doc of snapshot.docs) {
-          results.push({ ...(doc.data() as T), id: doc.id });
-        }
+        const results: ResultItemType[] = snapshot.docs.map(doc => ({ ...(doc.data() as T), id: doc.id }));
         setData(results);
         setError(null);
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        // This logic extracts the path from either a ref or a query
         const path: string =
           targetRefOrQuery.type === 'collection'
             ? (targetRefOrQuery as CollectionReference).path
-            : (targetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
+            : (targetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString();
 
         const contextualError = new FirestorePermissionError({
           operation: 'list',
           path,
-        })
+        });
 
-        setError(contextualError)
-        setData(null)
-        setIsLoading(false)
-
-        // trigger global error propagation
+        setError(contextualError);
+        setData(null);
+        setIsLoading(false);
         errorEmitter.emit('permission-error', contextualError);
       }
     );
 
     return () => unsubscribe();
-  }, [targetRefOrQuery]); // Re-run if the target query/reference changes.
+  }, [targetRefOrQuery]);
 
   return { data, isLoading, error };
 }
