@@ -99,9 +99,26 @@ export default function ProfilPage() {
   };
 
   const removeGalleryImage = (index: number) => {
-    setGalleryPreviews(prev => prev.filter((_, i) => i !== index));
-    // Also need to remove from files if it was a newly added file
-    // For simplicity, we handle removal from saved URLs on submit
+    const removedPreview = galleryPreviews[index];
+    const newPreviews = galleryPreviews.filter((_, i) => i !== index);
+    
+    // Check if the removed image was from the newly added files
+    const fileIndex = galleryPreviews.slice(0, index).filter(p => !user?.galleryImages?.includes(p)).length;
+    
+    const isNewFile = galleryFiles.some(f => {
+        const objectURL = URL.createObjectURL(f);
+        const match = objectURL === removedPreview;
+        URL.revokeObjectURL(objectURL);
+        return match;
+    });
+
+    if (fileIndex < galleryFiles.length && removedPreview.startsWith('data:')) {
+      const newFiles = [...galleryFiles];
+      newFiles.splice(fileIndex, 1);
+      setGalleryFiles(newFiles);
+    }
+
+    setGalleryPreviews(newPreviews);
   };
 
 
