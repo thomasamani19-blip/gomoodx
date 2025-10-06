@@ -3,10 +3,10 @@
 
 import { useCollection, useDoc, useFirestore } from '@/firebase';
 import type { Annonce, User, Review } from '@/lib/types';
-import { doc, collection, query, orderBy } from 'firebase/firestore';
+import { doc, collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import { Star, MessageCircle, Heart, Share2, Send } from 'lucide-react';
+import { Star, MessageCircle, Heart, Share2, Send, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 // Copié depuis annonces/page.tsx
 const StarRating = ({ rating, ratingCount, className }: { rating: number, ratingCount?: number, className?: string }) => {
@@ -39,42 +41,116 @@ const StarRating = ({ rating, ratingCount, className }: { rating: number, rating
     );
 };
 
-const ReviewForm = () => {
+const ReviewForm = ({ annonceId }: { annonceId: string }) => {
+    const { user, loading: authLoading } = useAuth();
+    const firestore = useFirestore();
+    const router = useRouter();
+    const { toast } = useToast();
+
     const [rating, setRating] = useState(0);
     const [hover, setHover] = useState(0);
+    const [comment, setComment] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleReviewSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!user) {
+            toast({
+                title: "Connexion requise",
+                description: "Vous devez être connecté pour laisser un avis.",
+                variant: "destructive",
+            });
+            router.push('/connexion');
+            return;
+        }
+
+        if (rating === 0 || !comment.trim()) {
+            toast({
+                title: "Champs incomplets",
+                description: "Veuillez donner une note et écrire un commentaire.",
+                variant: "destructive",
+            });
+            return;
+        }
+        
+        setIsSubmitting(true);
+        
+        try {
+            const reviewData = {
+                authorId: user.id,
+                authorName: user.displayName,
+                authorImage: user.profileImage || '',
+                rating,
+                comment,
+                createdAt: serverTimestamp(),
+            };
+
+            const reviewsCollectionRef = collection(firestore, 'services', annonceId, 'reviews');
+            await addDoc(reviewsCollectionRef, reviewData);
+            
+            // TODO: In a future step, trigger a cloud function to update the average rating on the annonce document.
+            
+            toast({
+                title: "Avis publié !",
+                description: "Merci pour votre contribution.",
+            });
+            setRating(0);
+            setComment('');
+
+        } catch (error) {
+            console.error("Erreur lors de la publication de l'avis:", error);
+            toast({
+                title: "Erreur",
+                description: "Une erreur est survenue. Veuillez réessayer.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Laissez votre avis</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <div>
-                    <p className="text-sm font-medium mb-2">Votre note</p>
-                    <div className="flex items-center">
-                        {[...Array(5)].map((_, index) => {
-                            const starValue = index + 1;
-                            return (
-                                <button
-                                    type="button"
-                                    key={starValue}
-                                    onClick={() => setRating(starValue)}
-                                    onMouseEnter={() => setHover(starValue)}
-                                    onMouseLeave={() => setHover(rating)}
-                                    className="p-1"
-                                >
-                                    <Star
-                                        className={cn("h-6 w-6 transition-colors", starValue <= (hover || rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300')}
-                                    />
-                                </button>
-                            );
-                        })}
+            <CardContent>
+                <form onSubmit={handleReviewSubmit} className="space-y-4">
+                    <div>
+                        <p className="text-sm font-medium mb-2">Votre note</p>
+                        <div className="flex items-center">
+                            {[...Array(5)].map((_, index) => {
+                                const starValue = index + 1;
+                                return (
+                                    <button
+                                        type="button"
+                                        key={starValue}
+                                        onClick={() => setRating(starValue)}
+                                        onMouseEnter={() => setHover(starValue)}
+                                        onMouseLeave={() => setHover(rating)}
+                                        className="p-1"
+                                    >
+                                        <Star
+                                            className={cn("h-6 w-6 transition-colors", starValue <= (hover || rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300')}
+                                        />
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
-                </div>
-                <Textarea placeholder="Rédigez votre commentaire ici..." rows={4} />
-                <Button>
-                    <Send className="mr-2 h-4 w-4" /> Envoyer l'avis
-                </Button>
+                    <Textarea 
+                        placeholder="Rédigez votre commentaire ici..." 
+                        rows={4}
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        disabled={isSubmitting || authLoading}
+                    />
+                    <Button type="submit" disabled={isSubmitting || authLoading}>
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                        Envoyer l'avis
+                    </Button>
+                </form>
             </CardContent>
         </Card>
     )
@@ -157,11 +233,11 @@ function ReviewList({ annonceId }: { annonceId: string }) {
 export default function AnnonceDetailPage({ params }: { params: { id: string } }) {
   const firestore = useFirestore();
 
-  const annonceRef = doc(firestore, 'services', params.id);
+  const annonceRef = useMemo(() => firestore ? doc(firestore, 'services', params.id) : null, [firestore, params.id]);
   const { data: annonce, loading: annonceLoading } = useDoc<Annonce>(annonceRef);
   
   // Fetch creator info once we have the annonce data
-  const creatorRef = annonce?.createdBy ? doc(firestore, 'users', annonce.createdBy) : null;
+  const creatorRef = useMemo(() => (annonce?.createdBy && firestore) ? doc(firestore, 'users', annonce.createdBy) : null, [annonce, firestore]);
   const { data: creator, loading: creatorLoading } = useDoc<User>(creatorRef);
 
   const loading = annonceLoading || creatorLoading;
@@ -225,7 +301,7 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                 </Card>
 
                 <div className="space-y-6">
-                    <ReviewForm />
+                    <ReviewForm annonceId={params.id} />
                     <ReviewList annonceId={params.id} />
                 </div>
 
