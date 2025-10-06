@@ -45,6 +45,16 @@ export interface User {
   gender?: string;
   verificationStatus?: VerificationStatus;
   verificationType?: VerificationType;
+  // Rates for creators
+  rates?: {
+    videoCallPerMinute?: number;
+    voiceCallPerMinute?: number; // For when quota is exceeded
+  };
+  // Quotas for clients
+  dailyVoiceCallQuota?: {
+    minutesUsed: number;
+    lastReset: Timestamp;
+  };
 }
 
 // Wallet
@@ -60,7 +70,7 @@ export interface Wallet {
 }
 
 // Transaction (subcollection of Wallet)
-export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit';
+export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'call_fee';
 
 export type TransactionStatus = 'pending' | 'success' | 'failed';
 
@@ -164,6 +174,11 @@ export interface Call {
   answer?: Record<string, unknown>;
   status: CallStatus;
   createdAt: Timestamp;
+  // Billing fields
+  pricePerMinute?: number;
+  startedAt?: Timestamp;
+  endedAt?: Timestamp;
+  billedDuration?: number; // in seconds
 }
 
 // Live Session

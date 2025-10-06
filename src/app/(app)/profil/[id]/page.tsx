@@ -18,6 +18,18 @@ import Image from 'next/image';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useState } from 'react';
+
 
 // StarRating component copied from annonces/page.tsx
 const StarRating = ({ rating, ratingCount, className }: { rating: number, ratingCount?: number, className?: string }) => {
@@ -115,6 +127,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
     const router = useRouter();
     const { toast } = useToast();
     const isFavorite = currentUser?.favorites?.includes(user.id);
+    const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null }>({ show: false, type: null });
 
     const handleToggleFavorite = async () => {
         if (!currentUser || !firestore) {
@@ -137,16 +150,24 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         }
     };
   
-    const handleInitiateCall = async (type: CallType) => {
-        if (!currentUser || !user || !firestore) return;
-        toast({ title: "Initiation de l'appel...", description: `Appel ${type === 'video' ? 'vidéo' : 'vocal'} avec ${user.displayName} en cours de préparation.` });
+    const handleInitiateCall = async () => {
+        if (!currentUser || !user || !firestore || !callConfirmation.type) return;
+
+        const callType = callConfirmation.type;
+        setCallConfirmation({ show: false, type: null });
+
+        toast({ title: "Initiation de l'appel...", description: `Appel ${callType === 'video' ? 'vidéo' : 'vocal'} avec ${user.displayName} en cours de préparation.` });
+        
+        const pricePerMinute = callType === 'video' ? user.rates?.videoCallPerMinute : undefined;
+
         const callData: Omit<Call, 'id'> = {
             callerId: currentUser.id,
             receiverId: user.id,
             callerName: currentUser.displayName || 'Utilisateur',
             status: 'pending',
-            type: type,
+            type: callType,
             createdAt: serverTimestamp() as any,
+            ...(pricePerMinute && { pricePerMinute }),
         };
         try {
             const callDocRef = await addDoc(collection(firestore, 'calls'), callData);
@@ -157,7 +178,10 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         }
     };
 
+    const videoCallRate = user.rates?.videoCallPerMinute;
+
     return (
+        <>
         <div className="space-y-8">
             <div className="relative mb-8">
                 <div className="h-48 w-full rounded-lg bg-muted overflow-hidden relative">
@@ -201,11 +225,11 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => handleInitiateCall('video')}>
+                                    <DropdownMenuItem onClick={() => setCallConfirmation({show: true, type: 'video'})}>
                                         <Video className="mr-2 h-4 w-4" />
-                                        Appel Vidéo
+                                        Appel Vidéo {videoCallRate && `(${videoCallRate}€/min)`}
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleInitiateCall('voice')}>
+                                    <DropdownMenuItem onClick={() => setCallConfirmation({show: true, type: 'voice'})}>
                                         <Phone className="mr-2 h-4 w-4" />
                                         Appel Vocal
                                     </DropdownMenuItem>
@@ -248,6 +272,24 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                </div>
             </div>
         </div>
+
+        <AlertDialog open={callConfirmation.show} onOpenChange={(open) => setCallConfirmation({show: open, type: null})}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmer l'appel</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        {callConfirmation.type === 'video' && videoCallRate ? 
+                        `Lancer un appel vidéo avec ${user.displayName} ? Cet appel sera facturé ${videoCallRate}€ par minute.` :
+                        `Lancer un appel vocal gratuit avec ${user.displayName} ?`}
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleInitiateCall}>Confirmer</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </>
     );
 };
 
