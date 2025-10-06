@@ -46,7 +46,7 @@ export default function ModifierProduitPage({ params }: { params: { id: string }
     const [isLoading, setIsLoading] = useState(false);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-    const { register, handleSubmit, control, formState: { errors }, reset } = useForm<ProductFormValues>({
+    const { register, handleSubmit, control, formState: { errors }, setValue, reset } = useForm<ProductFormValues>({
         resolver: zodResolver(productSchema),
     });
 
