@@ -1,232 +1,596 @@
-
 {
   "entities": {
-    "user": {
-      "title": "User",
-      "description": "Represents a user in the system.",
+    "Membre": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Membre",
       "type": "object",
+      "description": "Représente un membre (client) de l'application GoMoodX.",
       "properties": {
-        "displayName": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "phone": { "type": "string" },
-        "pseudo": { "type": "string" },
-        "role": { "type": "string", "enum": ["administrateur", "founder", "client", "escorte", "partenaire", "moderator"] },
-        "status": { "type": "string", "enum": ["active", "suspended"] },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" },
-        "rewardPoints": { "type": "number" },
-        "referralCode": { "type": "string" },
-        "referredBy": { "type": "string" },
-        "referralsCount": { "type": "number" },
-        "profileImage": { "type": "string", "format": "uri" },
-        "bio": { "type": "string" },
-        "isVerified": { "type": "boolean" },
-        "onlineStatus": { "type": "string", "enum": ["online", "offline"] },
-        "lastLogin": { "type": "string", "format": "date-time" }
+        "id": {
+          "type": "string",
+          "description": "Identifiant unique du membre."
+        },
+        "nomUtilisateur": {
+          "type": "string",
+          "description": "Nom d'utilisateur du membre."
+        },
+        "email": {
+          "type": "string",
+          "description": "Adresse e-mail du membre.",
+          "format": "email"
+        },
+        "languePreferee": {
+          "type": "string",
+          "description": "Langue préférée du membre (fr, en, es, it, ar)."
+        },
+        "dateInscription": {
+          "type": "string",
+          "description": "Date d'inscription du membre.",
+          "format": "date-time"
+        },
+        "portefeuilleId": {
+          "type": "string",
+          "description": "Référence au Portefeuille du membre. (Relation: Membre 1:1 Portefeuille)"
+        },
+        "role": {
+          "type": "string",
+          "description": "Role du membre (client, escorte, partenaire, administrateur)."
+        }
       },
-      "required": ["displayName", "email", "role", "status", "createdAt", "updatedAt"]
+      "required": [
+        "id",
+        "nomUtilisateur",
+        "email",
+        "languePreferee",
+        "dateInscription",
+        "portefeuilleId",
+        "role"
+      ]
     },
-    "wallet": {
-      "title": "Wallet",
+    "Escorte": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Escorte",
       "type": "object",
+      "description": "Représente une escorte/créateur de contenu sur GoMoodX.",
       "properties": {
-        "balance": { "type": "number" },
-        "currency": { "type": "string" },
-        "totalEarned": { "type": "number" },
-        "totalSpent": { "type": "number" },
-        "status": { "type": "string", "enum": ["active"] }
+        "id": {
+          "type": "string",
+          "description": "Identifiant unique de l'escorte."
+        },
+        "nomUtilisateur": {
+          "type": "string",
+          "description": "Nom d'utilisateur de l'escorte."
+        },
+        "email": {
+          "type": "string",
+          "description": "Adresse e-mail de l'escorte.",
+          "format": "email"
+        },
+        "bio": {
+          "type": "string",
+          "description": "Biographie de l'escorte."
+        },
+        "languePreferee": {
+          "type": "string",
+          "description": "Langue préférée de l'escorte (fr, en, es, it, ar)."
+        },
+        "dateInscription": {
+          "type": "string",
+          "description": "Date d'inscription de l'escorte.",
+          "format": "date-time"
+        },
+        "portefeuilleId": {
+          "type": "string",
+          "description": "Référence au Portefeuille de l'escorte. (Relation: Escorte 1:1 Portefeuille)"
+        },
+        "contenuPremiumIds": {
+          "type": "array",
+          "description": "Références aux Contenus Premium de l'escorte. (Relation: Escorte 1:N ContenuPremium)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "role": {
+          "type": "string",
+          "description": "Role de l'escorte (client, escorte, partenaire, administrateur)."
+        }
       },
-      "required": ["balance", "currency", "status"]
+      "required": [
+        "id",
+        "nomUtilisateur",
+        "email",
+        "bio",
+        "languePreferee",
+        "dateInscription",
+        "portefeuilleId",
+        "role"
+      ]
     },
-    "transaction": {
-      "title": "Transaction",
+    "Partenaire": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Partenaire",
       "type": "object",
+      "description": "Représente un partenaire (hôtel, photographe, vidéaste) sur GoMoodX.",
       "properties": {
-        "amount": { "type": "number" },
-        "type": { "type": "string", "enum": ["deposit", "withdrawal", "reward", "purchase"] },
-        "date": { "type": "string", "format": "date-time" },
-        "description": { "type": "string" },
-        "status": { "type": "string", "enum": ["pending", "success", "failed"] },
-        "reference": { "type": "string" }
+        "id": {
+          "type": "string",
+          "description": "Identifiant unique du partenaire."
+        },
+        "nomEntreprise": {
+          "type": "string",
+          "description": "Nom de l'entreprise du partenaire."
+        },
+        "email": {
+          "type": "string",
+          "description": "Adresse e-mail du partenaire.",
+          "format": "email"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description de l'activité du partenaire."
+        },
+        "languePreferee": {
+          "type": "string",
+          "description": "Langue préférée du partenaire (fr, en, es, it, ar)."
+        },
+        "dateInscription": {
+          "type": "string",
+          "description": "Date d'inscription du partenaire.",
+          "format": "date-time"
+        },
+        "portefeuilleId": {
+          "type": "string",
+          "description": "Référence au Portefeuille du partenaire. (Relation: Partenaire 1:1 Portefeuille)"
+        },
+        "produitIds": {
+          "type": "array",
+          "description": "Références aux Produits du partenaire. (Relation: Partenaire 1:N Produit)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "role": {
+          "type": "string",
+          "description": "Role du partenaire (client, escorte, partenaire, administrateur)."
+        }
       },
-      "required": ["amount", "type", "date", "status"]
+      "required": [
+        "id",
+        "nomEntreprise",
+        "email",
+        "description",
+        "languePreferee",
+        "dateInscription",
+        "portefeuilleId",
+        "role"
+      ]
     },
-    "service": {
-      "title": "Service (Annonce)",
+    "Administrateur": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Administrateur",
       "type": "object",
+      "description": "Représente un administrateur de l'application GoMoodX.",
       "properties": {
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "price": { "type": "number" },
-        "category": { "type": "string" },
-        "imageUrl": { "type": "string", "format": "uri" },
-        "createdBy": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" },
-        "status": { "type": "string", "enum": ["active", "hidden"] },
-        "location": { "type": "string" },
-        "rating": { "type": "number" },
-        "views": { "type": "number" }
+        "id": {
+          "type": "string",
+          "description": "Identifiant unique de l'administrateur."
+        },
+        "nomUtilisateur": {
+          "type": "string",
+          "description": "Nom d'utilisateur de l'administrateur."
+        },
+        "email": {
+          "type": "string",
+          "description": "Adresse e-mail de l'administrateur.",
+          "format": "email"
+        },
+        "dateInscription": {
+          "type": "string",
+          "description": "Date d'inscription de l'administrateur.",
+          "format": "date-time"
+        },
+        "role": {
+          "type": "string",
+          "description": "Role de l'administrateur (client, escorte, partenaire, administrateur)."
+        }
       },
-      "required": ["title", "price", "createdBy", "createdAt"]
+      "required": [
+        "id",
+        "nomUtilisateur",
+        "email",
+        "dateInscription",
+        "role"
+      ]
     },
-    "message": {
+    "Portefeuille": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Portefeuille",
+      "type": "object",
+      "description": "Représente le portefeuille virtuel d'un utilisateur.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifiant unique du portefeuille."
+        },
+        "solde": {
+          "type": "number",
+          "description": "Solde actuel du portefeuille."
+        },
+        "dateCreation": {
+          "type": "string",
+          "description": "Date de création du portefeuille.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "solde",
+        "dateCreation"
+      ]
+    },
+    "ContenuPremium": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ContenuPremium",
+      "type": "object",
+      "description": "Représente un contenu premium (photo, vidéo) vendu par une escorte.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifiant unique du contenu premium."
+        },
+        "escorteId": {
+          "type": "string",
+          "description": "Référence à l'Escorte qui a créé le contenu. (Relation: Escorte 1:N ContenuPremium)"
+        },
+        "titre": {
+          "type": "string",
+          "description": "Titre du contenu premium."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description du contenu premium."
+        },
+        "type": {
+          "type": "string",
+          "description": "Type de contenu (photo, vidéo)."
+        },
+        "url": {
+          "type": "string",
+          "description": "URL du contenu premium.",
+          "format": "uri"
+        },
+        "prix": {
+          "type": "number",
+          "description": "Prix du contenu premium."
+        }
+      },
+      "required": [
+        "id",
+        "escorteId",
+        "titre",
+        "description",
+        "type",
+        "url",
+        "prix"
+      ]
+    },
+    "Produit": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Produit",
+      "type": "object",
+      "description": "Représente un produit vendu par un partenaire (hôtel, etc.).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifiant unique du produit."
+        },
+        "partenaireId": {
+          "type": "string",
+          "description": "Référence au Partenaire qui vend le produit. (Relation: Partenaire 1:N Produit)"
+        },
+        "nom": {
+          "type": "string",
+          "description": "Nom du produit."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description du produit."
+        },
+        "prix": {
+          "type": "number",
+          "description": "Prix du produit."
+        },
+        "imageURL": {
+          "type": "string",
+          "description": "URL de l'image du produit",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "partenaireId",
+        "nom",
+        "description",
+        "prix",
+        "imageURL"
+      ]
+    },
+    "Reservation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Reservation",
+      "type": "object",
+      "description": "Représente une réservation faite par un membre.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifiant unique de la réservation."
+        },
+        "membreId": {
+          "type": "string",
+          "description": "Référence au Membre qui a fait la réservation. (Relation: Membre 1:N Reservation)"
+        },
+        "produitId": {
+          "type": "string",
+          "description": "Référence au Produit réservé. (Relation: Produit 1:N Reservation)"
+        },
+        "dateDebut": {
+          "type": "string",
+          "description": "Date de début de la réservation.",
+          "format": "date-time"
+        },
+        "dateFin": {
+          "type": "string",
+          "description": "Date de fin de la réservation.",
+          "format": "date-time"
+        },
+        "statut": {
+          "type": "string",
+          "description": "Statut de la réservation (en attente, confirmée, annulée)."
+        }
+      },
+      "required": [
+        "id",
+        "membreId",
+        "produitId",
+        "dateDebut",
+        "dateFin",
+        "statut"
+      ]
+    },
+    "Message": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Message",
       "type": "object",
+      "description": "Représente un message dans le système de messagerie privée.",
       "properties": {
-        "senderId": { "type": "string" },
-        "receiverId": { "type": "string" },
-        "message": { "type": "string" },
-        "type": { "type": "string", "enum": ["text", "image", "audio"] },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "isRead": { "type": "boolean" },
-        "callType": { "type": "string", "enum": ["none", "voice", "video"]}
+        "id": {
+          "type": "string",
+          "description": "Identifiant unique du message."
+        },
+        "expediteurId": {
+          "type": "string",
+          "description": "Référence à l'expéditeur du message. (Relation: Membre 1:N Message)"
+        },
+        "destinataireId": {
+          "type": "string",
+          "description": "Référence au destinataire du message. (Relation: Membre 1:N Message)"
+        },
+        "contenu": {
+          "type": "string",
+          "description": "Contenu du message."
+        },
+        "dateEnvoi": {
+          "type": "string",
+          "description": "Date d'envoi du message.",
+          "format": "date-time"
+        }
       },
-      "required": ["senderId", "receiverId", "message", "createdAt"]
-    },
-    "call": {
-        "title": "Call",
-        "type": "object",
-        "properties": {
-            "callerId": { "type": "string" },
-            "receiverId": { "type": "string" },
-            "type": { "type": "string", "enum": ["voice", "video"]},
-            "offer": { "type": "object" },
-            "answer": { "type": "object" },
-            "status": { "type": "string", "enum": ["ongoing", "ended", "missed"]},
-            "timestamp": { "type": "string", "format": "date-time" }
-        },
-        "required": ["callerId", "receiverId", "type", "status"]
-    },
-    "live": {
-        "title": "Live",
-        "type": "object",
-        "properties": {
-            "hostId": { "type": "string" },
-            "title": { "type": "string" },
-            "description": { "type": "string" },
-            "streamUrl": { "type": "string", "format": "uri" },
-            "isPublic": { "type": "boolean" },
-            "startTime": { "type": "string", "format": "date-time" },
-            "endTime": { "type": "string", "format": "date-time" },
-            "viewersCount": { "type": "number" },
-            "likes": { "type": "number" },
-            "status": { "type": "string", "enum": ["ongoing", "ended"] }
-        },
-        "required": ["hostId", "title"]
-    },
-    "reward": {
-        "title": "Reward",
-        "type": "object",
-        "properties": {
-            "userId": { "type": "string" },
-            "type": { "type": "string", "enum": ["goal", "referral", "sale"]},
-            "points": { "type": "number"},
-            "description": { "type": "string" },
-            "createdAt": { "type": "string", "format": "date-time"}
-        },
-        "required": ["userId", "type", "points"]
-    },
-    "referral": {
-        "title": "Referral",
-        "type": "object",
-        "properties": {
-            "referrerId": { "type": "string" },
-            "referredUserId": { "type": "string" },
-            "date": { "type": "string", "format": "date-time"},
-            "rewardPoints": { "type": "number" }
-        },
-        "required": ["referrerId", "referredUserId"]
-    },
-    "supportTicket": {
-        "title": "Support Ticket",
-        "type": "object",
-        "properties": {
-            "userId": { "type": "string" },
-            "subject": { "type": "string" },
-            "message": { "type": "string" },
-            "status": { "type": "string", "enum": ["open", "resolved", "closed"]},
-            "createdAt": { "type": "string", "format": "date-time"},
-            "adminResponse": { "type": "string" }
-        },
-        "required": ["userId", "subject", "message", "status"]
-    },
-    "settings": {
-        "title": "Settings",
-        "type": "object",
-        "properties": {
-            "appName": { "type": "string" },
-            "version": { "type": "string" },
-            "maintenanceMode": { "type": "boolean" },
-            "supportEmail": { "type": "string", "format": "email" },
-            "contactNumber": { "type": "string" },
-            "privacyPolicyUrl": { "type": "string", "format": "uri" },
-            "termsUrl": { "type": "string", "format": "uri" }
-        }
-    },
-    "aiAssistant": {
-        "title": "AI Assistant",
-        "type": "object",
-        "properties": {
-            "userId": { "type": "string" },
-            "prompt": { "type": "string" },
-            "response": { "type": "string" },
-            "createdAt": { "type": "string", "format": "date-time"}
-        }
+      "required": [
+        "id",
+        "expediteurId",
+        "destinataireId",
+        "contenu",
+        "dateEnvoi"
+      ]
     }
   },
   "auth": {
-    "providers": ["anonymous", "google.com", "password"]
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
   "firestore": {
-    "/users/{userId}": {
-      "schema": { "$ref": "#/entities/user" },
-      "description": "Stores user profile information."
-    },
-    "/wallets/{userId}": {
-      "schema": { "$ref": "#/entities/wallet" },
-      "description": "User wallets, where the documentId is the same as the userId."
-    },
-    "/wallets/{userId}/transactions/{transactionId}": {
-      "schema": { "$ref": "#/entities/transaction" },
-      "description": "Subcollection for wallet transactions."
-    },
-    "/services/{serviceId}": {
-      "schema": { "$ref": "#/entities/service" },
-      "description": "Collection of all service advertisements (annonces)."
-    },
-    "/messages/{messageId}": {
-      "schema": { "$ref": "#/entities/message" },
-      "description": "Stores all chat messages."
-    },
-    "/calls/{callId}": {
-      "schema": { "$ref": "#/entities/call" },
-      "description": "WebRTC signaling server calls."
-    },
-    "/lives/{liveId}": {
-      "schema": { "$ref": "#/entities/live" },
-      "description": "Live streaming sessions."
-    },
-    "/rewards/{rewardId}": {
-      "schema": { "$ref": "#/entities/reward" },
-      "description": "Tracks rewards given to users."
-    },
-    "/referrals/{referralId}": {
-      "schema": { "$ref": "#/entities/referral" },
-      "description": "Tracks user referrals."
-    },
-    "/supportTickets/{ticketId}": {
-      "schema": { "$ref": "#/entities/supportTicket" },
-      "description": "Support tickets from users."
-    },
-    "/settings/{settingId}": {
-      "schema": { "$ref": "#/entities/settings" },
-      "description": "Global application settings."
-    },
-    "/aiAssistant/{assistantId}": {
-      "schema": { "$ref": "#/entities/aiAssistant" },
-      "description": "Logs of AI assistant interactions."
-    }
+    "structure": [
+      {
+        "path": "/membres/{membreId}",
+        "definition": {
+          "entityName": "Membre",
+          "schema": {
+            "$ref": "#/backend/entities/Membre"
+          },
+          "description": "Stocke les informations des membres (clients).",
+          "params": [
+            {
+              "name": "membreId",
+              "description": "ID unique du membre."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/escortes/{escorteId}",
+        "definition": {
+          "entityName": "Escorte",
+          "schema": {
+            "$ref": "#/backend/entities/Escorte"
+          },
+          "description": "Stocke les informations des escortes/créateurs de contenu.",
+          "params": [
+            {
+              "name": "escorteId",
+              "description": "ID unique de l'escorte."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/partenaires/{partenaireId}",
+        "definition": {
+          "entityName": "Partenaire",
+          "schema": {
+            "$ref": "#/backend/entities/Partenaire"
+          },
+          "description": "Stocke les informations des partenaires (hôtels, photographes, vidéastes).",
+          "params": [
+            {
+              "name": "partenaireId",
+              "description": "ID unique du partenaire."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/administrateurs/{administrateurId}",
+        "definition": {
+          "entityName": "Administrateur",
+          "schema": {
+            "$ref": "#/backend/entities/Administrateur"
+          },
+          "description": "Stocke les informations des administrateurs.",
+          "params": [
+            {
+              "name": "administrateurId",
+              "description": "ID unique de l'administrateur."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/portefeuilles/{portefeuilleId}",
+        "definition": {
+          "entityName": "Portefeuille",
+          "schema": {
+            "$ref": "#/backend/entities/Portefeuille"
+          },
+          "description": "Stocke les informations des portefeuilles virtuels.",
+          "params": [
+            {
+              "name": "portefeuilleId",
+              "description": "ID unique du portefeuille."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/contenuPremium/{contenuPremiumId}",
+        "definition": {
+          "entityName": "ContenuPremium",
+          "schema": {
+            "$ref": "#/backend/entities/ContenuPremium"
+          },
+          "description": "Stocke les informations des contenus premium vendus par les escortes.",
+          "params": [
+            {
+              "name": "contenuPremiumId",
+              "description": "ID unique du contenu premium."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/produits/{produitId}",
+        "definition": {
+          "entityName": "Produit",
+          "schema": {
+            "$ref": "#/backend/entities/Produit"
+          },
+          "description": "Stocke les informations des produits vendus par les partenaires.",
+          "params": [
+            {
+              "name": "produitId",
+              "description": "ID unique du produit."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reservations/{reservationId}",
+        "definition": {
+          "entityName": "Reservation",
+          "schema": {
+            "$ref": "#/backend/entities/Reservation"
+          },
+          "description": "Stocke les informations des réservations faites par les membres.",
+          "params": [
+            {
+              "name": "reservationId",
+              "description": "ID unique de la réservation."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/membres/{membreId}/messages/{messageId}",
+        "definition": {
+          "entityName": "Message",
+          "schema": {
+            "$ref": "#/backend/entities/Message"
+          },
+          "description": "Stocke les messages privés des membres.",
+          "params": [
+            {
+              "name": "membreId",
+              "description": "ID unique du membre."
+            },
+            {
+              "name": "messageId",
+              "description": "ID unique du message."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/escortes/{escorteId}/messages/{messageId}",
+        "definition": {
+          "entityName": "Message",
+          "schema": {
+            "$ref": "#/backend/entities/Message"
+          },
+          "description": "Stocke les messages privés des escortes.",
+          "params": [
+            {
+              "name": "escorteId",
+              "description": "ID unique de l'escorte."
+            },
+            {
+              "name": "messageId",
+              "description": "ID unique du message."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/partenaires/{partenaireId}/messages/{messageId}",
+        "definition": {
+          "entityName": "Message",
+          "schema": {
+            "$ref": "#/backend/entities/Message"
+          },
+          "description": "Stocke les messages privés des partenaires.",
+          "params": [
+            {
+              "name": "partenaireId",
+              "description": "ID unique du partenaire."
+            },
+            {
+              "name": "messageId",
+              "description": "ID unique du message."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "La structure Firestore est conçue pour prendre en charge une application web complexe mettant en relation différents rôles (membres, escortes, partenaires, administrateurs) tout en assurant la sécurité et la scalabilité. L'accent est mis sur l'indépendance de l'autorisation via la dénormalisation des données et la ségrégation structurelle.  \n\n**Authentification et rôles** :\nLes informations des utilisateurs sont stockées dans des collections séparées par rôle (membres, escortes, partenaires, administrateurs). Cela permet d'appliquer des règles de sécurité spécifiques à chaque rôle. La collection `membres` stocke les informations des clients, tandis que `escortes` et `partenaires` contiennent les données des créateurs de contenu et des entreprises, respectivement. La collection `administrateurs` gère les comptes administrateurs.\n\n**Données privées** :\nLes données privées de chaque utilisateur (par exemple, le portefeuille) sont stockées dans des sous-collections sous le document utilisateur correspondant. Cela garantit que seul l'utilisateur concerné peut accéder à ces données.\n\n**Contenu premium et produits** :\nLe contenu premium créé par les escortes est stocké dans la collection `contenuPremium`. De même, les produits proposés par les partenaires sont stockés dans la collection `produits`. Chaque document contient une référence à l'escorte ou au partenaire correspondant, permettant ainsi de lier les données.\n\n**Réservations** :\nLes réservations sont stockées dans la collection `reservations`. Chaque document contient une référence au membre qui a fait la réservation et au produit réservé.\n\n**Messagerie privée** :\nLes messages privés sont stockés dans une sous-collection `messages` sous chaque utilisateur. Cela permet de gérer facilement les conversations entre utilisateurs.\n\n**Indépendance de l'autorisation** :\nPour garantir l'indépendance de l'autorisation, les données nécessaires pour vérifier les autorisations d'accès sont dénormalisées. Par exemple, si l'accès à un contenu premium dépend du rôle de l'utilisateur, ce rôle est copié dans le document `contenuPremium`. De même, les informations d'appartenance à des groupes ou communautés sont dénormalisées dans les documents correspondants.\n\n**Gestion des listes (QAPs)** :\nPour permettre des opérations de liste sécurisées, la structure est conçue de manière à ce que les règles de sécurité puissent être appliquées sans avoir besoin de filtrer les données côté client. Par exemple, les contenus premium publics et privés sont stockés dans des collections séparées, ce qui permet de définir des règles de sécurité différentes pour chaque collection."
   }
 }
-    
