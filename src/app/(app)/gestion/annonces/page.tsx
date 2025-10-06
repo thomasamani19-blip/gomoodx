@@ -61,11 +61,19 @@ export default function GestionAnnoncesPage() {
 
       // Delete image from Storage if it exists
       if (annonceToDelete.imageUrl) {
-        const imageRef = ref(storage, annonceToDelete.imageUrl);
-        // Use deleteObject, but don't block on errors (e.g., if file doesn't exist)
-        await deleteObject(imageRef).catch(error => {
-            console.warn("Could not delete image from storage:", error.message);
-        });
+        // We need to reconstruct the full path from the URL. This is fragile.
+        // A better approach is to store the path, not the URL.
+        // For now, let's assume the URL contains the path.
+        try {
+            const imageRef = ref(storage, annonceToDelete.imageUrl);
+            await deleteObject(imageRef);
+        } catch (storageError: any) {
+             // If the error is 'object-not-found', we can ignore it as the file might have been manually deleted.
+            if (storageError.code !== 'storage/object-not-found') {
+                console.warn("Could not delete image from storage:", storageError.message);
+                // We don't re-throw here to allow the UI to update even if image deletion fails.
+            }
+        }
       }
 
       toast({
