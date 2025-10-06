@@ -12,9 +12,12 @@ import Image from 'next/image';
 import { useCollection } from '@/firebase';
 import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { limit } from 'firebase/firestore';
 
 export function ProductCarousel() {
-  const { data: products, loading } = useCollection<Product>('products');
+  const { data: products, loading } = useCollection<Product>('products', {
+    constraints: [limit(10)]
+  });
 
   if (loading) {
     return (
@@ -36,18 +39,20 @@ export function ProductCarousel() {
     >
       <CarouselContent>
         {products && products.map((product, index) => (
-          <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+          <CarouselItem key={product.id || index} className="md:basis-1/2 lg:basis-1/3">
             <div className="p-1">
               <Card className="overflow-hidden transition-shadow duration-300 hover:shadow-xl">
                 <CardContent className="flex aspect-[4/3] items-center justify-center p-0 relative">
-                  <Image
-                    src={product.imageUrl}
-                    alt={product.title}
-                    fill
-                    className="object-cover"
-                    data-ai-hint={product.imageHint}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  />
+                  {product.imageUrl && (
+                    <Image
+                      src={product.imageUrl}
+                      alt={product.title}
+                      fill
+                      className="object-cover"
+                      data-ai-hint={product.imageHint}
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <span className="absolute bottom-4 left-4 font-headline text-xl text-white drop-shadow-md">
                     {product.title}

@@ -27,13 +27,8 @@ const USERS_TO_CREATE = [
         password: 'password123',
         data: {
             displayName: 'Amani Gnangoran',
-            role: 'admin',
+            role: 'administrateur',
             status: 'active',
-            verified: true,
-            premium: true,
-            walletBalance: 9999,
-            about: 'Lead administrator of GoMoodX.',
-            country: 'FR',
         }
     },
     {
@@ -41,14 +36,9 @@ const USERS_TO_CREATE = [
         password: 'password123',
         data: {
             displayName: 'Eva Sensuelle',
-            role: 'creator',
+            role: 'escorte',
             status: 'active',
-            verified: true,
-            premium: true,
-            walletBalance: 2500,
-            about: 'Artiste sensuelle explorant les limites du désir.',
-            country: 'FR',
-            gender: 'female',
+            profileImage: 'https://picsum.photos/seed/creator1/400/600',
         }
     },
     {
@@ -56,37 +46,56 @@ const USERS_TO_CREATE = [
         password: 'password123',
         data: {
             displayName: 'Alexandre',
-            role: 'member',
+            role: 'client',
             status: 'active',
-            verified: true,
-            premium: false,
-            walletBalance: 75,
-            about: 'Explorateur des plaisirs modernes.',
-            country: 'FR',
-            gender: 'male',
         }
     },
 ];
 
 async function seedDatabase() {
     console.log('Starting database seeding...');
-
+    const userIds: { [key: string]: string } = {};
+    
     try {
         for (const user of USERS_TO_CREATE) {
             try {
                 console.log(`Creating auth user: ${user.email}`);
                 const userCredential = await createUserWithEmailAndPassword(auth, user.email, user.password);
                 const uid = userCredential.user.uid;
+                userIds[user.data.role] = uid;
                 console.log(`User created with UID: ${uid}. Now creating Firestore document...`);
 
                 const userDocRef = doc(firestore, 'users', uid);
-                await setDoc(userDocRef, {
-                    ...user.data,
-                    uid: uid,
+                const baseData = {
+                    displayName: user.data.displayName,
                     email: user.email,
+                    role: user.data.role,
+                    status: 'active',
                     createdAt: Timestamp.now(),
+                    updatedAt: Timestamp.now(),
+                    rewardPoints: 0,
+                    referralsCount: 0,
+                    isVerified: true,
+                    onlineStatus: 'offline',
+                    lastLogin: Timestamp.now(),
+                    referralCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
+                    profileImage: (user.data as any).profileImage || `https://picsum.photos/seed/${uid}/150/150`,
+                    bio: 'Description de profil par défaut.'
+                };
+                await setDoc(userDocRef, baseData);
+
+                // Create wallet for each user
+                const walletRef = doc(firestore, 'wallets', uid);
+                await setDoc(walletRef, {
+                    balance: Math.floor(Math.random() * 200),
+                    currency: 'XOF',
+                    totalEarned: 0,
+                    totalSpent: 0,
+                    status: 'active'
                 });
-                console.log(`Firestore document created for ${user.email}`);
+
+                console.log(`Firestore document and wallet created for ${user.email}`);
+
             } catch (error: any) {
                  if (error.code === 'auth/email-already-in-use') {
                     console.warn(`Auth user ${user.email} already exists. Skipping auth creation.`);
@@ -98,49 +107,65 @@ async function seedDatabase() {
         
         console.log("\nSeeding additional data (services, products)...");
 
+        const creatorUid = userIds['escorte'] || 'creator-uid-placeholder';
+
         // Example service
         const serviceRef = doc(collection(firestore, 'services'));
         await setDoc(serviceRef, {
-            serviceId: serviceRef.id,
-            creatorId: 'PLACEHOLDER_CREATOR_UID', // Replace with actual creator UID after creation
             title: 'Dîner Privé aux Chandelles',
             description: 'Une soirée inoubliable en ma compagnie, où tous vos sens seront en éveil.',
             price: 450,
             category: 'rencontre',
-            duration: 180,
-            images: ['https://picsum.photos/seed/diner/800/600'],
-            isActive: true,
+            imageUrl: 'https://picsum.photos/seed/diner/800/600',
+            imageHint: 'romantic dinner',
+            createdBy: creatorUid,
             createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+            status: 'active',
+            location: 'Paris, FR',
+            rating: 4.8,
+            views: 1250,
         });
         
         // Example product
         const productRef = doc(collection(firestore, 'products'));
         await setDoc(productRef, {
-            productId: productRef.id,
-            creatorId: 'PLACEHOLDER_CREATOR_UID', // Replace with actual creator UID after creation
             title: 'Bougie de Massage Sensuelle',
             description: 'Une bougie parfumée qui se transforme en huile de massage chaude et enivrante.',
             price: 35,
-            stock: 50,
-            category: 'accessoires',
-            images: ['https://picsum.photos/seed/bougie/600/600'],
-            isActive: true,
+            imageUrl: 'https://picsum.photos/seed/bougie/600/600',
+            imageHint: 'massage candle',
+            createdBy: creatorUid,
             createdAt: Timestamp.now(),
         });
-        
+
+        // Example blog post
+        const blogRef = doc(collection(firestore, 'blog'));
+        await setDoc(blogRef, {
+            title: 'L\'Art de la Séduction Moderne',
+            content: 'Découvrez les secrets pour captiver et charmer à l\'ère du numérique. Un guide pour les audacieux et les curieux.',
+            imageUrl: 'https://picsum.photos/seed/blog1/800/600',
+            imageHint: 'seduction art',
+            date: Timestamp.now(),
+            authorName: 'Eva Sensuelle'
+        });
+
         // Example Live Session
-        const liveRef = doc(collection(firestore, 'liveSessions'));
+        const liveRef = doc(collection(firestore, 'lives'));
         await setDoc(liveRef, {
-            sessionId: liveRef.id,
-            creatorId: 'PLACEHOLDER_CREATOR_UID',
             title: 'Live Spécial "Confidences"',
             description: 'Un moment intime pour discuter de tout, sans tabou.',
-            pricePerMinute: 2.99,
-            isLive: false,
+            isPublic: true,
+            startTime: Timestamp.now(),
+            viewersCount: 0,
+            likes: 0,
+            status: 'ended',
+            imageUrl: 'https://picsum.photos/seed/live1/800/600',
+            imageHint: 'intimate conversation',
+            creatorName: 'Eva Sensuelle'
         });
 
         console.log('\nDatabase seeding completed successfully!');
-        console.log('NOTE: Remember to replace PLACEHOLDER_CREATOR_UID in sample data with a real creator UID.');
 
     } catch (error) {
         console.error('An error occurred during seeding:', error);

@@ -12,17 +12,12 @@ import Image from 'next/image';
 import { useCollection } from '@/firebase';
 import type { User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMemo } from 'react';
 import { query, where, limit } from 'firebase/firestore';
 
 
 export function CreatorCarousel() {
-    const creatorsQuery = useMemo(() => {
-        return query(where('role', '==', 'escorte'), limit(10));
-    }, []);
-
   const { data: creators, loading } = useCollection<User>('users', {
-      constraints: creatorsQuery ? [creatorsQuery] : undefined
+    constraints: [where('role', '==', 'escorte'), limit(10)],
   });
 
   if (loading) {
@@ -45,7 +40,7 @@ export function CreatorCarousel() {
     >
       <CarouselContent>
         {creators && creators.map((creator, index) => (
-          <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/4">
+          <CarouselItem key={creator.id || index} className="md:basis-1/2 lg:basis-1/4">
             <div className="p-1">
               <Card className="overflow-hidden transition-shadow duration-300 hover:shadow-xl">
                 <CardContent className="flex aspect-[3/4] items-center justify-center p-0 relative">

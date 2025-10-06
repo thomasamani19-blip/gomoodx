@@ -65,22 +65,22 @@ export default function EscorteDashboard({ user }: { user: User }) {
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
             title="Revenus (30j)"
-            value={stats?.monthlyRevenue ? `${stats.monthlyRevenue.value.toLocaleString('fr-FR')} €` : 'N/A'}
-            change={stats?.monthlyRevenue ? `${stats.monthlyRevenue.change > 0 ? '+' : ''}${stats.monthlyRevenue.change.toFixed(1)}%` : '-'}
+            value={stats?.monthlyRevenue?.value ? `${stats.monthlyRevenue.value.toLocaleString('fr-FR')} €` : 'N/A'}
+            change={stats?.monthlyRevenue?.change ? `${stats.monthlyRevenue.change > 0 ? '+' : ''}${stats.monthlyRevenue.change.toFixed(1)}%` : '-'}
             icon={TrendingUp}
             loading={statsLoading}
         />
         <StatCard
             title="Nouveaux Abonnés"
-            value={stats?.newSubscribers ? `+${stats.newSubscribers.value}` : 'N/A'}
-            change={stats?.newSubscribers ? `${stats.newSubscribers.change > 0 ? '+' : ''}${stats.newSubscribers.change} depuis hier` : '-'}
+            value={stats?.newSubscribers?.value ? `+${stats.newSubscribers.value}` : 'N/A'}
+            change={stats?.newSubscribers?.change ? `${stats.newSubscribers.change > 0 ? '+' : ''}${stats.newSubscribers.change} depuis hier` : '-'}
             icon={Users}
             loading={statsLoading}
         />
         <StatCard
             title="Vues de Profil (7j)"
-            value={stats?.profileViews ? stats.profileViews.value.toLocaleString('fr-FR') : 'N/A'}
-            change={stats?.profileViews ? `${stats.profileViews.change > 0 ? '+' : ''}${stats.profileViews.change.toFixed(1)}%` : '-'}
+            value={stats?.profileViews?.value ? stats.profileViews.value.toLocaleString('fr-FR') : 'N/A'}
+            change={stats?.profileViews?.change ? `${stats.profileViews.change > 0 ? '+' : ''}${stats.profileViews.change.toFixed(1)}%` : '-'}
             icon={UserIcon}
             loading={statsLoading}
         />

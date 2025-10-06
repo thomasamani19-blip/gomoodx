@@ -206,14 +206,15 @@ export interface BlogArticle {
 
 
 export type CreatorStats = {
-    id: string;
-    monthlyRevenue: { value: number; change: number };
-    newSubscribers: { value: number; change: number };
-    profileViews: { value: number; change: number };
-    engagementRate: { value: number; change: number };
+    id: string; // creatorId
+    monthlyRevenue?: { value: number; change: number };
+    newSubscribers?: { value: number; change: number };
+    profileViews?: { value: number; change: number };
+    engagementRate?: { value: number; change: number };
 }
 
 export type MonthlyRevenue = {
     month: string;
     revenue: number;
 }
+

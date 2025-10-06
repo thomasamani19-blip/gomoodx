@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from '@/components/shared/page-header';
@@ -12,7 +13,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ArrowDownCircle, ArrowUpCircle, PlusCircle } from 'lucide-react';
 import { useMemo } from 'react';
-import { query, where } from 'firebase/firestore';
+import { query, where, collection } from 'firebase/firestore';
 
 export default function PortefeuillePage() {
   const { user, loading: authLoading } = useAuth();
@@ -20,18 +21,14 @@ export default function PortefeuillePage() {
   // Path to the user's wallet document. The walletId is the userId.
   const walletPath = user ? `wallets/${user.id}` : null;
   
-  // Query for the user's transactions
-  const transactionsQuery = useMemo(() => {
+  // Query for the user's transactions (subcollection of wallet)
+  const transactionsPath = useMemo(() => {
     if (!user) return null;
-    return query(
-      where('userId', '==', user.id)
-    );
+    return `wallets/${user.id}/transactions`;
   }, [user]);
 
   const { data: wallet, loading: walletLoading } = useDoc<Wallet>(walletPath);
-  const { data: transactions, loading: transactionsLoading } = useCollection<Transaction>('transactions', {
-      constraints: transactionsQuery ? [transactionsQuery] : undefined
-  });
+  const { data: transactions, loading: transactionsLoading } = useCollection<Transaction>(transactionsPath);
 
   const loading = authLoading || walletLoading || transactionsLoading;
 

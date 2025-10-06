@@ -12,7 +12,7 @@ import Image from 'next/image';
 import { useCollection } from '@/firebase';
 import type { Annonce } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { limit } from 'firebase/firestore';
+import { limit, query } from 'firebase/firestore';
 
 
 export function AnnonceCarousel() {
@@ -40,7 +40,7 @@ export function AnnonceCarousel() {
     >
       <CarouselContent>
         {annonces && annonces.map((annonce, index) => (
-          <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+          <CarouselItem key={annonce.id || index} className="md:basis-1/2 lg:basis-1/3">
             <div className="p-1">
               <Card className="overflow-hidden transition-shadow duration-300 hover:shadow-xl">
                 <CardContent className="flex aspect-[4/3] items-center justify-center p-0 relative">

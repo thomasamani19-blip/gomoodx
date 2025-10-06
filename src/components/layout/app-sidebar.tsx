@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -11,22 +10,16 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarTrigger,
-  useSidebar
 } from '@/components/ui/sidebar';
 import { GoMoodXLogo } from '../GoMoodXLogo';
 import { useAuth } from '@/hooks/use-auth';
-import type { UserRole } from '@/lib/types';
 import {
   LayoutDashboard,
   MessageSquare,
-  Users,
-  Building,
-  ShieldCheck,
   ShoppingBag,
   Clapperboard,
   BookOpen,
   Wallet,
-  Settings,
   Bot,
   PenSquare,
   ImageIcon,
@@ -34,67 +27,51 @@ import {
   Search,
   HeartHandshake,
   Sparkles,
-  UserCircle
+  UserCircle,
+  Users,
+  ShieldCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { Skeleton } from '../ui/skeleton';
 
+const clientNav = [
+  { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+  { title: 'Annonces', href: '/annonces', icon: HeartHandshake },
+  { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
+  { title: 'Boutique', href: '/boutique', icon: ShoppingBag },
+  { title: 'Live', href: '/live', icon: Clapperboard },
+  { title: 'Blog', href: '/blog', icon: BookOpen },
+  { title: 'Recherche', href: '/recherche', icon: Search },
+  { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
+];
 
-const navConfig: Record<string, { title: string; href: string; icon: React.ElementType }[]> = {
-  client: [
-    { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'Annonces', href: '/annonces', icon: HeartHandshake },
-    { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
-    { title: 'Boutique', href: '/boutique', icon: ShoppingBag },
-    { title: 'Live', href: '/live', icon: Clapperboard },
-    { title: 'Blog', href: '/blog', icon: BookOpen },
-    { title: 'Recherche', href: '/recherche', icon: Search },
-    { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
-  ],
-  escorte: [
-    { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'Statistiques', href: '/statistiques', icon: BarChart3 },
-    { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
-    { title: 'Annonces', href: '/annonces', icon: HeartHandshake },
-    { title: 'Recherche', href: '/recherche', icon: Search },
-    { title: 'Générer Bio', href: '/outils-ia/generer-bio', icon: PenSquare },
-    { title: 'Idées de Contenu', href: '/outils-ia/idees-contenu', icon: ImageIcon },
-    { title: 'Posts Réseaux', href: '/outils-ia/posts-sociaux', icon: Bot },
-    { title: 'Studio IA', href: '/outils-ia/studio', icon: Sparkles },
-    { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
-  ],
-  partenaire: [
-    { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'Mon Établissement', href: '/partenaire/etablissement', icon: Building },
-    { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
-  ],
-  administrateur: [
-    { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'Utilisateurs', href: '/admin/users', icon: Users },
-    { title: 'Modération', href: '/admin/moderation', icon: ShieldCheck },
-  ],
-  founder: [
-    { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'Utilisateurs', href: '/admin/users', icon: Users },
-    { title: 'Modération', href: '/admin/moderation', icon: ShieldCheck },
-  ],
-  moderator: [
-    { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'Modération', href: '/admin/moderation', icon: ShieldCheck },
-  ],
-};
+const escorteNav = [
+  { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+  { title: 'Statistiques', href: '/statistiques', icon: BarChart3 },
+  { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
+  { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
+];
+
+const toolsNav = [
+  { title: 'Générer Bio', href: '/outils-ia/generer-bio', icon: PenSquare },
+  { title: 'Idées de Contenu', href: '/outils-ia/idees-contenu', icon: ImageIcon },
+  { title: 'Posts Sociaux', href: '/outils-ia/posts-sociaux', icon: Bot },
+  { title: 'Studio IA', href: '/outils-ia/studio', icon: Sparkles },
+];
+
+const adminNav = [
+  { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+  { title: 'Utilisateurs', href: '/admin/users', icon: Users },
+  { title: 'Modération', href: '/admin/moderation', icon: ShieldCheck },
+];
 
 export function AppSidebar() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const pathname = usePathname();
-  const isMobile = useIsMobile();
-  const navItems = user?.role ? navConfig[user.role] || [] : [];
 
-  const renderMenuItems = () => (
-    <SidebarMenu>
-      {navItems.map(item => (
+  const renderNavItems = (items: { title: string; href: string; icon: React.ElementType }[]) => {
+    return items.map(item => (
         <SidebarMenuItem key={item.href}>
           <Link href={item.href} passHref legacyBehavior>
             <SidebarMenuButton
@@ -109,37 +86,66 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </Link>
         </SidebarMenuItem>
-      ))}
-    </SidebarMenu>
-  );
+      ));
+  }
 
-  const sidebarContent = (
-    <>
-      <SidebarHeader className='flex items-center justify-between'>
-        <GoMoodXLogo />
-        <SidebarTrigger className={cn(isMobile ? "hidden" : "flex")} />
-      </SidebarHeader>
-      <SidebarContent>
-        {renderMenuItems()}
-      </SidebarContent>
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <Link href="/profil" passHref legacyBehavior>
-              <SidebarMenuButton tooltip="Profil & Paramètres" isActive={pathname === '/profil'} asChild>
-                <a><UserCircle /><span>Profil</span></a>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </>
-  );
+  const renderLoadingSkeleton = () => (
+    <div className="p-2 space-y-2">
+        {Array.from({ length: 6 }).map((_, i) => (
+             <Skeleton key={i} className="h-8 w-full" />
+        ))}
+    </div>
+  )
+
+  const renderMenuForRole = () => {
+    if (loading) return renderLoadingSkeleton();
+    if (!user) return null; // No items if no user
+
+    switch (user.role) {
+      case 'client':
+        return renderNavItems(clientNav);
+      case 'escorte':
+        return (
+            <>
+                {renderNavItems(escorteNav)}
+                <SidebarMenuItem>
+                    <span className="p-2 text-xs text-muted-foreground">Outils IA</span>
+                </SidebarMenuItem>
+                {renderNavItems(toolsNav)}
+            </>
+        )
+      case 'administrateur':
+      case 'founder':
+      case 'moderator':
+        return renderNavItems(adminNav);
+      default:
+        // By default, maybe show client nav or nothing
+        return renderNavItems(clientNav);
+    }
+  }
 
   return (
       <Sidebar side="left" collapsible="icon" className='border-r'>
-        {sidebarContent}
+          <SidebarHeader className='flex items-center justify-between'>
+            <GoMoodXLogo />
+            <SidebarTrigger />
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarMenu>
+                {renderMenuForRole()}
+            </SidebarMenu>
+          </SidebarContent>
+          <SidebarFooter>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <Link href="/profil" passHref legacyBehavior>
+                  <SidebarMenuButton tooltip="Profil & Paramètres" isActive={pathname === '/profil'} asChild>
+                    <a><UserCircle /><span>Profil</span></a>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarFooter>
       </Sidebar>
   );
 }
-    

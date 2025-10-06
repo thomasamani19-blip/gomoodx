@@ -7,11 +7,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowRight, Heart, MessageSquare, Wallet } from "lucide-react";
-import type { User, Product } from "@/lib/types";
+import type { User } from "@/lib/types";
 import Link from 'next/link';
 import { useCollection } from "@/firebase";
-import { useMemo } from "react";
-import { query, where, limit } from "firebase/firestore";
+import { limit, where } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 
 const recentPurchases = [
@@ -21,13 +20,12 @@ const recentPurchases = [
 ];
 
 export default function ClientDashboard({ user }: { user: User }) {
-  const favoriteCreatorsQuery = useMemo(() => {
-    return query(where('role', '==', 'escorte'), limit(4));
-  }, []);
-
-  const { data: favoriteCreators, loading: creatorsLoading } = useCollection<User>('users', {
-    constraints: favoriteCreatorsQuery ? [favoriteCreatorsQuery] : undefined
-  });
+  const { data: creators, loading: creatorsLoading } = useCollection<User>(
+    'users',
+    {
+      constraints: [where('role', '==', 'escorte'), limit(4)],
+    }
+  );
 
   return (
     <div className="space-y-8">
@@ -86,14 +84,16 @@ export default function ClientDashboard({ user }: { user: User }) {
                              <Skeleton className="h-4 w-16" />
                         </div>
                     ))}
-                    {!creatorsLoading && favoriteCreators?.map(creator => (
-                        <Link href={`/profil/${creator.id}`} key={creator.id} className="flex flex-col items-center gap-2 group">
-                            <Avatar className="h-20 w-20 border-2 border-transparent group-hover:border-primary transition-colors">
-                                <AvatarImage src={creator.profileImage || `https://picsum.photos/seed/${creator.id}/100`} />
-                                <AvatarFallback>{creator.displayName?.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm font-medium text-center">{creator.displayName}</span>
-                        </Link>
+                    {!creatorsLoading && creators?.map(creator => (
+                        <div key={creator.id} className="flex flex-col items-center gap-2 group cursor-pointer">
+                            <Link href={`/profil/${creator.id}`} className="flex flex-col items-center gap-2 text-center">
+                                <Avatar className="h-20 w-20 border-2 border-transparent group-hover:border-primary transition-colors">
+                                    <AvatarImage src={creator.profileImage || `https://picsum.photos/seed/${creator.id}/100`} />
+                                    <AvatarFallback>{creator.displayName?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-sm font-medium">{creator.displayName}</span>
+                            </Link>
+                        </div>
                     ))}
                 </CardContent>
             </Card>

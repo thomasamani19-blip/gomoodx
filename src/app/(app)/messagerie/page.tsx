@@ -52,9 +52,11 @@ export default function MessageriePage() {
                 const contactIds = new Set<string>();
                 allUserMessages.forEach(msg => {
                     const otherUserId = msg.senderId === user.id ? msg.receiverId : msg.senderId;
-                    contactIds.add(otherUserId);
+                    if (otherUserId) {
+                        contactIds.add(otherUserId);
+                    }
                 });
-
+                
                 if (contactIds.size === 0) {
                     setRecentContacts([]);
                     setContactsLoading(false);
@@ -96,11 +98,14 @@ export default function MessageriePage() {
     const activeMessagesQuery = useMemo(() => {
         if (!user || !selectedContact || !firestore) return null;
         
-        const q = query(
+        return query(
             collection(firestore, 'messages'),
+            or(
+                where('senderId', '==', user.id),
+                where('receiverId', '==', user.id)
+            ),
             orderBy('createdAt', 'asc')
         );
-        return q;
 
     }, [user, selectedContact, firestore]);
     
@@ -196,6 +201,9 @@ export default function MessageriePage() {
                         )}
                     </button>
                 ))}
+                 {!loading && recentContacts.length === 0 && (
+                    <div className="p-4 text-center text-sm text-muted-foreground">Aucune conversation récente.</div>
+                )}
             </ScrollArea>
         </div>
         <div className="md:col-span-2 lg:col-span-3 flex flex-col h-full">
