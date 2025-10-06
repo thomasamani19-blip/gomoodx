@@ -32,6 +32,7 @@ import {
   Users,
   ShieldCheck,
   Heart,
+  Info,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -145,6 +146,13 @@ export function AppSidebar() {
           </SidebarContent>
           <SidebarFooter>
             <SidebarMenu>
+                 <SidebarMenuItem>
+                    <Link href="/a-propos" passHref legacyBehavior>
+                    <SidebarMenuButton tooltip="À propos" isActive={pathname.startsWith('/a-propos')} asChild>
+                        <a><Info /><span>À propos</span></a>
+                    </SidebarMenuButton>
+                    </Link>
+                </SidebarMenuItem>
               <SidebarMenuItem>
                 <Link href="/profil" passHref legacyBehavior>
                   <SidebarMenuButton tooltip="Profil & Paramètres" isActive={pathname.startsWith('/profil')} asChild>

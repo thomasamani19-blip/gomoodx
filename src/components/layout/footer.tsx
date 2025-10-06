@@ -3,7 +3,8 @@ import { Github, Twitter, Instagram } from 'lucide-react';
 import Link from 'next/link';
 
 const quickLinks = [
-  { label: 'À propos', href: '#' },
+  { label: 'À propos', href: '/a-propos' },
+  { label: 'Comment ça marche ?', href: '/a-propos' },
   { label: 'Contact', href: '#' },
   { label: "Conditions d'utilisation", href: '#' },
   { label: 'Politique de confidentialité', href: '#' },
