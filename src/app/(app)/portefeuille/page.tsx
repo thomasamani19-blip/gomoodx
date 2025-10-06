@@ -5,30 +5,138 @@
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useDoc, useCollection, useFirestore } from '@/firebase';
-import type { Wallet, Transaction } from '@/lib/types';
+import type { Wallet, Transaction, Call } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowDownCircle, ArrowUpCircle, PlusCircle } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, PlusCircle, Video, Phone, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { doc, collection } from 'firebase/firestore';
+import { doc, collection, query, or, where, orderBy } from 'firebase/firestore';
+import { formatDuration } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+
+function CallHistory() {
+    const { user, loading: authLoading } = useAuth();
+    const firestore = useFirestore();
+
+    const callsQuery = useMemo(() => {
+        if (!user || !firestore) return null;
+        return query(
+            collection(firestore, 'calls'),
+            or(where('callerId', '==', user.id), where('receiverId', '==', user.id)),
+            orderBy('createdAt', 'desc')
+        );
+    }, [user, firestore]);
+    
+    const { data: calls, loading: callsLoading } = useCollection<Call>(callsQuery);
+
+    const loading = authLoading || callsLoading;
+
+    const getCallCost = (call: Call) => {
+        if (call.isFreeCall || !call.pricePerMinute || !call.billedDuration || call.billedDuration <= 0) {
+            return 'Gratuit';
+        }
+        const minutesBilled = Math.ceil(call.billedDuration / 60);
+        const totalCost = minutesBilled * call.pricePerMinute;
+        return `${totalCost.toFixed(2)} €`;
+    }
+
+    if (loading) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Historique des Appels</CardTitle>
+                    <CardDescription>Chargement de vos appels récents...</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <div className="space-y-4">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    if (!calls || calls.length === 0) {
+        return (
+             <Card>
+                <CardHeader>
+                    <CardTitle>Historique des Appels</CardTitle>
+                    <CardDescription>Retrouvez ici vos appels entrants et sortants.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground text-center py-8">Aucun appel dans votre historique.</p>
+                </CardContent>
+            </Card>
+        )
+    }
+
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Historique des Appels</CardTitle>
+                <CardDescription>Retrouvez ici vos appels entrants et sortants.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Interlocuteur</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Durée</TableHead>
+                            <TableHead>Coût</TableHead>
+                            <TableHead className="text-right">Date</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {calls.map((call) => {
+                            const isCaller = call.callerId === user?.id;
+                            const otherPartyName = isCaller ? 'Destinataire' : call.callerName; // Simplified, ideally fetch other user name
+                            
+                            return (
+                            <TableRow key={call.id}>
+                                <TableCell className="font-medium flex items-center gap-2">
+                                     {isCaller ? <ArrowRight className="h-4 w-4 text-red-500"/> : <ArrowLeft className="h-4 w-4 text-green-500" />}
+                                    {otherPartyName}
+                                </TableCell>
+                                 <TableCell>
+                                    {call.type === 'video' ? <Video className="h-5 w-5"/> : <Phone className="h-5 w-5"/>}
+                                </TableCell>
+                                <TableCell>{call.billedDuration ? formatDuration(call.billedDuration) : '-'}</TableCell>
+                                 <TableCell className="font-semibold">
+                                    {getCallCost(call)}
+                                </TableCell>
+                                <TableCell className="text-right text-muted-foreground text-xs">
+                                     {call.createdAt?.toDate ? format(call.createdAt.toDate(), "d MMM yyyy, HH:mm", { locale: fr }) : 'N/A'}
+                                </TableCell>
+                            </TableRow>
+                            )
+                        })}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+}
 
 export default function PortefeuillePage() {
   const { user, loading: authLoading } = useAuth();
   const firestore = useFirestore();
   
-  // Path to the user's wallet document. The walletId is the userId.
   const walletRef = useMemo(() => user ? doc(firestore, 'wallets', user.id) : null, [user, firestore]);
-  
-  // Query for the user's transactions (subcollection of wallet)
   const transactionsCollection = useMemo(() => user ? collection(firestore, 'wallets', user.id, 'transactions') : null, [user, firestore]);
+  const transactionsQuery = useMemo(() => transactionsCollection ? query(transactionsCollection, orderBy('createdAt', 'desc')) : null, [transactionsCollection]);
 
   const { data: wallet, loading: walletLoading } = useDoc<Wallet>(walletRef);
-  const { data: transactions, loading: transactionsLoading } = useCollection<Transaction>(transactionsCollection);
+  const { data: transactions, loading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
 
   const loading = authLoading || walletLoading || transactionsLoading;
 
@@ -40,23 +148,12 @@ export default function PortefeuillePage() {
       case 'purchase':
       case 'debit':
       case 'withdrawal':
+      case 'call_fee':
         return <ArrowDownCircle className="h-5 w-5 text-red-500" />;
       default:
         return null;
     }
   }
-
-  // Sort history by date descending
-  const sortedHistory = useMemo(() => {
-    if (!transactions) return [];
-    // Ensure createdAt is a valid date object for sorting
-    return [...transactions].sort((a,b) => {
-        const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(0).getTime();
-        const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(0).getTime();
-        return dateB - dateA;
-    });
-  }, [transactions]);
-
 
   return (
     <div>
@@ -64,8 +161,8 @@ export default function PortefeuillePage() {
         title="Mon Portefeuille"
         description="Gérez votre solde et consultez l'historique de vos transactions."
       />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="md:col-span-1">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div className="lg:col-span-1">
            <Card>
             <CardHeader>
               <CardTitle>Solde Actuel</CardTitle>
@@ -89,7 +186,7 @@ export default function PortefeuillePage() {
             </CardFooter>
            </Card>
         </div>
-        <div className="md:col-span-2">
+        <div className="lg:col-span-2 flex flex-col gap-8">
             <Card>
                 <CardHeader>
                     <CardTitle>Historique des Transactions</CardTitle>
@@ -103,7 +200,7 @@ export default function PortefeuillePage() {
                             <Skeleton className="h-10 w-full" />
                         </div>
                     )}
-                    {!loading && sortedHistory && sortedHistory.length > 0 && (
+                    {!loading && transactions && transactions.length > 0 && (
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -114,12 +211,12 @@ export default function PortefeuillePage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {sortedHistory.map((tx) => (
+                                {transactions.map((tx) => (
                                     <TableRow key={tx.id}>
                                         <TableCell>{getTransactionIcon(tx.type)}</TableCell>
                                         <TableCell className="font-medium capitalize">{tx.description || tx.reference || tx.type}</TableCell>
-                                        <TableCell className={`text-right font-semibold ${tx.type === 'deposit' || tx.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
-                                            {tx.type === 'deposit' || tx.type === 'credit' ? '+' : '-'} {tx.amount.toFixed(2)} €
+                                        <TableCell className={`text-right font-semibold ${['deposit', 'credit'].includes(tx.type) ? 'text-green-600' : 'text-red-600'}`}>
+                                            {['deposit', 'credit'].includes(tx.type) ? '+' : '-'} {tx.amount.toFixed(2)} €
                                         </TableCell>
                                         <TableCell className="text-right text-muted-foreground text-xs">
                                             {tx.createdAt?.toDate ? format(tx.createdAt.toDate(), "d MMM yyyy, HH:mm", { locale: fr }) : 'Date inconnue'}
@@ -129,13 +226,16 @@ export default function PortefeuillePage() {
                             </TableBody>
                         </Table>
                     )}
-                     {!loading && (!sortedHistory || sortedHistory.length === 0) && (
+                     {!loading && (!transactions || transactions.length === 0) && (
                         <p className="text-sm text-muted-foreground text-center py-8">Aucune transaction pour le moment.</p>
                      )}
                 </CardContent>
             </Card>
+
+            <CallHistory />
         </div>
       </div>
     </div>
   );
 }
+
