@@ -3,7 +3,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User as UserIcon, BookText, PenSquare, Sparkles, ShoppingBag, Newspaper } from "lucide-react";
+import { User as UserIcon, BookText, PenSquare, Sparkles, ShoppingBag, Newspaper, Bot } from "lucide-react";
 import Link from 'next/link';
 import type { User, CreatorStats } from "@/lib/types";
 import PageHeader from "../shared/page-header";
@@ -11,6 +11,7 @@ import { useDoc, useFirestore } from "@/firebase";
 import { Skeleton } from "../ui/skeleton";
 import { doc } from "firebase/firestore";
 import { BarChart, TrendingUp, Users } from "lucide-react";
+import { useMemo } from "react";
 
 
 const StatCard = ({ title, value, change, icon: Icon, loading }: { title: string, value: string, change: string, icon: React.ElementType, loading: boolean}) => {
@@ -62,7 +63,7 @@ const contentManagementTools = [
 
 export default function EscorteDashboard({ user }: { user: User }) {
     const firestore = useFirestore();
-    const statsRef = user ? doc(firestore, `/creators/${user.id}/stats/main`) : null;
+    const statsRef = useMemo(() => user && firestore ? doc(firestore, `/creators/${user.id}/stats/main`) : null, [user, firestore]);
     const { data: stats, loading: statsLoading } = useDoc<CreatorStats>(statsRef);
 
   return (

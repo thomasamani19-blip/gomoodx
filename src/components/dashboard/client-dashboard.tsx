@@ -25,12 +25,12 @@ export default function ClientDashboard({ user }: { user: User }) {
   const firestore = useFirestore();
 
   const creatorsQuery = useMemo(() => 
-    query(collection(firestore, 'users'), where('role', '==', 'escorte'), limit(4)),
+    firestore ? query(collection(firestore, 'users'), where('role', '==', 'escorte'), limit(4)) : null,
     [firestore]
   );
   const { data: creators, loading: creatorsLoading } = useCollection<User>(creatorsQuery);
   
-  const walletRef = useMemo(() => doc(firestore, 'wallets', user.id), [firestore, user.id]);
+  const walletRef = useMemo(() => firestore ? doc(firestore, 'wallets', user.id) : null, [firestore, user.id]);
   const { data: wallet, loading: walletLoading } = useDoc<any>(walletRef);
 
 
