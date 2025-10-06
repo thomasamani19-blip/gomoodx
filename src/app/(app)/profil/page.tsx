@@ -192,23 +192,24 @@ export default function ProfilPage() {
             <CardTitle>Informations Personnelles</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="nom">Nom d'affichage</Label>
                   <Input id="nom" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="pseudo">Pseudo</Label>
+                  <Label htmlFor="pseudo">Pseudo (@)</Label>
                   <Input id="pseudo" value={pseudo} onChange={(e) => setPseudo(e.target.value)} placeholder="Votre nom d'utilisateur public" />
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="bio">Biographie</Label>
-                    <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Parlez un peu de vous..." rows={4} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Adresse e-mail</Label>
-                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled />
-                </div>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="email">Adresse e-mail</Label>
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled />
+                <p className="text-xs text-muted-foreground">L'adresse e-mail ne peut pas être modifiée.</p>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="bio">Biographie</Label>
+                <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Parlez un peu de vous..." rows={4} />
             </div>
           </CardContent>
           <CardFooter>
@@ -217,8 +218,8 @@ export default function ProfilPage() {
               Enregistrer les modifications
             </Button>
           </CardFooter>
-        </form>
-      </Card>
+        </Card>
+      </form>
     </div>
   );
 }
