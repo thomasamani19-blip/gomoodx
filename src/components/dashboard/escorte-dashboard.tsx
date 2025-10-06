@@ -88,7 +88,7 @@ export default function EscorteDashboard({ user }: { user: User }) {
         <StatCard
             title="Vues de Profil (7j)"
             value={stats?.profileViews?.value ? stats.profileViews.value.toLocaleString('fr-FR') : 'N/A'}
-            change={stats?.profileViews?.change ? `${stats.profileViews.change > 0 ? '+' : ''}${stats.profileViews.change.toFixed(1)}%` : '-'}
+            change={stats?.profileViews?.change ? `${stats?.profileViews?.change > 0 ? '+' : ''}${stats.profileViews.change.toFixed(1)}%` : '-'}
             icon={UserIcon}
             loading={statsLoading}
         />
