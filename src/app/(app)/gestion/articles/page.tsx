@@ -189,7 +189,7 @@ export default function GestionArticlesPage() {
       <AlertDialog open={!!articleToDelete} onOpenChange={(open) => !open && setArticleToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+            <AlertDialogTitle>Êtes-vous absolutely sûr ?</AlertDialogTitle>
             <AlertDialogDescription>
               Cette action est irréversible. L'article "{articleToDelete?.title}" sera définitivement supprimé.
             </AlertDialogDescription>
