@@ -34,6 +34,7 @@ import {
   Info,
   BookText,
   Building,
+  FileText,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -75,6 +76,7 @@ const toolsNav = [
 const adminNav = [
   { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
   { title: 'Utilisateurs', href: '/admin/users', icon: Users },
+  { title: 'Demandes Partenaires', href: '/admin/demandes-partenaires', icon: FileText },
   { title: 'Modération', href: '/admin/moderation', icon: ShieldCheck },
 ];
 
