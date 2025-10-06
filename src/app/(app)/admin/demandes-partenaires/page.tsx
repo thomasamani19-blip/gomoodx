@@ -34,7 +34,7 @@ export default function AdminPartnerRequestsPage() {
     const [loadingStates, setLoadingStates] = useState<{[key: string]: boolean}>({});
     
     const requestsQuery = useMemo(() => firestore ? query(collection(firestore, 'partnerRequests'), orderBy('createdAt', 'desc')) : null, [firestore]);
-    const { data: requests, loading: requestsLoading } = useCollection<PartnerRequest>(requestsQuery);
+    const { data: requests, loading: requestsLoading, setData: setRequests } = useCollection<PartnerRequest>(requestsQuery);
 
     const handleUpdateRequest = async (id: string, status: 'approved' | 'rejected') => {
         if (!firestore) return;
@@ -49,6 +49,8 @@ export default function AdminPartnerRequestsPage() {
                     title: 'Demande rejetée',
                     description: `La demande a été marquée comme rejetée.`,
                 });
+                // Optimistically update UI
+                setRequests(prev => prev?.map(r => r.id === id ? {...r, status: 'rejected'} : r) || null);
             } catch (error) {
                 console.error("Error rejecting partner request:", error);
                 toast({
@@ -72,6 +74,8 @@ export default function AdminPartnerRequestsPage() {
                         title: 'Partenaire Approuvé !',
                         description: `Le compte pour ${result.companyName} a été créé.`,
                     });
+                     // Optimistically update UI
+                    setRequests(prev => prev?.map(r => r.id === id ? {...r, status: 'approved'} : r) || null);
                 } else {
                     throw new Error(result.message || 'Une erreur est survenue.');
                 }
@@ -143,6 +147,7 @@ export default function AdminPartnerRequestsPage() {
                                                     size="icon" 
                                                     onClick={() => handleUpdateRequest(req.id, 'approved')}
                                                     disabled={loadingStates[req.id]}
+                                                    aria-label="Approuver"
                                                 >
                                                     {loadingStates[req.id] ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle className="h-5 w-5 text-green-500" />}
                                                 </Button>
@@ -151,6 +156,7 @@ export default function AdminPartnerRequestsPage() {
                                                     size="icon" 
                                                     onClick={() => handleUpdateRequest(req.id, 'rejected')}
                                                     disabled={loadingStates[req.id]}
+                                                    aria-label="Rejeter"
                                                 >
                                                     <XCircle className="h-5 w-5 text-destructive" />
                                                 </Button>
