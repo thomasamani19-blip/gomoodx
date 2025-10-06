@@ -12,6 +12,14 @@ export type UserStatus = 'active' | 'suspended' | 'pending';
 export type OnlineStatus = 'online' | 'offline';
 export type VerificationStatus = 'pending' | 'verified' | 'rejected';
 export type VerificationType = 'selfie' | 'complete';
+export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled';
+
+export interface Subscription {
+    type: 'premium_member' | 'premium_creator';
+    status: SubscriptionStatus;
+    startDate: Timestamp;
+    endDate: Timestamp;
+}
 
 // Base User structure
 export interface User {
@@ -45,6 +53,7 @@ export interface User {
   gender?: string;
   verificationStatus?: VerificationStatus;
   verificationType?: VerificationType;
+  subscription?: Subscription;
   // Rates for creators
   rates?: {
     videoCallPerMinute?: number;
@@ -69,7 +78,7 @@ export interface Wallet {
 }
 
 // Transaction (subcollection of Wallet)
-export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'call_fee' | 'platform_fee' | 'commission' | 'points_conversion';
+export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'call_fee' | 'platform_fee' | 'commission' | 'points_conversion' | 'subscription_fee';
 
 export type TransactionStatus = 'pending' | 'success' | 'failed';
 
@@ -297,6 +306,7 @@ export type CreatorStats = {
     newSubscribers?: { value: number; change: number };
     profileViews?: { value: number; change: number };
     engagementRate?: { value: number; change: number };
+    rewardPoints?: { value: number; change: number };
 }
 
 export type MonthlyRevenue = {

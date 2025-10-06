@@ -10,13 +10,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CreditCard, Loader2 } from 'lucide-react';
+import { CreditCard, Loader2, Star } from 'lucide-react';
 import { FlutterWaveButton, closePaymentModal as closeFlutterwaveModal } from 'flutterwave-react-v3';
-// import { Kkiapay, KkiapayProps, closeKkiapayModal } from 'kkiapay-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type PaymentMethod = 'flutterwave' | 'kkiapay';
+const PREMIUM_MEMBER_PRICE = 29.99;
 
-export default function RechargerPage() {
+
+function RechargeTab() {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -24,7 +26,6 @@ export default function RechargerPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('flutterwave');
   const [isLoading, setIsLoading] = useState(false);
 
-  // --- Flutterwave Config ---
   const fwPublicKey = process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY;
   const fwConfig = {
     public_key: fwPublicKey || '',
@@ -72,52 +73,8 @@ export default function RechargerPage() {
         closeFlutterwaveModal();
     }
   };
-
-  // --- KkiaPay Config ---
-  const kkiapayPublicKey = process.env.NEXT_PUBLIC_KKIAPAY_PUBLIC_KEY;
-  /*
-  const kkiapayOptions: KkiapayProps = {
-    amount,
-    phone: user?.phone || '',
-    data: "Rechargement de portefeuille GoMoodX",
-    sandbox: true,
-    apikey: kkiapayPublicKey || '',
-    callback: handleKkiapaySuccess,
-    onClose: () => setIsLoading(false),
-    theme: '#EAB308',
-  };
-
-  async function handleKkiapaySuccess(response: any) {
-    setIsLoading(true);
-    try {
-      const apiResponse = await fetch('/api/payments/verifyKkiapay', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transactionId: response.transactionId,
-          userId: user?.id,
-          amount: amount,
-          currency: 'XOF', // KkiaPay operates in XOF
-        }),
-      });
-
-      const result = await apiResponse.json();
-      if (apiResponse.ok && result.status === 'success') {
-        toast({ title: 'Rechargement réussi !', description: `Votre portefeuille a été crédité.` });
-        router.push('/portefeuille');
-      } else {
-        throw new Error(result.message || 'La vérification KkiaPay a échoué.');
-      }
-    } catch (error: any) {
-      toast({ title: 'Erreur de vérification', description: error.message, variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
-      closeKkiapayModal();
-    }
-  }
-  */
-
-  const renderPaymentButton = () => {
+  
+    const renderPaymentButton = () => {
     if (isLoading) {
       return (
         <Button className="w-full" disabled>
@@ -142,41 +99,22 @@ export default function RechargerPage() {
       );
     }
 
-    if (paymentMethod === 'kkiapay') {
-      return (
-        <Button className="w-full" disabled>
-          KkiaPay (Indisponible)
-        </Button>
-        /*
-        <Kkiapay
-          {...kkiapayOptions}
-          className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-          onLoading={() => setIsLoading(true)}
-        />
-        */
-      );
-    }
-
     return null;
   };
 
+
   return (
-    <div>
-      <PageHeader
-        title="Recharger le Portefeuille"
-        description="Ajoutez des fonds à votre compte pour profiter de tous nos services."
-      />
-      <div className="flex justify-center">
-        <Card className="w-full max-w-lg">
-          <CardHeader>
-            <CardTitle>Choisir une méthode de paiement</CardTitle>
-          </CardHeader>
-          <CardContent>
+    <Card className="w-full border-none shadow-none">
+        <CardHeader>
+            <CardTitle>Recharger des Crédits</CardTitle>
+            <CardDescription>Ajoutez des fonds à votre compte pour les achats et services.</CardDescription>
+        </CardHeader>
+        <CardContent>
             <div className="grid grid-cols-2 gap-4 mb-6">
                 <Button variant={paymentMethod === 'flutterwave' ? 'secondary' : 'outline'} onClick={() => setPaymentMethod('flutterwave')}>
                     Flutterwave (EUR)
                 </Button>
-                 <Button variant={paymentMethod === 'kkiapay' ? 'secondary' : 'outline'} onClick={() => setPaymentMethod('kkiapay')}>
+                 <Button variant={paymentMethod === 'kkiapay' ? 'secondary' : 'outline'} onClick={() => setPaymentMethod('kkiapay')} disabled>
                     KkiaPay (XOF)
                 </Button>
             </div>
@@ -187,12 +125,12 @@ export default function RechargerPage() {
             <div className="grid grid-cols-3 gap-2">
               {[50, 100, 200].map(val => (
                 <Button key={val} variant={amount === val ? 'default' : 'outline'} onClick={() => setAmount(val)}>
-                  {paymentMethod === 'kkiapay' ? `${(val * 655.957).toLocaleString('fr-FR')} XOF` : `${val} €`}
+                  {`${val} €`}
                 </Button>
               ))}
             </div>
             <div className="space-y-2 mt-4">
-              <Label htmlFor="amount">Ou entrez un montant personnalisé ({paymentMethod === 'kkiapay' ? 'XOF' : 'EUR'})</Label>
+              <Label htmlFor="amount">Ou entrez un montant personnalisé (EUR)</Label>
               <Input
                 id="amount"
                 type="number"
@@ -202,11 +140,99 @@ export default function RechargerPage() {
                 placeholder="Ex: 75"
               />
             </div>
-          </CardContent>
-          <CardFooter>
+        </CardContent>
+        <CardFooter>
             {renderPaymentButton()}
-          </CardFooter>
+        </CardFooter>
+    </Card>
+  )
+}
+
+function SubscriptionTab() {
+    const { user } = useAuth();
+    const router = useRouter();
+    const { toast } = useToast();
+    const [isLoading, setIsLoading] = useState(false);
+
+    const fwPublicKey = process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY;
+    const fwConfig = {
+        public_key: fwPublicKey || '',
+        tx_ref: `gomoodx-sub-${Date.now()}-${user?.id}`,
+        amount: PREMIUM_MEMBER_PRICE,
+        currency: 'EUR',
+        payment_options: 'card,mobilemoney,ussd',
+        customer: {
+            email: user?.email || '',
+            name: user?.displayName || 'Client GoMoodX',
+        },
+        customizations: {
+            title: 'GoMoodX - Abonnement Premium',
+            description: `Abonnement Membre Premium`,
+            logo: 'https://placehold.co/100x100/EAB308/000000?text=GMX',
+        },
+    };
+
+    const handleSubscriptionSuccess = (response: any) => {
+        // TODO: Call a new API endpoint to verify subscription and update user role
+        console.log(response);
+        toast({ title: 'Paiement de l\'abonnement réussi !', description: 'Vérification en cours...' });
+        closeFlutterwaveModal();
+    }
+
+    return (
+        <Card className="w-full border-none shadow-none">
+            <CardHeader>
+                <CardTitle>Devenez Membre Premium</CardTitle>
+                <CardDescription>Débloquez des avantages exclusifs et soutenez vos créateurs.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <Card className="bg-primary/10 border-primary/30 p-6">
+                    <ul className="space-y-3 text-sm">
+                        <li className="flex items-center gap-3"><Star className="h-5 w-5 text-primary" /> Badge de membre Premium sur votre profil.</li>
+                        <li className="flex items-center gap-3"><Star className="h-5 w-5 text-primary" /> Accès aux contenus exclusifs des créateurs.</li>
+                        <li className="flex items-center gap-3"><Star className="h-5 w-5 text-primary" /> Recevez 20€ de crédits chaque mois.</li>
+                    </ul>
+                </Card>
+                <div className="text-center pt-4">
+                    <p className="text-4xl font-bold">{PREMIUM_MEMBER_PRICE}€ <span className="text-lg font-normal text-muted-foreground">/ mois</span></p>
+                </div>
+            </CardContent>
+            <CardFooter>
+                 <FlutterWaveButton
+                    {...fwConfig}
+                    className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                    disabled={!fwPublicKey || !user || user?.subscription?.status === 'active'}
+                    onClick={() => setIsLoading(true)}
+                    callback={handleSubscriptionSuccess}
+                    onClose={() => setIsLoading(false)}
+                >
+                    {user?.subscription?.status === 'active' ? 'Vous êtes déjà abonné' : 'Devenir Premium'}
+                </FlutterWaveButton>
+            </CardFooter>
         </Card>
+    )
+}
+
+export default function RechargerPage() {
+  return (
+    <div>
+      <PageHeader
+        title="Boutique & Rechargement"
+        description="Ajoutez des fonds à votre compte ou devenez membre premium."
+      />
+      <div className="flex justify-center">
+        <Tabs defaultValue="recharge" className="w-full max-w-lg">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="recharge"><CreditCard className="mr-2"/>Recharger</TabsTrigger>
+                <TabsTrigger value="subscription"><Star className="mr-2"/>Abonnement</TabsTrigger>
+            </TabsList>
+            <TabsContent value="recharge">
+                <RechargeTab />
+            </TabsContent>
+            <TabsContent value="subscription">
+                <SubscriptionTab />
+            </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
