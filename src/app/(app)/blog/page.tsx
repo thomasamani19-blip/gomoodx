@@ -10,12 +10,14 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { useMemo } from 'react';
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 export default function BlogPage() {
   const firestore = useFirestore();
-  const articlesQuery = useMemo(() => firestore ? query(collection(firestore, 'blog')) : null, [firestore]);
+  const articlesQuery = useMemo(() => firestore ? query(collection(firestore, 'blog'), orderBy('date', 'desc')) : null, [firestore]);
   const { data: articles, loading } = useCollection<BlogArticle>(articlesQuery);
 
   return (
@@ -45,23 +47,29 @@ export default function BlogPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {articles.map((article) => (
             <Card key={article.id} className="overflow-hidden group flex flex-col">
-              <div className="relative aspect-video">
-                <Image
-                  src={article.imageUrl || 'https://picsum.photos/seed/blog/600/400'}
-                  alt={article.title}
-                  fill
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                  data-ai-hint={article.imageHint}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                />
-              </div>
+              <Link href={`/blog/${article.id}`} className="block">
+                <div className="relative aspect-video">
+                  <Image
+                    src={article.imageUrl || 'https://picsum.photos/seed/blog/600/400'}
+                    alt={article.title}
+                    fill
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    data-ai-hint={article.imageHint}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  />
+                </div>
+              </Link>
               <CardContent className="p-6 flex flex-col flex-1">
                  <p className="text-sm text-muted-foreground mb-2">
                     {article.date ? format(article.date.toDate(), "d MMMM yyyy", { locale: fr }) : 'Date inconnue'}
                 </p>
-                <h3 className="font-headline text-xl font-semibold mb-3 flex-1">{article.title}</h3>
+                <h3 className="font-headline text-xl font-semibold mb-3 flex-1">
+                  <Link href={`/blog/${article.id}`} className="hover:text-primary transition-colors">{article.title}</Link>
+                </h3>
                 <p className="text-sm text-muted-foreground line-clamp-3 mb-4">{article.content}</p>
-                <Button variant="secondary" className="mt-auto self-start">Lire la suite</Button>
+                <Button variant="link" asChild className="p-0 mt-auto self-start">
+                    <Link href={`/blog/${article.id}`}>Lire la suite <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                 </Button>
               </CardContent>
             </Card>
           ))}
@@ -80,3 +88,4 @@ export default function BlogPage() {
     </div>
   );
 }
+
