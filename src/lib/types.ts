@@ -63,6 +63,7 @@ export interface User {
     minutesUsed: number;
     lastReset: Timestamp;
   };
+  unlockedContacts?: string[]; // Array of seller UIDs for which contact has been purchased
 }
 
 // Wallet
@@ -78,7 +79,7 @@ export interface Wallet {
 }
 
 // Transaction (subcollection of Wallet)
-export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'call_fee' | 'platform_fee' | 'commission' | 'points_conversion' | 'subscription_fee';
+export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'call_fee' | 'platform_fee' | 'commission' | 'points_conversion' | 'subscription_fee' | 'contact_pass';
 
 export type TransactionStatus = 'pending' | 'success' | 'failed';
 
@@ -113,7 +114,6 @@ export interface Annonce {
   ratingCount?: number;
   views: number;
   isSponsored?: boolean;
-  isPremium?: boolean;
 }
 
 // Review (subcollection of Annonce)
@@ -261,6 +261,9 @@ export interface Settings {
         voicePerMinute: number;
         videoToProducerPerMinute: number;
     };
+    passContact?: {
+        price: number;
+    };
     platformCommissionRate?: number;
     rewardPointsConversionRate?: number; // e.g., 100 points = 1 EUR
 }
@@ -289,7 +292,6 @@ export interface Product {
     createdAt: Timestamp;
     productType: ProductType;
     isSponsored?: boolean;
-    isPremium?: boolean;
 }
 
 export interface BlogArticle {

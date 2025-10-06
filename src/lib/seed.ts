@@ -113,6 +113,9 @@ async function seedDatabase() {
                 voicePerMinute: 1.5, // 1.5€ / minute for voice calls after quota
                 videoToProducerPerMinute: 8 // 8€ / minute for video calls to producers
             },
+            passContact: {
+                price: 5.0 // 5€ to get contact for a physical product
+            },
             platformCommissionRate: 0.20, // 20% commission
             rewardPointsConversionRate: 0.01 // 100 points = 1 EUR
         });

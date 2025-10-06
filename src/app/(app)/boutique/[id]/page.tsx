@@ -2,11 +2,11 @@
 'use-client';
 
 import { useDoc, useFirestore } from '@/firebase';
-import type { Product, User } from '@/lib/types';
-import { doc } from 'firebase/firestore';
+import type { Product, User, Settings } from '@/lib/types';
+import { doc, collection } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import { MessageCircle, Heart, Loader2, Package, Film, Download } from 'lucide-react';
+import { MessageCircle, Heart, Loader2, Package, Film, Download, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,14 +16,27 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [showContactPassDialog, setShowContactPassDialog] = useState(false);
+  const [isBuyingPass, setIsBuyingPass] = useState(false);
 
   const productRef = useMemo(() => firestore ? doc(firestore, 'products', params.id) : null, [firestore, params.id]);
   const { data: product, loading: productLoading } = useDoc<Product>(productRef);
@@ -31,7 +44,11 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const creatorRef = useMemo(() => (product?.createdBy && firestore) ? doc(firestore, 'users', product.createdBy) : null, [product, firestore]);
   const { data: creator, loading: creatorLoading } = useDoc<User>(creatorRef);
 
-  const loading = productLoading || creatorLoading;
+  const settingsRef = useMemo(() => firestore ? doc(firestore, 'settings', 'global') : null, [firestore]);
+  const { data: settings, loading: settingsLoading } = useDoc<Settings>(settingsRef);
+
+
+  const loading = productLoading || creatorLoading || authLoading || settingsLoading;
   
   const handlePurchase = async () => {
     if (!user) {
@@ -80,6 +97,29 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         setIsPurchasing(false);
     }
   };
+  
+  const handleBuyContactPass = async () => {
+    if (!user || !creator) return;
+    setIsBuyingPass(true);
+    // TODO: Implement API call to /api/products/purchase-contact-pass
+    toast({ title: 'Fonctionnalité en cours de développement', description: "L'API pour acheter le pass contact sera bientôt prête."});
+    setShowContactPassDialog(false);
+    setIsBuyingPass(false);
+  }
+
+  const handleContactSeller = () => {
+    if (!user || !creator) {
+        toast({ title: 'Connexion requise', variant: 'destructive' });
+        router.push('/connexion');
+        return;
+    }
+    // Check if user has already unlocked this contact
+    if (user.unlockedContacts?.includes(creator.id)) {
+        router.push(`/messagerie?contact=${creator.id}`);
+    } else {
+        setShowContactPassDialog(true);
+    }
+  }
 
 
   if (loading) {
@@ -115,8 +155,11 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const isPhysical = product.productType === 'physique';
   const isFreeDigital = product.productType === 'digital' && product.price === 0;
   const isPaidDigital = product.productType === 'digital' && product.price > 0;
+  const contactPassPrice = settings?.passContact?.price || 5;
+  const hasUnlockedContact = !!(user && creator && user.unlockedContacts?.includes(creator.id));
 
   return (
+    <>
     <div className="space-y-8">
         <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden">
              <Image
@@ -151,17 +194,16 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                  <Card>
                     <CardHeader className="text-center">
                         <p className="text-4xl font-bold text-primary">
-                            {isFreeDigital ? 'Gratuit' : `${product.price} €`}
+                            {isPhysical ? 'Sur demande' : (isFreeDigital ? 'Gratuit' : `${product.price} €`)}
                         </p>
-                         {isPhysical && <p className="text-xs text-muted-foreground">Livraison et paiement à organiser avec le vendeur.</p>}
+                         {isPhysical && <p className="text-xs text-muted-foreground">Paiement à organiser avec le vendeur.</p>}
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
-                        {isPhysical && creator ? (
-                             <Button size="lg" asChild>
-                                 <Link href={`/messagerie?contact=${creator.id}`}>
-                                    <MessageCircle className="mr-2 h-4 w-4" /> Contacter pour acheter
-                                 </Link>
-                             </Button>
+                        {isPhysical ? (
+                            <Button size="lg" onClick={handleContactSeller}>
+                                {hasUnlockedContact ? <CheckCircle className="mr-2 h-4 w-4"/> : <MessageCircle className="mr-2 h-4 w-4" />}
+                                {hasUnlockedContact ? 'Contacter' : 'Contacter pour acheter'}
+                            </Button>
                         ) : isPaidDigital ? (
                              <Button size="lg" onClick={handlePurchase} disabled={isPurchasing}>
                                  {isPurchasing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -199,5 +241,26 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
             </div>
         </div>
     </div>
+    
+    <AlertDialog open={showContactPassDialog} onOpenChange={setShowContactPassDialog}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Débloquer le Contact</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Pour contacter le vendeur de ce produit physique, vous devez acheter un "Pass Contact". Ce pass, d'un montant de <span className="font-bold">{contactPassPrice.toFixed(2)}€</span>, vous donnera accès à la messagerie privée avec ce vendeur pour finaliser votre achat.
+                    <br/><br/>
+                    Ce montant est facturé par la plateforme pour la mise en relation.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel disabled={isBuyingPass}>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleBuyContactPass} disabled={isBuyingPass}>
+                    {isBuyingPass && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Payer le Pass et Contacter
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
