@@ -12,7 +12,7 @@ import { ProductCarousel } from '@/components/features/products/product-carousel
 import { EstablishmentCarousel } from '@/components/features/partners/establishment-carousel';
 import { ProducerCarousel } from '@/components/features/partners/producer-carousel';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Search, Wand2 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useCollection, useFirestore } from '@/firebase';
 import type { BlogArticle } from '@/lib/types';
@@ -20,6 +20,9 @@ import { collection, limit, orderBy, query } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 const TestimonialCard = ({ quote, author, role }: { quote: string, author: string, role: string }) => (
     <Card className="bg-card/50 border-primary/20 flex flex-col justify-between">
@@ -83,33 +86,82 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-black via-background to-background">
       <Header />
       <main className="flex-1">
-        <section className="relative h-[80vh] w-full">
+        <section className="relative h-[90vh] w-full">
           {heroImage && (
             <Image
               src={heroImage.imageUrl}
               alt={heroImage.description}
               fill
-              className="object-cover opacity-40"
+              className="object-cover opacity-30"
               data-ai-hint={heroImage.imageHint}
               priority
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
-            <h1 className="font-headline text-5xl md:text-7xl font-bold drop-shadow-[0_2px_2px_rgba(255,190,0,0.5)] text-transparent bg-clip-text bg-gradient-to-br from-yellow-300 to-amber-500">
-              GoMoodX
+            <h1 className="font-headline text-5xl md:text-7xl font-bold drop-shadow-[0_2px_2px_rgba(255,190,0,0.5)]">
+              Trouvez l'Expérience Parfaite
             </h1>
-            <p className="mt-4 max-w-2xl text-lg md:text-xl drop-shadow-md">
+            <p className="mt-4 max-w-2xl text-lg md:text-xl text-muted-foreground drop-shadow-md">
               La destination privilégiée pour des rencontres et des contenus exclusifs.
             </p>
-            <div className="flex gap-4 mt-8">
-                <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105">
-                  <Link href="/inscription">Devenir Membre</Link>
-                </Button>
-                 <Button asChild size="lg" variant="outline" className="bg-transparent hover:bg-white/10 text-white border-white/50 transition-all hover:scale-105">
-                  <Link href="/inscription">Devenir Créateur</Link>
-                </Button>
-            </div>
+            
+            <Card className="mt-8 w-full max-w-3xl bg-black/50 backdrop-blur-sm border-primary/20">
+                <CardContent className="p-4 md:p-6">
+                    <div className="flex w-full items-center space-x-2">
+                        <Input type="text" placeholder="Rechercher par mot-clé, créateur, ou service..." className="h-12 text-base" />
+                        <Button type="submit" size="icon" className="h-12 w-12 flex-shrink-0" aria-label="Recherche IA">
+                            <Wand2 className="h-6 w-6" />
+                        </Button>
+                        <Button type="submit" size="icon" className="h-12 w-12 flex-shrink-0" aria-label="Recherche">
+                            <Search className="h-6 w-6" />
+                        </Button>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-2">
+                        <div className="flex items-center space-x-2">
+                            <Checkbox id="cat-rencontre" />
+                            <Label htmlFor="cat-rencontre" className="text-sm font-light text-gray-300">Rencontre</Label>
+                        </div>
+                         <div className="flex items-center space-x-2">
+                            <Checkbox id="cat-massage" />
+                            <Label htmlFor="cat-massage" className="text-sm font-light text-gray-300">Massage</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Checkbox id="cat-media" />
+                            <Label htmlFor="cat-media" className="text-sm font-light text-gray-300">Média</Label>
+                        </div>
+                         <div className="flex items-center space-x-2">
+                            <Checkbox id="cat-produit" />
+                            <Label htmlFor="cat-produit" className="text-sm font-light text-gray-300">Produit</Label>
+                        </div>
+                         <div className="flex items-center space-x-2">
+                            <Checkbox id="cat-live" />
+                            <Label htmlFor="cat-live" className="text-sm font-light text-gray-300">Live</Label>
+                        </div>
+                         <div className="flex items-center space-x-2">
+                            <Checkbox id="zone-paris" />
+                            <Label htmlFor="zone-paris" className="text-sm font-light text-gray-300">Paris</Label>
+                        </div>
+                         <div className="flex items-center space-x-2">
+                            <Checkbox id="genre-femme" />
+                            <Label htmlFor="genre-femme" className="text-sm font-light text-gray-300">Femme</Label>
+                        </div>
+                         <div className="flex items-center space-x-2">
+                            <Checkbox id="prix-luxe" />
+                            <Label htmlFor="prix-luxe" className="text-sm font-light text-gray-300">Luxe</Label>
+                        </div>
+                         <div className="flex items-center space-x-2">
+                            <Checkbox id="type-etablissement" />
+                            <Label htmlFor="type-etablissement" className="text-sm font-light text-gray-300">Établissement</Label>
+                        </div>
+                         <div className="flex items-center space-x-2">
+                            <Checkbox id="type-producteur" />
+                            <Label htmlFor="type-producteur" className="text-sm font-light text-gray-300">Producteur</Label>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
           </div>
         </section>
 

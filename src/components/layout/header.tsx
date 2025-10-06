@@ -18,6 +18,7 @@ const navItems = [
   { label: 'Boutique', href: '/boutique' },
   { label: 'Live', href: '/live' },
   { label: 'Blog', href: '/blog' },
+  { label: 'Recherche', href: '/recherche' },
 ];
 
 export function Header() {
@@ -53,12 +54,7 @@ export function Header() {
         </nav>
 
         <div className="flex flex-1 items-center justify-end gap-2 md:gap-4">
-          <form onSubmit={handleSearch} className="relative hidden w-full max-w-xs sm:block">
-            <Input type="search" name="search" placeholder="Rechercher..." className="pl-10 bg-black/20 border-primary/20 focus:bg-black/30" />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          </form>
-
-          <ThemeSwitcher />
+           <ThemeSwitcher />
 
           {/* Auth buttons for desktop */}
           <div className="hidden md:flex items-center gap-2">
