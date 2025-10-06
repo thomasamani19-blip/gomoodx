@@ -20,11 +20,13 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 function MessagerieContent() {
     const { user, loading: authLoading } = useAuth();
     const firestore = useFirestore();
     const router = useRouter();
+    const { toast } = useToast();
     const searchParams = useSearchParams();
     const messageEndRef = useRef<HTMLDivElement>(null);
 
@@ -198,6 +200,11 @@ function MessagerieContent() {
     const handleInitiateCall = async () => {
         if (!user || !selectedContact || !firestore) return;
 
+        toast({
+            title: "Initiation de l'appel...",
+            description: `Appel avec ${selectedContact.displayName} en cours de préparation.`
+        });
+        
         // Create a new call document in Firestore
         const callData: Omit<Call, 'id'> = {
             callerId: user.id,
@@ -214,6 +221,11 @@ function MessagerieContent() {
             router.push(`/appels/${callDocRef.id}`);
         } catch (error) {
             console.error("Erreur lors de l'initiation de l'appel :", error);
+            toast({
+                title: "Erreur d'appel",
+                description: "Impossible de démarrer l'appel. Veuillez réessayer.",
+                variant: 'destructive'
+            });
         }
     };
 
@@ -260,7 +272,7 @@ function MessagerieContent() {
                             <p className="font-semibold truncate">{contact.displayName}</p>
                             <p className="text-sm text-muted-foreground truncate">{lastMessage.message}</p>
                         </div>
-                         {lastMessage.createdAt && (
+                         {lastMessage?.createdAt && (
                            <span className="text-xs text-muted-foreground ml-auto whitespace-nowrap">
                             {formatDistanceToNow(lastMessage.createdAt.toDate(), { addSuffix: true, locale: fr })}
                            </span>
@@ -276,18 +288,18 @@ function MessagerieContent() {
             {selectedContact ? (
                 <>
                     <div className="p-4 border-b flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <Link href={`/profil/${selectedContact.id}`} className="flex items-center gap-4">
-                                <Avatar>
-                                    <AvatarImage src={selectedContact.profileImage} alt={selectedContact.displayName} />
-                                    <AvatarFallback>{selectedContact.displayName?.charAt(0) ?? '?'}</AvatarFallback>
-                                </Avatar>
-                                <h2 className="font-semibold text-lg hover:underline">{selectedContact.displayName}</h2>
-                            </Link>
-                        </div>
-                        <Button variant="ghost" size="icon" onClick={handleInitiateCall} disabled={!user || selectedContact.role !== 'escorte'}>
-                            <Video className="h-5 w-5 text-primary" />
-                        </Button>
+                        <Link href={`/profil/${selectedContact.id}`} className="flex items-center gap-4 group">
+                            <Avatar>
+                                <AvatarImage src={selectedContact.profileImage} alt={selectedContact.displayName} />
+                                <AvatarFallback>{selectedContact.displayName?.charAt(0) ?? '?'}</AvatarFallback>
+                            </Avatar>
+                            <h2 className="font-semibold text-lg group-hover:underline">{selectedContact.displayName}</h2>
+                        </Link>
+                        {selectedContact.role === 'escorte' && (
+                            <Button variant="ghost" size="icon" onClick={handleInitiateCall} title={`Démarrer un appel vidéo avec ${selectedContact.displayName}`}>
+                                <Video className="h-5 w-5 text-primary" />
+                            </Button>
+                        )}
                     </div>
                     <ScrollArea className="flex-1 p-6 bg-muted/20">
                         <div className="space-y-6">
@@ -306,7 +318,7 @@ function MessagerieContent() {
                                     )}>
                                         <p>{msg.message}</p>
                                     </div>
-                                     {msg.senderId === user?.id && (
+                                     {msg.senderId === user?.id && user?.profileImage && (
                                         <Avatar className="h-8 w-8">
                                             <AvatarImage src={user.profileImage} />
                                             <AvatarFallback>{user.displayName?.charAt(0) ?? '?'}</AvatarFallback>

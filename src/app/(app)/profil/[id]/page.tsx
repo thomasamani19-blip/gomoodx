@@ -18,7 +18,7 @@ import Link from 'next/link';
 export default function UserProfilePage({ params }: { params: { id: string } }) {
   const { user: currentUser, loading: authLoading } = useAuth();
   const firestore = useFirestore();
-  const userRef = doc(firestore, 'users', params.id);
+  const userRef = firestore ? doc(firestore, 'users', params.id) : null;
   const { data: user, loading: userLoading } = useDoc<User>(userRef);
   const { toast } = useToast();
   const router = useRouter();
@@ -56,6 +56,8 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   
     const handleInitiateCall = async () => {
         if (!currentUser || !user || !firestore) return;
+        
+        toast({ title: "Initiation de l'appel...", description: `Appel avec ${user.displayName} en cours de préparation.` });
 
         const callData: Omit<Call, 'id'> = {
             callerId: currentUser.id,
@@ -122,7 +124,7 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
                 <h1 className="font-headline text-3xl md:text-4xl font-bold tracking-tight">{user.displayName}</h1>
                 <p className="text-lg text-muted-foreground">@{user.pseudo || user.displayName.toLowerCase().replace(/\s/g, '')}</p>
             </div>
-            {!isOwnProfile && (
+            {!isOwnProfile && currentUser && (
                 <div className="flex gap-2">
                     <Button onClick={handleToggleFavorite} variant={isFavorite ? "secondary" : "default"}>
                         <Heart className="mr-2 h-4 w-4" /> 
