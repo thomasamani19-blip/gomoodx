@@ -315,7 +315,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                     <AlertDialogTitle>Confirmer l'appel</AlertDialogTitle>
                     <AlertDialogDescription>
                         {callConfirmation.isFree ?
-                            `Lancer un appel vocal gratuit avec ${user.displayName} ?` :
+                            `Lancer un appel vocal gratuit avec ${user.displayName} ? Vous avez encore du quota gratuit.` :
                             `Lancer un appel ${callConfirmation.type === 'video' ? 'vidéo' : 'vocal'} avec ${user.displayName} ? Cet appel sera facturé ${callConfirmation.price}€ par minute.`
                         }
                     </AlertDialogDescription>

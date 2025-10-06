@@ -48,7 +48,6 @@ export interface User {
   // Rates for creators
   rates?: {
     videoCallPerMinute?: number;
-    voiceCallPerMinute?: number; // Kept for potential future use by escorts
   };
   // Quotas for clients
   dailyVoiceCallQuota?: {

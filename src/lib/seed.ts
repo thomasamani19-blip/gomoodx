@@ -47,6 +47,9 @@ const USERS_TO_CREATE = [
             displayName: 'Eva Sensuelle',
             role: 'escorte',
             profileImage: 'https://picsum.photos/seed/creator1/400/600',
+            rates: {
+                videoCallPerMinute: 5, // 5€ / minute
+            }
         }
     },
     {
@@ -102,6 +105,18 @@ async function seedDatabase() {
     const userIds: { [key: string]: { uid: string, displayName: string, profileImage: string } } = {};
     
     try {
+        // --- SEED GLOBAL SETTINGS ---
+        const settingsRef = doc(firestore, 'settings', 'global');
+        console.log('Seeding global settings...');
+        await setDoc(settingsRef, {
+            callRates: {
+                voicePerMinute: 1.5, // 1.5€ / minute for voice calls after quota
+                videoToProducerPerMinute: 8 // 8€ / minute for video calls to producers
+            }
+        });
+        console.log('Global settings seeded.');
+
+
         for (const user of USERS_TO_CREATE) {
             try {
                 console.log(`Creating auth user: ${user.email}`);
@@ -138,6 +153,11 @@ async function seedDatabase() {
                     bio: 'Description de profil par défaut.',
                     favorites: [],
                     dateOfBirth: '1990-01-01', // Default DOB
+                    rates: (user.data as any).rates || {},
+                    dailyVoiceCallQuota: {
+                        minutesUsed: 0,
+                        lastReset: Timestamp.now(),
+                    }
                 };
 
                 if (user.data.role === 'partenaire') {

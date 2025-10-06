@@ -73,14 +73,17 @@ export async function POST(request: Request) {
             const receiverUser = receiverUserDoc.data() as User;
             
             let finalReceiverWalletRef;
+            let finalReceiverDescription: string;
 
             // Déterminer qui reçoit les fonds
             if (callData.type === 'voice' || (callData.type === 'video' && receiverUser.role === 'partenaire' && receiverUser.partnerType === 'producer')) {
                 // Les revenus vont à la plateforme
                 finalReceiverWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
+                finalReceiverDescription = `Revenu Appel ${callData.type} de ${callData.callerName} vers ${receiverUser.displayName}`;
             } else {
                 // Les revenus vont au destinataire (cas normal: appel vidéo à une escorte)
                 finalReceiverWalletRef = db.collection('wallets').doc(callData.receiverId);
+                 finalReceiverDescription = `Revenu appel ${callData.type} de ${callData.callerName}`;
             }
 
             const finalReceiverWalletDoc = await t.get(finalReceiverWalletRef);
@@ -112,7 +115,7 @@ export async function POST(request: Request) {
                 amount: totalCost,
                 type: 'credit',
                 createdAt: Timestamp.now(),
-                description: `Revenu appel ${callData.type} de ${callData.callerName}`,
+                description: finalReceiverDescription,
                 status: 'success',
                 reference: callId,
             };
