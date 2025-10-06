@@ -1,19 +1,18 @@
+
+'use client';
+
 import PageHeader from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowRight, Heart, MessageSquare, Wallet } from "lucide-react";
-import type { User } from "@/lib/types";
+import type { User, Product } from "@/lib/types";
 import Link from 'next/link';
-
-// Données factices
-const favoriteCreators = [
-  { id: '1', name: 'Isabelle', avatar: 'https://images.unsplash.com/photo-1615538785945-6625ccdb4b25?w=100&h=100&fit=crop' },
-  { id: '2', name: 'Chloé', avatar: 'https://images.unsplash.com/photo-1627577279497-4b24bf1021b6?w=100&h=100&fit=crop' },
-  { id: '3', name: 'Sofia', avatar: 'https://images.unsplash.com/photo-1723291875355-cc9be3c07a76?w=100&h=100&fit=crop' },
-  { id: '4', name: 'Léa', avatar: 'https://images.unsplash.com/photo-1597855368386-1d0a518883b4?w=100&h=100&fit=crop' },
-];
+import { useCollection } from "@/firebase";
+import { useMemo } from "react";
+import { query, where, limit } from "firebase/firestore";
+import { Skeleton } from "../ui/skeleton";
 
 const recentPurchases = [
     { id: 'p1', item: 'Vidéo "Nuit à Paris"', date: 'Il y a 2 jours', amount: '25.00 €' },
@@ -22,6 +21,14 @@ const recentPurchases = [
 ];
 
 export default function ClientDashboard({ user }: { user: User }) {
+  const favoriteCreatorsQuery = useMemo(() => {
+    return query(where('role', '==', 'escorte'), limit(4));
+  }, []);
+
+  const { data: favoriteCreators, loading: creatorsLoading } = useCollection<User>('users', {
+    constraints: favoriteCreatorsQuery ? [favoriteCreatorsQuery] : undefined
+  });
+
   return (
     <div className="space-y-8">
         <PageHeader
@@ -65,21 +72,27 @@ export default function ClientDashboard({ user }: { user: User }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Vos créateurs favoris</CardTitle>
+                    <CardTitle>Créateurs à découvrir</CardTitle>
                     <Button variant="ghost" size="sm" asChild>
-                        <Link href="/favoris">
+                        <Link href="/annonces">
                             Voir tout <ArrowRight className="ml-2 h-4 w-4" />
                         </Link>
                     </Button>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {favoriteCreators.map(creator => (
-                        <Link href={`/creators/${creator.id}`} key={creator.id} className="flex flex-col items-center gap-2 group">
+                    {creatorsLoading && Array.from({length: 4}).map((_, i) => (
+                        <div key={i} className="flex flex-col items-center gap-2">
+                             <Skeleton className="h-20 w-20 rounded-full" />
+                             <Skeleton className="h-4 w-16" />
+                        </div>
+                    ))}
+                    {!creatorsLoading && favoriteCreators?.map(creator => (
+                        <Link href={`/profil/${creator.id}`} key={creator.id} className="flex flex-col items-center gap-2 group">
                             <Avatar className="h-20 w-20 border-2 border-transparent group-hover:border-primary transition-colors">
-                                <AvatarImage src={creator.avatar} />
-                                <AvatarFallback>{creator.name.charAt(0)}</AvatarFallback>
+                                <AvatarImage src={creator.profileImage || `https://picsum.photos/seed/${creator.id}/100`} />
+                                <AvatarFallback>{creator.displayName?.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <span className="text-sm font-medium text-center">{creator.name}</span>
+                            <span className="text-sm font-medium text-center">{creator.displayName}</span>
                         </Link>
                     ))}
                 </CardContent>

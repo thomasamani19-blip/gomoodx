@@ -67,7 +67,7 @@ const navConfig: Record<string, { title: string; href: string; icon: React.Eleme
   ],
   partenaire: [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'Mon Établissement', href: '/partner/establishment', icon: Building },
+    { title: 'Mon Établissement', href: '/partenaire/etablissement', icon: Building },
     { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
   ],
   administrateur: [

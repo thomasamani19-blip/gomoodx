@@ -40,7 +40,7 @@ export default function LivePage() {
             <Card key={session.id} className="overflow-hidden group">
                <div className="relative aspect-video">
                   <Image
-                    src={session.imageUrl}
+                    src={session.imageUrl || 'https://picsum.photos/seed/live/600/400'}
                     alt={session.title}
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-105"

@@ -13,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Message, User } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore } from '@/firebase';
-import { addDoc, collection, serverTimestamp, query, where, orderBy, or, Query } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, query, where, orderBy, or, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -25,68 +25,103 @@ export default function MessageriePage() {
 
     const [selectedContact, setSelectedContact] = useState<User | null>(null);
     const [newMessage, setNewMessage] = useState('');
+    const [recentContacts, setRecentContacts] = useState<{ contact: User; lastMessage: Message }[]>([]);
+    const [contactsLoading, setContactsLoading] = useState(true);
 
-    // 1. Fetch all messages where the current user is a participant
-    const messagesQuery = useMemo(() => {
-        if (!user || !firestore) return null;
-        return query(
-            collection(firestore, 'messages'),
-            or(where('senderId', '==', user.id), where('receiverId', '==', user.id)),
-            orderBy('createdAt', 'desc')
-        ) as Query<Message>;
+    // 1. Fetch messages for the current user and derive contacts
+    useEffect(() => {
+        if (!user || !firestore) {
+            setContactsLoading(false);
+            return;
+        }
+
+        const fetchContacts = async () => {
+            setContactsLoading(true);
+            try {
+                // Fetch all messages involving the current user
+                const messagesQuery = query(
+                    collection(firestore, 'messages'),
+                    or(where('senderId', '==', user.id), where('receiverId', '==', user.id)),
+                    orderBy('createdAt', 'desc')
+                );
+
+                const messagesSnapshot = await getDocs(messagesQuery);
+                const allUserMessages = messagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+
+                // Get unique contact IDs
+                const contactIds = new Set<string>();
+                allUserMessages.forEach(msg => {
+                    const otherUserId = msg.senderId === user.id ? msg.receiverId : msg.senderId;
+                    contactIds.add(otherUserId);
+                });
+
+                if (contactIds.size === 0) {
+                    setRecentContacts([]);
+                    setContactsLoading(false);
+                    return;
+                }
+                
+                // Fetch user details for these contacts
+                const usersQuery = query(collection(firestore, 'users'), where('__name__', 'in', Array.from(contactIds)));
+                const usersSnapshot = await getDocs(usersQuery);
+                const userMap = new Map(usersSnapshot.docs.map(doc => [doc.id, { id: doc.id, ...doc.data() } as User]));
+
+                // Create the recent contacts list
+                const conversations = new Map<string, { contact: User; lastMessage: Message }>();
+                allUserMessages.forEach(msg => {
+                    const otherUserId = msg.senderId === user.id ? msg.receiverId : msg.senderId;
+                    if (!conversations.has(otherUserId)) {
+                        const contactUser = userMap.get(otherUserId);
+                        if (contactUser) {
+                            conversations.set(otherUserId, {
+                                contact: contactUser,
+                                lastMessage: msg,
+                            });
+                        }
+                    }
+                });
+
+                setRecentContacts(Array.from(conversations.values()));
+            } catch (error) {
+                console.error("Error fetching contacts:", error);
+            } finally {
+                setContactsLoading(false);
+            }
+        };
+
+        fetchContacts();
     }, [user, firestore]);
 
-    const { data: allUserMessages, loading: messagesLoading } = useCollection<Message>(messagesQuery);
+    // 2. Listen to messages for the selected contact in real-time
+    const activeMessagesQuery = useMemo(() => {
+        if (!user || !selectedContact || !firestore) return null;
+        
+        const q = query(
+            collection(firestore, 'messages'),
+            orderBy('createdAt', 'asc')
+        );
+        return q;
+
+    }, [user, selectedContact, firestore]);
     
-    // 2. Fetch all users to get their details (names, avatars)
-    const { data: users, loading: usersLoading } = useCollection<User>('users');
+    const { data: activeMessages, loading: messagesLoading } = useCollection<Message>(
+        activeMessagesQuery
+    );
 
-    // 3. Create a map of users for quick lookup
-    const userMap = useMemo(() => {
-        if (!users) return new Map();
-        return new Map(users.map(u => [u.id, u]));
-    }, [users]);
+     // 3. Filter messages on the client side
+     const filteredActiveMessages = useMemo(() => {
+        if (!activeMessages || !user || !selectedContact) return [];
+        return activeMessages.filter(msg =>
+            (msg.senderId === user.id && msg.receiverId === selectedContact.id) ||
+            (msg.senderId === selectedContact.id && msg.receiverId === user.id)
+        );
+    }, [activeMessages, user, selectedContact]);
 
-    // 4. Determine recent contacts from the messages
-    const recentContacts = useMemo(() => {
-        if (!allUserMessages || !user) return [];
-        
-        const conversations = new Map<string, { contact: User; lastMessage: Message }>();
-
-        allUserMessages.forEach(msg => {
-            const otherUserId = msg.senderId === user.id ? msg.receiverId : msg.senderId;
-            
-            if (!conversations.has(otherUserId)) {
-                const contactUser = userMap.get(otherUserId);
-                if (contactUser) {
-                    conversations.set(otherUserId, {
-                        contact: contactUser,
-                        lastMessage: msg,
-                    });
-                }
-            }
-        });
-
-        return Array.from(conversations.values());
-
-    }, [allUserMessages, user, userMap]);
-
-    // 5. Filter messages for the currently selected conversation
-    const activeMessages = useMemo(() => {
-        if (!selectedContact || !allUserMessages || !user) return [];
-        
-        return allUserMessages
-            .filter(msg => 
-                (msg.senderId === user.id && msg.receiverId === selectedContact.id) ||
-                (msg.senderId === selectedContact.id && msg.receiverId === user.id)
-            )
-            .sort((a, b) => (a.createdAt?.toMillis() ?? 0) - (b.createdAt?.toMillis() ?? 0));
-    }, [selectedContact, allUserMessages, user]);
 
     // Scroll to the bottom of the messages when a new message is added
     useEffect(() => {
         messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [activeMessages]);
+    }, [filteredActiveMessages]);
 
 
     const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -111,7 +146,7 @@ export default function MessageriePage() {
         }
     };
     
-    const loading = authLoading || usersLoading;
+    const loading = authLoading || contactsLoading;
 
     return (
     <div className="h-[calc(100vh_-_10rem)] flex flex-col">
@@ -176,7 +211,7 @@ export default function MessageriePage() {
                     <ScrollArea className="flex-1 p-6 bg-muted/20">
                         <div className="space-y-6">
                             {messagesLoading && <div className="text-center text-muted-foreground">Chargement des messages...</div>}
-                            {!messagesLoading && activeMessages?.map(msg => (
+                            {!messagesLoading && filteredActiveMessages?.map(msg => (
                                 <div key={msg.id} className={cn("flex items-end gap-2", msg.senderId === user?.id ? 'justify-end' : '')}>
                                     {msg.senderId !== user?.id && (
                                         <Avatar className="h-8 w-8">
@@ -225,4 +260,3 @@ export default function MessageriePage() {
     );
 }
 
-    
