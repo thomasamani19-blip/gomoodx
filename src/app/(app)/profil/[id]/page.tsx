@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -120,7 +121,7 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
         <div className="relative mb-8">
              <div className="h-48 w-full rounded-lg bg-muted overflow-hidden relative">
                 <Image
-                    src={`https://picsum.photos/seed/${user.id}/1200/400`}
+                    src={user.bannerImage || `https://picsum.photos/seed/${user.id}/1200/400`}
                     alt={`Bannière de ${user.displayName}`}
                     fill
                     className="object-cover"

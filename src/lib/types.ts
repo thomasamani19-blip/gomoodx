@@ -29,6 +29,7 @@ export interface User {
   referredBy?: string;
   referralsCount: number;
   profileImage?: string;
+  bannerImage?: string;
   bio?: string;
   isVerified: boolean;
   onlineStatus: OnlineStatus;
