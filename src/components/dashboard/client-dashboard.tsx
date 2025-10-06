@@ -25,7 +25,7 @@ export default function ClientDashboard({ user }: { user: User }) {
   return (
     <div className="space-y-8">
         <PageHeader
-            title={`Bienvenue, ${user?.nom || '...'}`}
+            title={`Bienvenue, ${user?.displayName || '...'}`}
             description="Votre espace personnel sur GoMoodX."
         />
         

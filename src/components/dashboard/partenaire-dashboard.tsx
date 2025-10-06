@@ -6,7 +6,7 @@ export default function PartenaireDashboard({ user }: { user: User }) {
   return (
     <div>
         <PageHeader
-            title={`Tableau de bord de ${user?.nom || 'Partenaire'}`}
+            title={`Tableau de bord de ${user?.displayName || 'Partenaire'}`}
             description="Gérez les informations de votre établissement."
         />
       <Card>

@@ -1,14 +1,14 @@
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart, LineChart, PieChart, Sparkles } from "lucide-react";
+import { BarChart, Users, TrendingUp, Sparkles, User as UserIcon } from "lucide-react";
 import Link from 'next/link';
 import type { User } from "@/lib/types";
 import PageHeader from "../shared/page-header";
 
 const stats = [
-  { title: "Revenus (30j)", value: "4,250 €", change: "+15.2%", icon: LineChart },
-  { title: "Nouveaux Abonnés", value: "78", change: "+32", icon: BarChart },
-  { title: "Vues de Profil (7j)", value: "12,345", change: "+8.1%", icon: PieChart },
+  { title: "Revenus (30j)", value: "4,250 €", change: "+15.2%", icon: TrendingUp },
+  { title: "Nouveaux Abonnés", value: "78", change: "+32", icon: Users },
+  { title: "Vues de Profil (7j)", value: "12,345", change: "+8.1%", icon: UserIcon },
 ];
 
 const aiTools = [
@@ -22,7 +22,7 @@ export default function EscorteDashboard({ user }: { user: User }) {
   return (
     <div className="space-y-8">
         <PageHeader
-            title={`Bienvenue, ${user?.nom || '...'}`}
+            title={`Bienvenue, ${user?.displayName || '...'}`}
             description="Voici un aperçu de votre activité sur GoMoodX."
         />
       <div className="grid gap-4 md:grid-cols-3">
