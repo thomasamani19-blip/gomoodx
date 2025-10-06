@@ -2,25 +2,41 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useStorage } from '@/firebase';
 import type { Annonce } from '@/lib/types';
-import { collection, query, where, orderBy } from 'firebase/firestore';
-import { useMemo } from 'react';
+import { collection, query, where, orderBy, doc, deleteDoc } from 'firebase/firestore';
+import { ref, deleteObject } from 'firebase/storage';
+import { useMemo, useState } from 'react';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, PlusCircle, Trash2, Loader2 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 export default function GestionAnnoncesPage() {
   const { user, loading: authLoading } = useAuth();
   const firestore = useFirestore();
+  const storage = useStorage();
+  const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [annonceToDelete, setAnnonceToDelete] = useState<Annonce | null>(null);
 
   const annoncesQuery = useMemo(() => {
     if (!user || !firestore) return null;
@@ -34,6 +50,41 @@ export default function GestionAnnoncesPage() {
   const { data: annonces, loading: annoncesLoading } = useCollection<Annonce>(annoncesQuery);
 
   const loading = authLoading || annoncesLoading;
+
+  const handleDelete = async () => {
+    if (!annonceToDelete || !firestore || !storage) return;
+
+    setIsDeleting(true);
+    try {
+      // Delete Firestore document
+      await deleteDoc(doc(firestore, 'services', annonceToDelete.id));
+
+      // Delete image from Storage if it exists
+      if (annonceToDelete.imageUrl) {
+        const imageRef = ref(storage, annonceToDelete.imageUrl);
+        // Use deleteObject, but don't block on errors (e.g., if file doesn't exist)
+        await deleteObject(imageRef).catch(error => {
+            console.warn("Could not delete image from storage:", error.message);
+        });
+      }
+
+      toast({
+        title: "Annonce supprimée",
+        description: "L'annonce a été supprimée avec succès.",
+      });
+
+    } catch (error) {
+      console.error("Error deleting annonce:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'annonce.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setAnnonceToDelete(null);
+    }
+  };
 
   return (
     <div>
@@ -97,7 +148,11 @@ export default function GestionAnnoncesPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
                           <DropdownMenuItem>Modifier</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">Supprimer</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive" onClick={() => setAnnonceToDelete(annonce)}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Supprimer
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -119,6 +174,25 @@ export default function GestionAnnoncesPage() {
           )}
         </CardContent>
       </Card>
+      
+      <AlertDialog open={!!annonceToDelete} onOpenChange={(open) => !open && setAnnonceToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. L'annonce "{annonceToDelete?.title}" sera définitivement supprimée
+              et toutes les données associées seront perdues.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
