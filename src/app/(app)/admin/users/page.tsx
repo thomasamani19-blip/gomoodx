@@ -31,6 +31,7 @@ const roleVariantMap: { [key in UserRole]: 'default' | 'secondary' | 'destructiv
 const statusVariantMap: { [key in UserStatus]: 'default' | 'destructive' } = {
     active: 'default',
     suspended: 'destructive',
+    pending: 'outline',
 };
 
 
@@ -62,17 +63,17 @@ export default function AdminUsersPage() {
 
     const loading = authLoading || (isAllowed && usersLoading);
 
-    if (!isAllowed) {
+    if (!authLoading && !isAllowed) {
         return (
             <div>
                 <PageHeader title="Gestion des Utilisateurs" description="Supervisez et gérez tous les comptes de la plateforme." />
                 <Card>
                     <CardHeader>
-                        <Skeleton className="h-6 w-48" />
+                        <CardTitle>Accès non autorisé</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-center justify-center h-40">
-                             <p className="text-muted-foreground">Vérification des permissions...</p>
+                             <p className="text-muted-foreground">Vous n'avez pas les permissions nécessaires pour accéder à cette page.</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -96,9 +97,10 @@ export default function AdminUsersPage() {
                 <CardContent>
                    {loading ? (
                         <div className="space-y-4">
-                            <Skeleton className="h-10 w-full" />
-                            <Skeleton className="h-10 w-full" />
-                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
                         </div>
                     ) : (
                     <Table>
