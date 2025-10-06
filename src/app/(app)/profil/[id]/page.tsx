@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useDoc } from '@/firebase';
+import { useDoc, useFirestore } from '@/firebase';
 import type { User } from '@/lib/types';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,14 +11,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Heart, MessageCircle, Video } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
 export default function UserProfilePage({ params }: { params: { id: string } }) {
   const { user: currentUser, loading: authLoading } = useAuth();
-  const { data: user, loading: userLoading } = useDoc<User>(`users/${params.id}`);
   const firestore = useFirestore();
+  const userRef = doc(firestore, 'users', params.id);
+  const { data: user, loading: userLoading } = useDoc<User>(userRef);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -33,16 +33,16 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
         return;
     };
 
-    const userRef = doc(firestore, 'users', currentUser.id);
+    const currentUserRef = doc(firestore, 'users', currentUser.id);
 
     try {
         if (isFavorite) {
-            await updateDoc(userRef, {
+            await updateDoc(currentUserRef, {
                 favorites: arrayRemove(params.id)
             });
             toast({ title: `${user?.displayName} a été retiré de vos favoris.`});
         } else {
-            await updateDoc(userRef, {
+            await updateDoc(currentUserRef, {
                 favorites: arrayUnion(params.id)
             });
             toast({ title: `${user?.displayName} a été ajouté à vos favoris !`});

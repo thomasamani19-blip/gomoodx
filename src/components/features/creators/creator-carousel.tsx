@@ -9,16 +9,17 @@ import {
 } from '@/components/ui/carousel';
 import { Card, CardContent } from '@/components/ui/card';
 import Image from 'next/image';
-import { useCollection } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import type { User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { query, where, limit } from 'firebase/firestore';
+import { query, where, limit, collection } from 'firebase/firestore';
 
 
 export function CreatorCarousel() {
-  const { data: creators, loading } = useCollection<User>('users', {
-    constraints: [where('role', '==', 'escorte'), limit(10)],
-  });
+  const firestore = useFirestore();
+  const creatorsQuery = query(collection(firestore, 'users'), where('role', '==', 'escorte'), limit(10));
+  const { data: creators, loading } = useCollection<User>(creatorsQuery);
+
 
   if (loading) {
     return (

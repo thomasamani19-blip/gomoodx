@@ -7,9 +7,9 @@ import { BarChart, Users, TrendingUp, Sparkles, User as UserIcon } from "lucide-
 import Link from 'next/link';
 import type { User, CreatorStats } from "@/lib/types";
 import PageHeader from "../shared/page-header";
-import { useAuth } from "@/hooks/use-auth";
-import { useDoc } from "@/firebase";
+import { useDoc, useFirestore } from "@/firebase";
 import { Skeleton } from "../ui/skeleton";
+import { doc } from "firebase/firestore";
 
 
 const StatCard = ({ title, value, change, icon: Icon, loading }: { title: string, value: string, change: string, icon: React.ElementType, loading: boolean}) => {
@@ -53,8 +53,9 @@ const aiTools = [
 ]
 
 export default function EscorteDashboard({ user }: { user: User }) {
-    const statsPath = user ? `/creators/${user.id}/stats/main` : null;
-    const { data: stats, loading: statsLoading } = useDoc<CreatorStats>(statsPath);
+    const firestore = useFirestore();
+    const statsRef = user ? doc(firestore, `/creators/${user.id}/stats/main`) : null;
+    const { data: stats, loading: statsLoading } = useDoc<CreatorStats>(statsRef);
 
   return (
     <div className="space-y-8">

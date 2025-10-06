@@ -10,8 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowRight, Heart, MessageSquare, Wallet } from "lucide-react";
 import type { User } from "@/lib/types";
 import Link from 'next/link';
-import { useCollection, useDoc } from "@/firebase";
-import { limit, where } from "firebase/firestore";
+import { useCollection, useDoc, useFirestore } from "@/firebase";
+import { limit, where, query, collection } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 
 const recentPurchases = [
@@ -21,12 +21,9 @@ const recentPurchases = [
 ];
 
 export default function ClientDashboard({ user }: { user: User }) {
-  const { data: creators, loading: creatorsLoading } = useCollection<User>(
-    'users',
-    {
-      constraints: [where('role', '==', 'escorte'), limit(4)],
-    }
-  );
+  const firestore = useFirestore();
+  const creatorsQuery = query(collection(firestore, 'users'), where('role', '==', 'escorte'), limit(4));
+  const { data: creators, loading: creatorsLoading } = useCollection<User>(creatorsQuery);
   
   const { data: wallet, loading: walletLoading } = useDoc<any>(`wallets/${user.id}`);
 

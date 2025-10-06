@@ -9,16 +9,16 @@ import {
 } from '@/components/ui/carousel';
 import { Card, CardContent } from '@/components/ui/card';
 import Image from 'next/image';
-import { useCollection } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import type { Annonce } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { limit, query } from 'firebase/firestore';
+import { limit, query, collection } from 'firebase/firestore';
 
 
 export function AnnonceCarousel() {
-  const { data: annonces, loading } = useCollection<Annonce>('services', {
-    constraints: [limit(10)]
-  });
+  const firestore = useFirestore();
+  const annoncesQuery = query(collection(firestore, 'services'), limit(10));
+  const { data: annonces, loading } = useCollection<Annonce>(annoncesQuery);
 
   if (loading) {
     return (

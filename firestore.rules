@@ -1,210 +1,62 @@
-/**
- * @description This ruleset enforces a strict user-ownership model for most collections, with public read access where appropriate.
- * Data is segregated by user role (membre, escorte, partenaire, administrateur) into separate top-level collections.
- * User-specific data (e.g., messages) are stored in subcollections under the user's document.
- *
- * Data Structure:
- * - /membres/{membreId}: Information about members (clients).
- * - /escortes/{escorteId}: Information about escorts/content creators.
- * - /partenaires/{partenaireId}: Information about partners (hotels, photographers, videographers).
- * - /administrateurs/{administrateurId}: Information about administrators.
- * - /portefeuilles/{portefeuilleId}: Information about virtual wallets.
- * - /contenuPremium/{contenuPremiumId}: Information about premium content sold by escorts.
- * - /produits/{produitId}: Information about products sold by partners.
- * - /reservations/{reservationId}: Information about reservations made by members.
- * - /membres/{membreId}/messages/{messageId}: Private messages of members.
- * - /escortes/{escorteId}/messages/{messageId}: Private messages of escorts.
- * - /partenaires/{partenaireId}/messages/{messageId}: Private messages of partners.
- *
- * Key Security Decisions:
- * - User listing is generally disallowed for privacy.
- * - Public read access is granted to the /contenuPremium and /produits collections, assuming they are intended for public consumption. Writes are restricted to owners.
- * - Default security posture for ambiguous relationships is strict owner-only access.
- * - No role-based access control implemented.
- *
- * Denormalization for Authorization:
- * - For each document, the corresponding user ID is present, thus avoiding `get()` calls.
- * - Relationships between entities are represented by storing IDs.
- */
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * @description Manages member (client) profiles. Only the authenticated user can manage their own profile.
-     * @path /membres/{membreId}
-     * @allow (create, update, delete) if request.auth.uid == membreId (Self-creation and owner-only modification)
-     * @allow (get, list) if isOwner(membreId) (Owner-only access)
-     * @deny (create, update, delete) if request.auth.uid != membreId (Unauthorized modification attempt)
-     * @principle Enforces document ownership for writes.
-     */
-    match /membres/{membreId} {
-      allow get, list: if isOwner(membreId);
-      allow create: if isSignedIn() && request.auth.uid == membreId;
-      allow update: if isExistingOwner(membreId) && request.auth.uid == membreId;
-      allow delete: if isExistingOwner(membreId) && request.auth.uid == membreId;
+  
+    // Accès public pour les collections non-sensibles
+    match /products/{productId} {
+      allow read: if true;
+    }
+    match /services/{serviceId} {
+      allow read: if true;
+    }
+    match /blog/{blogId} {
+      allow read: if true;
+    }
+    
+    // Les utilisateurs peuvent voir tous les profils, mais ne peuvent modifier que le leur
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth.uid == userId;
     }
 
-    /**
-     * @description Manages escorte profiles. Only the authenticated user can manage their own profile.
-     * @path /escortes/{escorteId}
-     * @allow (create, update, delete) if request.auth.uid == escorteId (Self-creation and owner-only modification)
-     * @allow (get, list) if isOwner(escorteId) (Owner-only access)
-     * @deny (create, update, delete) if request.auth.uid != escorteId (Unauthorized modification attempt)
-     * @principle Enforces document ownership for writes.
-     */
-    match /escortes/{escorteId} {
-      allow get, list: if isOwner(escorteId);
-      allow create: if isSignedIn() && request.auth.uid == escorteId;
-      allow update: if isExistingOwner(escorteId) && request.auth.uid == escorteId;
-      allow delete: if isExistingOwner(escorteId) && request.auth.uid == escorteId;
+    // Un utilisateur ne peut accéder qu'à son propre portefeuille
+    match /wallets/{userId} {
+      allow read, create, update: if request.auth.uid == userId;
+      
+      // Transactions (sous-collection)
+      match /transactions/{transactionId} {
+         allow read, create: if request.auth.uid == userId;
+      }
+    }
+    
+    // Les créateurs peuvent gérer leurs propres sessions live
+    match /lives/{liveId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth.uid == resource.data.hostId;
     }
 
-    /**
-     * @description Manages partenaire profiles. Only the authenticated user can manage their own profile.
-     * @path /partenaires/{partenaireId}
-     * @allow (create, update, delete) if request.auth.uid == partenaireId (Self-creation and owner-only modification)
-     * @allow (get, list) if isOwner(partenaireId) (Owner-only access)
-     * @deny (create, update, delete) if request.auth.uid != partenaireId (Unauthorized modification attempt)
-     * @principle Enforces document ownership for writes.
-     */
-    match /partenaires/{partenaireId} {
-      allow get, list: if isOwner(partenaireId);
-      allow create: if isSignedIn() && request.auth.uid == partenaireId;
-      allow update: if isExistingOwner(partenaireId) && request.auth.uid == partenaireId;
-      allow delete: if isExistingOwner(partenaireId) && request.auth.uid == partenaireId;
+    // Les messages ne sont lisibles que par l'expéditeur et le destinataire
+    match /messages/{messageId} {
+        allow read, create: if request.auth != null && (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
     }
 
-    /**
-     * @description Manages administrateur profiles. Only the authenticated user can manage their own profile.
-     * @path /administrateurs/{administrateurId}
-     * @allow (create, update, delete) if request.auth.uid == administrateurId (Self-creation and owner-only modification)
-     * @allow (get, list) if isOwner(administrateurId) (Owner-only access)
-     * @deny (create, update, delete) if request.auth.uid != administrateurId (Unauthorized modification attempt)
-     * @principle Enforces document ownership for writes.
-     */
-    match /administrateurs/{administrateurId} {
-      allow get, list: if isOwner(administrateurId);
-      allow create: if isSignedIn() && request.auth.uid == administrateurId;
-      allow update: if isExistingOwner(administrateurId) && request.auth.uid == administrateurId;
-      allow delete: if isExistingOwner(administrateurId) && request.auth.uid == administrateurId;
+    // Les appels ne peuvent être créés et lus que par les participants
+    match /calls/{callId} {
+        allow read, create, update: if request.auth != null && (request.auth.uid == resource.data.callerId || request.auth.uid == resource.data.receiverId);
+        
+        match /offerCandidates/{candidateId} {
+           allow create: if request.auth != null;
+        }
+         match /answerCandidates/{candidateId} {
+           allow create: if request.auth != null;
+        }
     }
-
-    /**
-     * @description Manages portefeuille documents. Only the authenticated user can manage their own portefeuille.
-     * @path /portefeuilles/{portefeuilleId}
-     * @allow (create, update, delete) if request.auth.uid == portefeuilleId (Self-creation and owner-only modification)
-     * @allow (get, list) if isOwner(portefeuilleId) (Owner-only access)
-     * @deny (create, update, delete) if request.auth.uid != portefeuilleId (Unauthorized modification attempt)
-     * @principle Enforces document ownership for writes.
-     */
-    match /portefeuilles/{portefeuilleId} {
-      allow get, list: if isOwner(portefeuilleId);
-      allow create: if isSignedIn() && request.auth.uid == portefeuilleId;
-      allow update: if isExistingOwner(portefeuilleId) && request.auth.uid == portefeuilleId;
-      allow delete: if isExistingOwner(portefeuilleId) && request.auth.uid == portefeuilleId;
-    }
-
-    /**
-     * @description Manages contenuPremium documents. Public read, owner-only write.
-     * @path /contenuPremium/{contenuPremiumId}
-     * @allow (get, list) if true (Public read access)
-     * @allow (create, update, delete) if request.auth.uid == resource.data.escorteId (Owner-only modification)
-     * @deny (create, update, delete) if request.auth.uid != resource.data.escorteId (Unauthorized modification attempt)
-     * @principle Allows public read with owner-only writes, and enforces document ownership for writes.
-     */
-    match /contenuPremium/{contenuPremiumId} {
-      allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.escorteId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.escorteId) && resource.data.escorteId == request.auth.uid;
-      allow delete: if isExistingOwner(resource.data.escorteId) && resource.data.escorteId == request.auth.uid;
-    }
-
-    /**
-     * @description Manages produit documents. Public read, owner-only write.
-     * @path /produits/{produitId}
-     * @allow (get, list) if true (Public read access)
-     * @allow (create, update, delete) if request.auth.uid == resource.data.partenaireId (Owner-only modification)
-     * @deny (create, update, delete) if request.auth.uid != resource.data.partenaireId (Unauthorized modification attempt)
-     * @principle Allows public read with owner-only writes, and enforces document ownership for writes.
-     */
-    match /produits/{produitId} {
-      allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.partenaireId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.partenaireId) && resource.data.partenaireId == request.auth.uid;
-      allow delete: if isExistingOwner(resource.data.partenaireId) && resource.data.partenaireId == request.auth.uid;
-    }
-
-    /**
-     * @description Manages reservation documents. Only the authenticated user can manage their own reservation.
-     * @path /reservations/{reservationId}
-     * @allow (create, update, delete) if request.auth.uid == resource.data.membreId (Owner-only modification)
-     * @allow (get, list) if isOwner(resource.data.membreId) (Owner-only access)
-     * @deny (create, update, delete) if request.auth.uid != resource.data.membreId (Unauthorized modification attempt)
-     * @principle Enforces document ownership for writes.
-     */
-    match /reservations/{reservationId} {
-      allow get, list: if isOwner(resource.data.membreId);
-      allow create: if isSignedIn() && request.resource.data.membreId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.membreId) && resource.data.membreId == request.auth.uid;
-      allow delete: if isExistingOwner(resource.data.membreId) && resource.data.membreId == request.auth.uid;
-    }
-
-    /**
-     * @description Manages message documents under a member. Only the authenticated user can manage their own messages.
-     * @path /membres/{membreId}/messages/{messageId}
-     * @allow (create, update, delete) if request.auth.uid == membreId (Owner-only modification)
-     * @allow (get, list) if isOwner(membreId) (Owner-only access)
-     * @deny (create, update, delete) if request.auth.uid != membreId (Unauthorized modification attempt)
-     * @principle Enforces document ownership for writes.
-     */
-    match /membres/{membreId}/messages/{messageId} {
-      allow get, list: if isOwner(membreId);
-      allow create: if isSignedIn() && request.auth.uid == membreId;
-      allow update: if isExistingOwner(membreId) && request.auth.uid == membreId;
-      allow delete: if isExistingOwner(membreId) && request.auth.uid == membreId;
-    }
-
-    /**
-     * @description Manages message documents under a escorte. Only the authenticated user can manage their own messages.
-     * @path /escortes/{escorteId}/messages/{messageId}
-     * @allow (create, update, delete) if request.auth.uid == escorteId (Owner-only modification)
-     * @allow (get, list) if isOwner(escorteId) (Owner-only access)
-     * @deny (create, update, delete) if request.auth.uid != escorteId (Unauthorized modification attempt)
-     * @principle Enforces document ownership for writes.
-     */
-    match /escortes/{escorteId}/messages/{messageId} {
-      allow get, list: if isOwner(escorteId);
-      allow create: if isSignedIn() && request.auth.uid == escorteId;
-      allow update: if isExistingOwner(escorteId) && request.auth.uid == escorteId;
-      allow delete: if isExistingOwner(escorteId) && request.auth.uid == escorteId;
-    }
-
-    /**
-     * @description Manages message documents under a partenaire. Only the authenticated user can manage their own messages.
-     * @path /partenaires/{partenaireId}/messages/{messageId}
-     * @allow (create, update, delete) if request.auth.uid == partenaireId (Owner-only modification)
-     * @allow (get, list) if isOwner(partenaireId) (Owner-only access)
-     * @deny (create, update, delete) if request.auth.uid != partenaireId (Unauthorized modification attempt)
-     * @principle Enforces document ownership for writes.
-     */
-    match /partenaires/{partenaireId}/messages/{messageId} {
-      allow get, list: if isOwner(partenaireId);
-      allow create: if isSignedIn() && request.auth.uid == partenaireId;
-      allow update: if isExistingOwner(partenaireId) && request.auth.uid == partenaireId;
-      allow delete: if isExistingOwner(partenaireId) && request.auth.uid == partenaireId;
-    }
-
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+    
+    // Fallback : refuse tout par défaut
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

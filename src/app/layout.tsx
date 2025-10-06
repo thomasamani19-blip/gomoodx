@@ -4,7 +4,7 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { Toaster } from '@/components/ui/toaster';
 import { Playfair_Display, PT_Sans } from 'next/font/google';
 import { cn } from '@/lib/utils';
-import { FirebaseClientProvider } from '@/firebase';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ThemeProvider } from 'next-themes';
 
 const fontPlayfair = Playfair_Display({

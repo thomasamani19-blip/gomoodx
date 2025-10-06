@@ -7,8 +7,9 @@ import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartToo
 import PageHeader from '@/components/shared/page-header';
 import type { CreatorStats, MonthlyRevenue } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
-import { useDoc } from '@/firebase';
+import { useDoc, useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { doc } from 'firebase/firestore';
 
 
 const chartData: MonthlyRevenue[] = [
@@ -86,7 +87,8 @@ const StatCard = ({ title, value, change, icon: Icon, loading }: { title: string
 
 const StatsPage = () => {
     const { user, loading: authLoading } = useAuth();
-    const statsPath = user ? `/creators/${user.id}/stats/main` : null;
+    const firestore = useFirestore();
+    const statsPath = user ? doc(firestore, `/creators/${user.id}/stats/main`) : null;
     const { data: stats, loading: statsLoading } = useDoc<CreatorStats>(statsPath);
 
     const loading = authLoading || statsLoading;

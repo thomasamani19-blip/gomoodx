@@ -39,7 +39,8 @@ export default function CallPage({ params }: { params: { callId: string } }) {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
-  const { data: callDoc, loading: callLoading } = useDoc<Call>(`calls/${params.callId}`);
+  const callRef = doc(firestore, `calls/${params.callId}`);
+  const { data: callDoc, loading: callLoading } = useDoc<Call>(callRef);
 
   useEffect(() => {
     let peerConnection: RTCPeerConnection;
@@ -75,9 +76,9 @@ export default function CallPage({ params }: { params: { callId: string } }) {
         };
         
         const callId = params.callId;
-        const callRef = doc(firestore, 'calls', callId);
-        const offerCandidates = collection(callRef, 'offerCandidates');
-        const answerCandidates = collection(callRef, 'answerCandidates');
+        const callDocRef = doc(firestore, 'calls', callId);
+        const offerCandidates = collection(callDocRef, 'offerCandidates');
+        const answerCandidates = collection(callDocRef, 'answerCandidates');
 
         peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
@@ -92,11 +93,11 @@ export default function CallPage({ params }: { params: { callId: string } }) {
         if (callDoc.callerId === user.id && callDoc.status === 'pending') {
             const offerDescription = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offerDescription);
-            await updateDoc(callRef, { offer: { sdp: offerDescription.sdp, type: offerDescription.type }, status: 'ongoing' });
+            await updateDoc(callDocRef, { offer: { sdp: offerDescription.sdp, type: offerDescription.type }, status: 'ongoing' });
         }
 
         // Écouter la description distante et répondre si on est le destinataire
-        const unsubscribe = onSnapshot(callRef, async (snapshot) => {
+        const unsubscribe = onSnapshot(callDocRef, async (snapshot) => {
             const data = snapshot.data();
             if (!data) return;
 
@@ -107,7 +108,7 @@ export default function CallPage({ params }: { params: { callId: string } }) {
                     await peerConnection.setRemoteDescription(offerDescription);
                     const answerDescription = await peerConnection.createAnswer();
                     await peerConnection.setLocalDescription(answerDescription);
-                    await updateDoc(callRef, { answer: { sdp: answerDescription.sdp, type: answerDescription.type } });
+                    await updateDoc(callDocRef, { answer: { sdp: answerDescription.sdp, type: answerDescription.type } });
                 } catch (error) {
                     console.error("Erreur lors de la création de la réponse :", error);
                 }
@@ -167,7 +168,7 @@ export default function CallPage({ params }: { params: { callId: string } }) {
         hangUpLocal();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, firestore, params.callId]);
+  }, [user, firestore, params.callId, callDoc]);
   
   const hangUp = async () => {
     pc?.close();
@@ -175,8 +176,8 @@ export default function CallPage({ params }: { params: { callId: string } }) {
     remoteStream?.getTracks().forEach(track => track.stop());
 
     if (callDoc && callDoc.status !== 'ended' && firestore) {
-        const callRef = doc(firestore, 'calls', params.callId);
-        await updateDoc(callRef, { status: 'ended' });
+        const callDocRef = doc(firestore, 'calls', params.callId);
+        await updateDoc(callDocRef, { status: 'ended' });
     }
     router.push('/messagerie');
   };

@@ -3,14 +3,16 @@
 
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent } from '@/components/ui/card';
-import { useCollection } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import type { Annonce } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { collection } from 'firebase/firestore';
 
 export default function AnnoncesPage() {
-  const { data: annonces, loading } = useCollection<Annonce>('services');
+  const firestore = useFirestore();
+  const { data: annonces, loading } = useCollection<Annonce>(collection(firestore, 'services'));
 
   return (
     <div>

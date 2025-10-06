@@ -3,16 +3,18 @@
 
 import PageHeader from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { useCollection } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import type { BlogArticle } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { collection } from 'firebase/firestore';
 
 export default function BlogPage() {
-  const { data: articles, loading } = useCollection<BlogArticle>('blog');
+  const firestore = useFirestore();
+  const { data: articles, loading } = useCollection<BlogArticle>(collection(firestore, 'blog'));
 
   return (
     <div>

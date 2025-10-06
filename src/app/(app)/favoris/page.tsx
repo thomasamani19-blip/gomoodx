@@ -2,7 +2,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useCollection } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import type { User } from '@/lib/types';
 import PageHeader from '@/components/shared/page-header';
 import { Card } from '@/components/ui/card';
@@ -10,22 +10,26 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { where } from 'firebase/firestore';
+import { where, query, collection } from 'firebase/firestore';
+import { useMemo } from 'react';
 
 export default function FavorisPage() {
   const { user, loading: authLoading } = useAuth();
+  const firestore = useFirestore();
 
   // Get favorite creator IDs from the user object, if they exist
   const favoriteIds = user?.favorites && user.favorites.length > 0 ? user.favorites : null;
 
   // Query to fetch the full profiles of favorite creators.
-  // The 'in' query requires a non-empty array.
+  const favoriteCreatorsQuery = useMemo(() => {
+    // The 'in' query requires a non-empty array.
+    if (!favoriteIds) return null;
+    return query(collection(firestore, 'users'), where('__name__', 'in', favoriteIds));
+  }, [favoriteIds, firestore]);
+
+  
   const { data: favoriteCreators, loading: creatorsLoading } = useCollection<User>(
-    'users',
-    {
-      // Pass null constraints if favoriteIds is null to prevent an invalid query.
-      constraints: favoriteIds ? [where('__name__', 'in', favoriteIds)] : null,
-    }
+    favoriteCreatorsQuery,
   );
   
   // The overall loading state depends on auth and, if there are favorites, the creators query.

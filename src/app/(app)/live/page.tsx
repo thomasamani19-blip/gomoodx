@@ -3,15 +3,17 @@
 
 import PageHeader from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { useCollection } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import type { LiveSession } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Badge } from "@/components/ui/badge";
+import { collection } from "firebase/firestore";
 
 export default function LivePage() {
-  const { data: sessions, loading } = useCollection<LiveSession>('lives');
+  const firestore = useFirestore();
+  const { data: sessions, loading } = useCollection<LiveSession>(collection(firestore, 'lives'));
 
   return (
     <div>
