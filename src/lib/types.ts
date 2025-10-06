@@ -2,7 +2,8 @@
 import type { Timestamp } from 'firebase/firestore';
 
 // Main User Roles
-export type UserRole = 'administrateur' | 'escorte' | 'client' | 'partenaire';
+export type UserRole = 'administrateur' | 'escorte' | 'client' | 'partenaire' | 'founder' | 'moderator';
+
 
 // User status
 export type UserStatus = 'active' | 'suspended';
@@ -86,7 +87,7 @@ export interface Message {
   id: string;
   senderId: string;
   receiverId: string;
-  message: string;
+  content: string;
   type: MessageType;
   createdAt: Timestamp;
   isRead: boolean;

@@ -9,6 +9,7 @@ import ClientDashboard from '@/components/dashboard/client-dashboard';
 import PartenaireDashboard from '@/components/dashboard/partenaire-dashboard';
 import AdminDashboard from '@/components/dashboard/admin-dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { User } from '@/lib/types';
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -38,16 +39,18 @@ export default function DashboardPage() {
 
     switch (user.role) {
       case 'escorte':
-        return <EscorteDashboard user={user} />;
+        return <EscorteDashboard user={user as User} />;
       case 'client':
-        return <ClientDashboard user={user} />;
+        return <ClientDashboard user={user as User} />;
       case 'partenaire':
-        return <PartenaireDashboard user={user} />;
+        return <PartenaireDashboard user={user as User} />;
       case 'administrateur':
-        return <AdminDashboard user={user} />;
+      case 'founder':
+      case 'moderator':
+        return <AdminDashboard user={user as User} />;
       default:
-        // This case should ideally not be reached if roles are handled correctly
-        return <ClientDashboard user={user} />;
+        // Fallback for any unexpected role, default to client view
+        return <ClientDashboard user={user as User} />;
     }
   };
 
