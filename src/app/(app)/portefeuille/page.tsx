@@ -40,7 +40,7 @@ export default function PortefeuillePage() {
         return <ArrowUpCircle className="h-5 w-5 text-green-500" />;
       case 'purchase':
       case 'debit':
-      case 'withdraw':
+      case 'withdrawal':
         return <ArrowDownCircle className="h-5 w-5 text-red-500" />;
       default:
         return null;

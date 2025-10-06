@@ -17,21 +17,24 @@ export default function RechargerPage() {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [amount, setAmount] = useState(50); // Default amount
+  const [amount, setAmount] = useState(50); // Default amount in EUR
   const [isLoading, setIsLoading] = useState(false);
 
+  // Assumes public key is set in environment variables
   const fwPublicKey = process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY;
 
   if (!fwPublicKey) {
-    console.error("Flutterwave public key is not configured.");
+    console.error("La clé publique Flutterwave n'est pas configurée.");
     // Optionally render an error message to the user
   }
   
+  // This function is called when the payment is successful from Flutterwave's side
   const handleSuccess = async (response: any) => {
-    console.log("Flutterwave success response:", response);
+    console.log("Réponse de succès Flutterwave:", response);
     setIsLoading(true);
     
     try {
+        // Now, verify the transaction on your backend
         const apiResponse = await fetch('/api/payments/verifyFlutterwave', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -39,8 +42,8 @@ export default function RechargerPage() {
                 transaction_id: response.transaction_id,
                 tx_ref: response.tx_ref,
                 user_id: user?.id,
-                amount: amount,
-                currency: 'XOF' // Assuming XOF
+                amount: amount, // The amount that was intended to be paid
+                currency: 'EUR' // The currency
             }),
         });
 
@@ -64,7 +67,7 @@ export default function RechargerPage() {
         });
     } finally {
         setIsLoading(false);
-        closePaymentModal();
+        closePaymentModal(); // Close the modal
     }
   };
 
@@ -77,7 +80,7 @@ export default function RechargerPage() {
     public_key: fwPublicKey || '',
     tx_ref: `gomoodx-${Date.now()}-${user?.id}`,
     amount: amount,
-    currency: 'XOF',
+    currency: 'EUR', // Use EUR for the transaction
     payment_options: 'card,mobilemoney,ussd',
     customer: {
       email: user?.email || '',
@@ -86,7 +89,7 @@ export default function RechargerPage() {
     customizations: {
       title: 'GoMoodX - Rechargement',
       description: `Rechargement de ${amount} € pour votre portefeuille.`,
-      logo: 'https://www.gomoodx.com/logo.png', // Replace with your actual logo URL
+      logo: 'https://www.gomoodx.com/logo.png', // TODO: Replace with your actual logo URL
     },
   };
 
@@ -129,6 +132,7 @@ export default function RechargerPage() {
                 {...config}
                 className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
                 disabled={isLoading || !fwPublicKey}
+                onClick={() => setIsLoading(true)}
                 callback={handleSuccess}
                 onClose={handleClose}
             >

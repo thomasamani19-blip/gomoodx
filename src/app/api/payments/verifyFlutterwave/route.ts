@@ -5,9 +5,16 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin SDK
-// Important: This requires GOOGLE_APPLICATION_CREDENTIALS to be set in your environment
+// This should be configured with your service account for production.
+// For development, if you're running this with `firebase emulators:exec`,
+// GOOGLE_APPLICATION_CREDENTIALS might be set automatically.
 try {
   if (!getApps().length) {
+    // If you have a service account JSON file, you can use it like this:
+    // const serviceAccount = require('../../../../../path/to/your/serviceAccountKey.json');
+    // initializeApp({ credential: cert(serviceAccount) });
+    
+    // For environments like Google Cloud Run/Functions, it might be auto-initialized
     initializeApp();
   }
 } catch (e) {
@@ -23,8 +30,12 @@ export async function POST(request: Request) {
   try {
     const { transaction_id, tx_ref, user_id, amount, currency } = await request.json();
 
-    if (!transaction_id || !user_id || !amount || !currency) {
+    if (!transaction_id || !tx_ref || !user_id || !amount || !currency) {
       return NextResponse.json({ error: 'Des champs obligatoires sont manquants.' }, { status: 400 });
+    }
+
+    if (!FLUTTERWAVE_SECRET_KEY) {
+        throw new Error("La clé secrète Flutterwave n'est pas configurée sur le serveur.");
     }
 
     const response = await fetch(
@@ -38,8 +49,13 @@ export async function POST(request: Request) {
 
     const result = await response.json();
     
-    // Basic validation
-    if (result.status === 'success' && result.data.tx_ref === tx_ref && result.data.amount >= amount && result.data.currency === currency) {
+    // Perform thorough validation
+    if (result.status === 'success' && 
+        result.data.status === 'successful' &&
+        result.data.tx_ref === tx_ref && 
+        result.data.amount >= amount && 
+        result.data.currency === currency) {
+      
       console.log('Paiement Flutterwave vérifié avec succès:', result.data);
 
       const walletRef = db.collection('wallets').doc(user_id);
@@ -48,24 +64,31 @@ export async function POST(request: Request) {
       // Use a Firestore transaction to ensure atomicity
       await db.runTransaction(async (t) => {
         const walletDoc = await t.get(walletRef);
+        const transactionDoc = await t.get(transactionRef);
+
+        // Prevent duplicate processing
+        if (transactionDoc.exists) {
+            console.warn(`La transaction ${transactionRef.id} a déjà été traitée.`);
+            return;
+        }
         
         if (!walletDoc.exists) {
             // If wallet doesn't exist, create it.
             t.set(walletRef, {
-                balance: amount,
+                balance: result.data.amount, // Use the amount confirmed by Flutterwave
                 currency: currency,
-                totalEarned: 0,
-                totalSpent: 0,
-                status: 'active'
+                createdAt: FieldValue.serverTimestamp(),
+                updatedAt: FieldValue.serverTimestamp(),
             });
         } else {
             // If wallet exists, update balance.
             t.update(walletRef, {
-              balance: FieldValue.increment(amount),
+              balance: FieldValue.increment(result.data.amount),
+              updatedAt: FieldValue.serverTimestamp(),
             });
         }
         
-        // Create a new transaction record
+        // Create a new transaction record to log the event
         t.set(transactionRef, {
             amount: result.data.amount,
             type: 'deposit',
@@ -79,10 +102,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: 'success', message: 'Paiement vérifié et portefeuille mis à jour.' });
     } else {
       console.error('La vérification du paiement Flutterwave a échoué:', result);
-      return NextResponse.json({ status: 'error', message: 'La vérification du paiement a échoué.' }, { status: 400 });
+      return NextResponse.json({ status: 'error', message: result.message || 'La vérification du paiement a échoué.' }, { status: 400 });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erreur lors de la vérification du paiement Flutterwave:', error);
-    return NextResponse.json({ error: 'Erreur Interne du Serveur' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur Interne du Serveur', message: error.message }, { status: 500 });
   }
 }

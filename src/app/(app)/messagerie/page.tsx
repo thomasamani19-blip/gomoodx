@@ -101,6 +101,8 @@ export default function MessageriePage() {
     const activeMessagesQuery = useMemo(() => {
         if (!user || !selectedContact || !firestore) return null;
         
+        // This query is intentionally broad to listen for ANY new message for the user.
+        // The filtering happens client-side. This simplifies the real-time logic.
         return query(
             collection(firestore, 'messages'),
             or(
@@ -116,7 +118,7 @@ export default function MessageriePage() {
         activeMessagesQuery
     );
 
-     // 3. Filter messages on the client side
+     // 3. Filter messages on the client side to show only the conversation with the selected contact
      const filteredActiveMessages = useMemo(() => {
         if (!activeMessages || !user || !selectedContact) return [];
         return activeMessages.filter(msg =>
@@ -157,6 +159,7 @@ export default function MessageriePage() {
     const handleInitiateCall = async () => {
         if (!user || !selectedContact || !firestore) return;
 
+        // Create a new call document in Firestore
         const callData: Omit<Call, 'id'> = {
             callerId: user.id,
             receiverId: selectedContact.id,
@@ -168,6 +171,7 @@ export default function MessageriePage() {
 
         try {
             const callDocRef = await addDoc(collection(firestore, 'calls'), callData);
+            // Redirect to the call page
             router.push(`/appels/${callDocRef.id}`);
         } catch (error) {
             console.error("Erreur lors de l'initiation de l'appel :", error);
@@ -295,4 +299,5 @@ export default function MessageriePage() {
     </div>
     );
 }
+
 

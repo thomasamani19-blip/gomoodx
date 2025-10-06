@@ -37,14 +37,16 @@ export interface User {
 export interface Wallet {
   id: string; // Same as user UID
   balance: number;
-  currency: 'XOF';
+  currency: 'EUR' | 'XOF'; // Allow multiple currencies
   totalEarned: number;
   totalSpent: number;
   status: 'active';
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }
 
 // Transaction (subcollection of Wallet)
-export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'withdraw';
+export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit';
 
 export type TransactionStatus = 'pending' | 'success' | 'failed';
 
@@ -106,7 +108,7 @@ export interface Call {
   answer?: Record<string, unknown>;
   status: CallStatus;
   createdAt: Timestamp;
-  callerName?: string;
+  callerName: string;
 }
 
 // Live Session
@@ -220,4 +222,3 @@ export type MonthlyRevenue = {
     month: string;
     revenue: number;
 }
-

@@ -78,7 +78,7 @@ export function AppSidebar() {
         <SidebarMenuItem key={item.href}>
           <Link href={item.href} passHref legacyBehavior>
             <SidebarMenuButton
-              isActive={pathname === item.href}
+              isActive={pathname.startsWith(item.href)}
               tooltip={item.title}
               asChild
             >
@@ -105,10 +105,8 @@ export function AppSidebar() {
       return renderLoadingSkeleton();
     }
     if (!user) {
-      // It's better to show some skeleton or nothing, 
-      // but if an unauthenticated user reaches here, something is wrong.
-      // For now, let's show the client nav skeleton as a fallback.
-      return renderLoadingSkeleton();
+      // Show a minimal navigation for logged-out users if they somehow reach here
+      return renderNavItems(clientNav.filter(item => ['/annonces', '/boutique', '/live', '/blog'].includes(item.href)));
     }
 
     switch (user.role) {
@@ -149,7 +147,7 @@ export function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <Link href="/profil" passHref legacyBehavior>
-                  <SidebarMenuButton tooltip="Profil & Paramètres" isActive={pathname === '/profil'} asChild>
+                  <SidebarMenuButton tooltip="Profil & Paramètres" isActive={pathname.startsWith('/profil')} asChild>
                     <a><UserCircle /><span>Profil</span></a>
                   </SidebarMenuButton>
                 </Link>

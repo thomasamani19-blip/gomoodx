@@ -5,16 +5,16 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useDoc, useFirestore } from '@/firebase';
 import type { Call } from '@/lib/types';
-import { doc, onSnapshot, setDoc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, collection, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Phone, Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import { Phone, Mic, MicOff, Video, VideoOff, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Use a public STUN server
+// Utiliser un serveur STUN public
 const servers = {
   iceServers: [
     {
@@ -42,108 +42,137 @@ export default function CallPage({ params }: { params: { callId: string } }) {
   const { data: callDoc, loading: callLoading } = useDoc<Call>(`calls/${params.callId}`);
 
   useEffect(() => {
+    let peerConnection: RTCPeerConnection;
+    let localMediaStream: MediaStream;
+    let remoteMediaStream: MediaStream;
+    
     const initPeerConnection = async () => {
-      if (!user || !firestore || !callDoc) return;
+        if (!user || !firestore || !callDoc) return;
+        
+        peerConnection = new RTCPeerConnection(servers);
+        setPc(peerConnection);
 
-      const newPc = new RTCPeerConnection(servers);
-      setPc(newPc);
+        localMediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        setLocalStream(localMediaStream);
+        if (localVideoRef.current) {
+            localVideoRef.current.srcObject = localMediaStream;
+        }
 
-      const local = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      setLocalStream(local);
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = local;
-      }
-      
-      const remote = new MediaStream();
-      setRemoteStream(remote);
-      if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = remote;
-      }
+        remoteMediaStream = new MediaStream();
+        setRemoteStream(remoteMediaStream);
+        if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = remoteMediaStream;
+        }
 
-      local.getTracks().forEach((track) => {
-        newPc.addTrack(track, local);
-      });
-
-      newPc.ontrack = (event) => {
-        event.streams[0].getTracks().forEach((track) => {
-          remote.addTrack(track);
+        localMediaStream.getTracks().forEach((track) => {
+            peerConnection.addTrack(track, localMediaStream);
         });
-      };
-      
-      const callId = params.callId;
-      const callRef = doc(firestore, 'calls', callId);
-      const offerCandidates = collection(callRef, 'offerCandidates');
-      const answerCandidates = collection(callRef, 'answerCandidates');
 
-      newPc.onicecandidate = (event) => {
-        if (event.candidate) {
-          const candidatesCollection = callDoc.callerId === user.id ? offerCandidates : answerCandidates;
-          addDoc(candidatesCollection, event.candidate.toJSON());
-        }
-      };
-
-      // --- Signaling Logic ---
-
-      // Create offer if caller
-      if (callDoc.callerId === user.id && callDoc.status === 'pending') {
-        const offerDescription = await newPc.createOffer();
-        await newPc.setLocalDescription(offerDescription);
-        await updateDoc(callRef, { offer: { sdp: offerDescription.sdp, type: offerDescription.type }, status: 'ongoing' });
-      }
-
-      // Listen for remote description and answer if receiver
-      onSnapshot(callRef, (snapshot) => {
-        const data = snapshot.data();
-        if (data?.offer && !newPc.currentRemoteDescription && user.id === callDoc.receiverId) {
-          const offerDescription = new RTCSessionDescription(data.offer);
-          newPc.setRemoteDescription(offerDescription).then(async () => {
-             const answerDescription = await newPc.createAnswer();
-             await newPc.setLocalDescription(answerDescription);
-             await updateDoc(callRef, { answer: { sdp: answerDescription.sdp, type: answerDescription.type } });
-          });
-        }
+        peerConnection.ontrack = (event) => {
+            event.streams[0].getTracks().forEach((track) => {
+                remoteMediaStream.addTrack(track);
+            });
+        };
         
-        if (data?.answer && !newPc.currentRemoteDescription && user.id === callDoc.callerId) {
-          const answerDescription = new RTCSessionDescription(data.answer);
-          newPc.setRemoteDescription(answerDescription);
-        }
-        
-        // When call ends
-        if (data?.status === 'ended') {
-            hangUp();
-            toast({ title: "Appel terminé" });
-            router.push('/messagerie');
-        }
-      });
-      
-      // Listen for ICE candidates
-      const candidatesCollection = callDoc.callerId === user.id ? answerCandidates : offerCandidates;
-      onSnapshot(candidatesCollection, (snapshot) => {
-         snapshot.docChanges().forEach((change) => {
-            if (change.type === 'added') {
-                const candidate = new RTCIceCandidate(change.doc.data());
-                newPc.addIceCandidate(candidate);
+        const callId = params.callId;
+        const callRef = doc(firestore, 'calls', callId);
+        const offerCandidates = collection(callRef, 'offerCandidates');
+        const answerCandidates = collection(callRef, 'answerCandidates');
+
+        peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+                const candidatesCollection = callDoc.callerId === user.id ? offerCandidates : answerCandidates;
+                addDoc(candidatesCollection, event.candidate.toJSON());
             }
-         });
-      });
+        };
+
+        // --- Logique de signalisation ---
+
+        // Créer une offre si on est l'appelant
+        if (callDoc.callerId === user.id && callDoc.status === 'pending') {
+            const offerDescription = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offerDescription);
+            await updateDoc(callRef, { offer: { sdp: offerDescription.sdp, type: offerDescription.type }, status: 'ongoing' });
+        }
+
+        // Écouter la description distante et répondre si on est le destinataire
+        const unsubscribe = onSnapshot(callRef, async (snapshot) => {
+            const data = snapshot.data();
+            if (!data) return;
+
+            // Logique pour le receveur pour répondre à l'offre
+            if (data.offer && !peerConnection.currentRemoteDescription && user.id === callDoc.receiverId) {
+                try {
+                    const offerDescription = new RTCSessionDescription(data.offer);
+                    await peerConnection.setRemoteDescription(offerDescription);
+                    const answerDescription = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answerDescription);
+                    await updateDoc(callRef, { answer: { sdp: answerDescription.sdp, type: answerDescription.type } });
+                } catch (error) {
+                    console.error("Erreur lors de la création de la réponse :", error);
+                }
+            }
+            
+            // Logique pour l'appelant pour définir la réponse distante
+            if (data.answer && !peerConnection.currentRemoteDescription && user.id === callDoc.callerId) {
+                 try {
+                    const answerDescription = new RTCSessionDescription(data.answer);
+                    await peerConnection.setRemoteDescription(answerDescription);
+                } catch (error) {
+                    console.error("Erreur lors de la définition de la description distante :", error);
+                }
+            }
+            
+            // Lorsque l'appel se termine
+            if (data.status === 'ended') {
+                hangUpLocal();
+                toast({ title: "Appel terminé" });
+                router.push('/messagerie');
+            }
+        });
+        
+        // Écouter les candidats ICE
+        const candidatesUnsubscribe = onSnapshot(
+            callDoc.callerId === user.id ? answerCandidates : offerCandidates, 
+            (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        const candidate = new RTCIceCandidate(change.doc.data());
+                        peerConnection.addIceCandidate(candidate).catch(e => console.error("Erreur d'ajout de ICE candidate", e));
+                    }
+                });
+            }
+        );
+        
+        return () => {
+            unsubscribe();
+            candidatesUnsubscribe();
+            hangUpLocal();
+        };
     };
 
+    const hangUpLocal = () => {
+        pc?.close();
+        localStream?.getTracks().forEach(track => track.stop());
+        remoteStream?.getTracks().forEach(track => track.stop());
+        setPc(null);
+        setLocalStream(null);
+        setRemoteStream(null);
+    }
+    
     initPeerConnection();
 
-    // Cleanup
+    // Nettoyage
     return () => {
-        hangUp();
+        hangUpLocal();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, firestore, params.callId, callDoc]);
+  }, [user, firestore, params.callId]);
   
   const hangUp = async () => {
     pc?.close();
     localStream?.getTracks().forEach(track => track.stop());
     remoteStream?.getTracks().forEach(track => track.stop());
-    setPc(null);
-    setLocalStream(null);
-    setRemoteStream(null);
 
     if (callDoc && callDoc.status !== 'ended' && firestore) {
         const callRef = doc(firestore, 'calls', params.callId);
@@ -168,16 +197,16 @@ export default function CallPage({ params }: { params: { callId: string } }) {
 
   return (
     <div className="relative h-screen w-screen bg-black text-white flex items-center justify-center">
-        {/* Remote Video */}
+        {/* Vidéo distante */}
         <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
 
-        {/* Local Video */}
-        <div className="absolute bottom-8 right-8 h-48 w-36 rounded-lg overflow-hidden border-2 border-primary">
+        {/* Vidéo locale */}
+        <div className="absolute bottom-24 sm:bottom-8 right-4 sm:right-8 h-48 w-36 rounded-lg overflow-hidden border-2 border-primary">
              <video ref={localVideoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
         </div>
 
-        {/* Call Controls */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4">
+        {/* Contrôles de l'appel */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 p-2 bg-black/50 rounded-full">
             <Button onClick={toggleMute} variant="secondary" size="icon" className="rounded-full h-14 w-14">
                 {isMuted ? <MicOff /> : <Mic />}
             </Button>
@@ -189,17 +218,18 @@ export default function CallPage({ params }: { params: { callId: string } }) {
             </Button>
         </div>
 
-        {/* Call Status Overlay */}
+        {/* Superposition de statut d'appel */}
         {(!remoteStream || remoteStream.getTracks().length === 0) && (
             <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-4">
                 <Avatar className="h-32 w-32">
-                    <AvatarImage src={callDoc?.callerId === user?.id ? undefined : callDoc?.callerName} />
+                    {/* Devrait montrer l'image de l'autre utilisateur */}
+                    <AvatarImage src={''} /> 
                     <AvatarFallback className="text-4xl">
-                        {callDoc?.callerName?.charAt(0) || '?'}
+                        ?
                     </AvatarFallback>
                 </Avatar>
                 <h2 className="text-2xl font-bold">
-                    {callDoc?.status === 'pending' ? `Appel de ${callDoc.callerName}...` : 'Connexion en cours...'}
+                    {callDoc?.status === 'pending' ? `Appel de ${callDoc?.callerName || 'quelqu\'un'}...` : 'Connexion en cours...'}
                 </h2>
                 <Loader2 className="animate-spin h-8 w-8 text-primary" />
             </div>

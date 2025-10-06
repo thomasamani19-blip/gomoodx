@@ -23,10 +23,12 @@ export default function FavorisPage() {
   const { data: favoriteCreators, loading: creatorsLoading } = useCollection<User>(
     'users',
     {
+      // Pass null constraints if favoriteIds is null to prevent an invalid query.
       constraints: favoriteIds ? [where('__name__', 'in', favoriteIds)] : null,
     }
   );
   
+  // The overall loading state depends on auth and, if there are favorites, the creators query.
   const loading = authLoading || (favoriteIds ? creatorsLoading : false);
 
   return (

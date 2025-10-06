@@ -13,12 +13,15 @@ import { useAuth } from '@/hooks/use-auth';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 export default function UserProfilePage({ params }: { params: { id: string } }) {
   const { user: currentUser, loading: authLoading } = useAuth();
   const { data: user, loading: userLoading } = useDoc<User>(`users/${params.id}`);
   const firestore = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
+
 
   const isOwnProfile = currentUser?.id === params.id;
   const isFavorite = currentUser?.favorites?.includes(params.id);
@@ -26,6 +29,7 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   const handleToggleFavorite = async () => {
     if (!currentUser || !firestore) {
         toast({ title: "Vous n'êtes pas connecté", variant: 'destructive'});
+        router.push('/connexion');
         return;
     };
 
@@ -122,4 +126,3 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
     </div>
   );
 }
-
