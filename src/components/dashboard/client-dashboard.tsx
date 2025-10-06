@@ -8,30 +8,57 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowRight, Heart, MessageSquare, Wallet } from "lucide-react";
-import type { User } from "@/lib/types";
+import type { User, Transaction } from "@/lib/types";
 import Link from 'next/link';
 import { useCollection, useDoc, useFirestore } from "@/firebase";
-import { limit, where, query, collection, doc } from "firebase/firestore";
+import { limit, where, query, collection, doc, orderBy } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { useMemo } from "react";
-
-const recentPurchases = [
-    { id: 'p1', item: 'Vidéo "Nuit à Paris"', date: 'Il y a 2 jours', amount: '25.00 €' },
-    { id: 'p2', item: 'Album photo "Charme Secret"', date: 'Il y a 1 semaine', amount: '15.00 €' },
-    { id: 'p3', item: 'Crédits messagerie (100)', date: 'Il y a 1 semaine', amount: '10.00 €' },
-];
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 export default function ClientDashboard({ user }: { user: User }) {
   const firestore = useFirestore();
 
-  const creatorsQuery = useMemo(() => 
-    firestore ? query(collection(firestore, 'users'), where('role', '==', 'escorte'), limit(4)) : null,
-    [firestore]
-  );
+  // Query for favorite creators
+  const favoriteIds = user?.favorites && user.favorites.length > 0 ? user.favorites : [];
+  const creatorsQuery = useMemo(() => {
+    if (favoriteIds.length === 0 || !firestore) return null;
+    // Query for the first 4 favorite creators
+    return query(collection(firestore, 'users'), where('__name__', 'in', favoriteIds.slice(0, 4)));
+  }, [firestore, favoriteIds]);
   const { data: creators, loading: creatorsLoading } = useCollection<User>(creatorsQuery);
   
+  // Query for wallet
   const walletRef = useMemo(() => firestore ? doc(firestore, 'wallets', user.id) : null, [firestore, user.id]);
   const { data: wallet, loading: walletLoading } = useDoc<any>(walletRef);
+
+  // Query for recent purchases
+  const transactionsQuery = useMemo(() => 
+    firestore 
+      ? query(
+          collection(firestore, `wallets/${user.id}/transactions`), 
+          where('type', 'in', ['purchase', 'debit']), 
+          orderBy('createdAt', 'desc'), 
+          limit(3)
+        )
+      : null,
+    [firestore, user.id]
+  );
+  const { data: recentPurchases, loading: purchasesLoading } = useCollection<Transaction>(transactionsQuery);
+
+  // Query for unread messages (simplified)
+  const messagesQuery = useMemo(() => 
+      firestore ? query(collection(firestore, 'messages'), where('receiverId', '==', user.id), where('isRead', '==', false)) : null,
+      [firestore, user.id]
+  );
+  const { data: unreadMessages, loading: messagesLoading } = useCollection(messagesQuery);
+
+  const unreadConversationsCount = useMemo(() => {
+    if (!unreadMessages) return 0;
+    const senderIds = new Set(unreadMessages.map((msg: any) => msg.senderId));
+    return senderIds.size;
+  }, [unreadMessages]);
 
 
   return (
@@ -70,8 +97,12 @@ export default function ClientDashboard({ user }: { user: User }) {
                     <MessageSquare className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">3 Non lus</div>
-                    <p className="text-xs text-muted-foreground">dans 2 conversations</p>
+                    {messagesLoading ? <Skeleton className="h-8 w-1/2"/> : (
+                        <>
+                            <div className="text-2xl font-bold">{unreadMessages?.length || 0} Non lus</div>
+                            <p className="text-xs text-muted-foreground">dans {unreadConversationsCount} conversation(s)</p>
+                        </>
+                    )}
                 </CardContent>
             </Card>
         </div>
@@ -79,9 +110,9 @@ export default function ClientDashboard({ user }: { user: User }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Créateurs à découvrir</CardTitle>
+                    <CardTitle>Vos Créateurs Favoris</CardTitle>
                     <Button variant="ghost" size="sm" asChild>
-                        <Link href="/annonces">
+                        <Link href="/favoris">
                             Voir tout <ArrowRight className="ml-2 h-4 w-4" />
                         </Link>
                     </Button>
@@ -93,7 +124,7 @@ export default function ClientDashboard({ user }: { user: User }) {
                              <Skeleton className="h-4 w-16" />
                         </div>
                     ))}
-                    {!creatorsLoading && creators?.map(creator => (
+                    {!creatorsLoading && creators && creators.length > 0 && creators.map(creator => (
                         <div key={creator.id} className="flex flex-col items-center gap-2 group">
                             <Link href={`/profil/${creator.id}`} className="flex flex-col items-center gap-2 text-center">
                                 <Avatar className="h-20 w-20 border-2 border-transparent group-hover:border-primary transition-colors">
@@ -104,6 +135,9 @@ export default function ClientDashboard({ user }: { user: User }) {
                             </Link>
                         </div>
                     ))}
+                     {!creatorsLoading && (!creators || creators.length === 0) && (
+                        <p className="col-span-full text-center text-sm text-muted-foreground py-4">Ajoutez des créateurs à vos favoris pour les voir ici.</p>
+                     )}
                 </CardContent>
             </Card>
             <Card>
@@ -111,28 +145,38 @@ export default function ClientDashboard({ user }: { user: User }) {
                     <CardTitle>Achats récents</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Article</TableHead>
-                                <TableHead className="text-right">Montant</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {recentPurchases.map(purchase => (
-                                <TableRow key={purchase.id}>
-                                    <TableCell>
-                                        <div className="font-medium">{purchase.item}</div>
-                                        <div className="text-xs text-muted-foreground">{purchase.date}</div>
-                                    </TableCell>
-                                    <TableCell className="text-right font-mono">{purchase.amount}</TableCell>
+                    {purchasesLoading ? <Skeleton className="h-24 w-full" /> : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Article</TableHead>
+                                    <TableHead className="text-right">Montant</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {recentPurchases && recentPurchases.length > 0 ? recentPurchases.map(purchase => (
+                                    <TableRow key={purchase.id}>
+                                        <TableCell>
+                                            <div className="font-medium">{purchase.description}</div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {purchase.createdAt?.toDate ? formatDistanceToNow(purchase.createdAt.toDate(), { addSuffix: true, locale: fr }) : ''}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right font-mono text-red-500">- {purchase.amount.toFixed(2)} €</TableCell>
+                                    </TableRow>
+                                )) : (
+                                    <TableRow>
+                                        <TableCell colSpan={2} className="text-center text-muted-foreground">Aucun achat récent.</TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    )}
                 </CardContent>
             </Card>
         </div>
     </div>
   );
 }
+
+    

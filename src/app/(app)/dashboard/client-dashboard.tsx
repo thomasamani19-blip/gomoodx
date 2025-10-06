@@ -21,9 +21,9 @@ export default function ClientDashboard({ user }: { user: User }) {
   const firestore = useFirestore();
 
   // Query for favorite creators
-  const favoriteIds = user?.favorites && user.favorites.length > 0 ? user.favorites : null;
+  const favoriteIds = user?.favorites && user.favorites.length > 0 ? user.favorites : [];
   const creatorsQuery = useMemo(() => {
-    if (!favoriteIds || !firestore) return null;
+    if (favoriteIds.length === 0 || !firestore) return null;
     // Query for the first 4 favorite creators
     return query(collection(firestore, 'users'), where('__name__', 'in', favoriteIds.slice(0, 4)));
   }, [firestore, favoriteIds]);
@@ -56,7 +56,7 @@ export default function ClientDashboard({ user }: { user: User }) {
 
   const unreadConversationsCount = useMemo(() => {
     if (!unreadMessages) return 0;
-    const senderIds = new Set(unreadMessages.map(msg => msg.senderId));
+    const senderIds = new Set(unreadMessages.map((msg: any) => msg.senderId));
     return senderIds.size;
   }, [unreadMessages]);
 
@@ -159,7 +159,7 @@ export default function ClientDashboard({ user }: { user: User }) {
                                         <TableCell>
                                             <div className="font-medium">{purchase.description}</div>
                                             <div className="text-xs text-muted-foreground">
-                                                {formatDistanceToNow(purchase.createdAt.toDate(), { addSuffix: true, locale: fr })}
+                                                {purchase.createdAt?.toDate ? formatDistanceToNow(purchase.createdAt.toDate(), { addSuffix: true, locale: fr }) : ''}
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right font-mono text-red-500">- {purchase.amount.toFixed(2)} €</TableCell>
@@ -178,3 +178,5 @@ export default function ClientDashboard({ user }: { user: User }) {
     </div>
   );
 }
+
+    
