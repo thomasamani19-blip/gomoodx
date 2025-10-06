@@ -77,7 +77,7 @@ const adminNav = [
   { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
   { title: 'Utilisateurs', href: '/admin/users', icon: Users },
   { title: 'Demandes Partenaires', href: '/admin/demandes-partenaires', icon: FileText },
-  { title: 'Modération', href: '/admin/moderation', icon: ShieldCheck },
+  { title: 'Vérifications', href: '/admin/moderation', icon: ShieldCheck },
 ];
 
 export function AppSidebar() {

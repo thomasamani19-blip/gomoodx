@@ -1,0 +1,169 @@
+
+'use client';
+
+import PageHeader from '@/components/shared/page-header';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useCollection, useFirestore } from '@/firebase';
+import type { User, VerificationStatus } from '@/lib/types';
+import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { Button } from '@/components/ui/button';
+import { CheckCircle, Loader2, XCircle, MoreHorizontal } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useMemo, useState } from 'react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
+const statusVariantMap: { [key in VerificationStatus]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
+    pending: 'outline',
+    verified: 'default',
+    rejected: 'destructive',
+};
+
+const statusTextMap = {
+    pending: 'En attente',
+    verified: 'Vérifié',
+    rejected: 'Rejeté',
+};
+
+export default function AdminModerationPage() {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [loadingStates, setLoadingStates] = useState<{[key: string]: boolean}>({});
+    
+    const verificationQuery = useMemo(() => firestore 
+        ? query(
+            collection(firestore, 'users'), 
+            where('role', '==', 'escorte'), 
+            where('verificationStatus', '==', 'pending')
+          ) 
+        : null, [firestore]);
+        
+    const { data: users, loading: usersLoading } = useCollection<User>(verificationQuery);
+
+    const handleUpdateVerification = async (userId: string, status: 'verified' | 'rejected') => {
+        if (!firestore) return;
+
+        setLoadingStates(prev => ({...prev, [userId]: true}));
+
+        const userRef = doc(firestore, 'users', userId);
+        try {
+            await updateDoc(userRef, { 
+                verificationStatus: status,
+                status: status === 'verified' ? 'active' : 'suspended',
+                isVerified: status === 'verified',
+            });
+            toast({
+                title: 'Statut mis à jour',
+                description: `Le créateur a été ${status === 'verified' ? 'approuvé' : 'rejeté'}.`,
+            });
+        } catch (error) {
+            console.error("Error updating verification status:", error);
+            toast({
+                title: 'Erreur',
+                description: 'Impossible de mettre à jour le statut.',
+                variant: 'destructive',
+            });
+        } finally {
+            setLoadingStates(prev => ({...prev, [userId]: false}));
+        }
+    };
+    
+    return (
+        <div>
+            <PageHeader
+                title="Vérifications d'Identité"
+                description="Examinez et validez les nouveaux créateurs de la plateforme."
+            />
+            <Card>
+                <CardHeader>
+                    <CardTitle>Demandes en attente</CardTitle>
+                    <CardDescription>
+                        {usersLoading ? 'Chargement...' : `Il y a actuellement ${users?.length || 0} demande(s) en attente.`}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                   {usersLoading ? (
+                        <div className="space-y-4">
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                        </div>
+                    ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Créateur</TableHead>
+                                <TableHead>Type de vérification</TableHead>
+                                <TableHead>Date d'inscription</TableHead>
+                                <TableHead>Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {users && users.map(user => (
+                                <TableRow key={user.id}>
+                                    <TableCell>
+                                        <div className="flex items-center gap-3">
+                                            <Avatar>
+                                                <AvatarImage src={user.profileImage} />
+                                                <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p className="font-medium">{user.displayName}</p>
+                                                <p className="text-sm text-muted-foreground">{user.email}</p>
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                     <TableCell>
+                                        <Badge variant="secondary" className="capitalize">{user.verificationType === 'complete' ? 'Complète' : 'Selfie'}</Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        {user.createdAt ? format(user.createdAt.toDate(), 'd MMM yyyy', { locale: fr }) : 'N/A'}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex gap-2">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                onClick={() => handleUpdateVerification(user.id, 'verified')}
+                                                disabled={loadingStates[user.id]}
+                                            >
+                                                {loadingStates[user.id] ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle className="h-5 w-5 text-green-500" />}
+                                            </Button>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                onClick={() => handleUpdateVerification(user.id, 'rejected')}
+                                                disabled={loadingStates[user.id]}
+                                            >
+                                                <XCircle className="h-5 w-5 text-destructive" />
+                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem>Voir les documents</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    )}
+                    {!usersLoading && (!users || users.length === 0) && (
+                        <p className="text-center text-muted-foreground py-8">Aucune demande de vérification en attente.</p>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+    )
+}
