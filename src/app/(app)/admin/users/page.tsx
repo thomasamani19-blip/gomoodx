@@ -54,7 +54,7 @@ export default function AdminUsersPage() {
     }, [currentUser, authLoading, router]);
     
     const usersQuery = useMemo(() => {
-        if (!isAllowed) return null;
+        if (!isAllowed || !firestore) return null;
         return query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
     }, [isAllowed, firestore]);
     
