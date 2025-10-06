@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function InscriptionClientPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -53,7 +54,7 @@ export default function InscriptionClientPage() {
 
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4 py-8">
       <Card className="w-full max-w-md">
         <form onSubmit={handleSignup}>
             <CardHeader className="text-center">
@@ -62,13 +63,42 @@ export default function InscriptionClientPage() {
             <CardDescription>Accédez à un monde de contenus exclusifs.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
-                <div className="grid gap-2">
-                    <Label htmlFor="displayName">Nom d'affichage</Label>
-                    <Input id="displayName" name="displayName" placeholder="Votre nom ou pseudo" required />
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="displayName">Nom d'affichage</Label>
+                        <Input id="displayName" name="displayName" placeholder="Votre nom ou pseudo" required />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="dateOfBirth">Date de naissance</Label>
+                        <Input id="dateOfBirth" name="dateOfBirth" type="date" required />
+                    </div>
+                </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="country">Pays</Label>
+                        <Input id="country" name="country" placeholder="Ex: France" required />
+                    </div>
+                     <div className="grid gap-2">
+                        <Label htmlFor="phone">Téléphone</Label>
+                        <Input id="phone" name="phone" placeholder="+33 6..." required />
+                    </div>
                 </div>
                 <div className="grid gap-2">
-                    <Label htmlFor="dateOfBirth">Date de naissance</Label>
-                    <Input id="dateOfBirth" name="dateOfBirth" type="date" required />
+                    <Label>Genre</Label>
+                    <RadioGroup name="gender" defaultValue="male" className="flex gap-4">
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="male" id="male" />
+                            <Label htmlFor="male">Homme</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="female" id="female" />
+                            <Label htmlFor="female">Femme</Label>
+                        </div>
+                         <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="other" id="other" />
+                            <Label htmlFor="other">Autre</Label>
+                        </div>
+                    </RadioGroup>
                 </div>
                 <div className="grid gap-2">
                     <Label htmlFor="email">Email</Label>
