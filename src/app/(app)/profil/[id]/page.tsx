@@ -2,21 +2,113 @@
 
 'use client';
 
-import { useDoc, useFirestore } from '@/firebase';
-import type { User, Call, CallType } from '@/lib/types';
+import { useCollection, useDoc, useFirestore } from '@/firebase';
+import type { User, Call, CallType, Annonce, Product } from '@/lib/types';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, MessageCircle, Video, Phone, ChevronDown } from 'lucide-react';
+import { Heart, MessageCircle, Video, Phone, ChevronDown, Star } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { doc, updateDoc, arrayUnion, arrayRemove, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, arrayRemove, addDoc, collection, serverTimestamp, query, where, limit } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useMemo } from 'react';
+import { cn } from '@/lib/utils';
+
+// StarRating component copied from annonces/page.tsx
+const StarRating = ({ rating, ratingCount, className }: { rating: number, ratingCount?: number, className?: string }) => {
+    const totalStars = 5;
+    const fullStars = Math.floor(rating);
+    const halfStar = rating % 1 !== 0;
+    const emptyStars = totalStars - fullStars - (halfStar ? 1 : 0);
+
+    return (
+        <div className={cn("flex items-center gap-1", className)}>
+            {[...Array(fullStars)].map((_, i) => (
+                <Star key={`full-${i}`} className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+            ))}
+            {halfStar && <Star key="half" className="h-4 w-4 text-yellow-400" style={{ clipPath: 'inset(0 50% 0 0)' }} />}
+            {[...Array(emptyStars)].map((_, i) => (
+                <Star key={`empty-${i}`} className="h-4 w-4 text-gray-300" />
+            ))}
+             {ratingCount !== undefined && (
+                <span className="text-xs text-muted-foreground ml-1">({ratingCount})</span>
+            )}
+        </div>
+    );
+};
+
+
+const CreatorAnnonces = ({ creatorId }: { creatorId: string }) => {
+    const firestore = useFirestore();
+    const annoncesQuery = useMemo(() => firestore ? query(collection(firestore, 'services'), where('createdBy', '==', creatorId), limit(6)) : null, [firestore, creatorId]);
+    const { data: annonces, loading } = useCollection<Annonce>(annoncesQuery);
+
+    if (loading) return <Skeleton className="h-48 w-full" />;
+    if (!annonces || annonces.length === 0) return null;
+
+    return (
+        <Card>
+            <CardHeader><CardTitle>Annonces de {name}</CardTitle></CardHeader>
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {annonces.map(annonce => (
+                    <Card key={annonce.id} className="overflow-hidden group">
+                        <Link href={`/annonces/${annonce.id}`} className="block">
+                            <div className="relative aspect-video">
+                                <Image src={annonce.imageUrl || ''} alt={annonce.title} fill className="object-cover transition-transform group-hover:scale-105" />
+                            </div>
+                            <div className="p-3">
+                                <h4 className="font-semibold truncate">{annonce.title}</h4>
+                                <div className="flex items-center justify-between mt-2">
+                                    <span className="font-bold text-primary">{annonce.price} €</span>
+                                    <StarRating rating={annonce.rating} ratingCount={annonce.ratingCount} />
+                                </div>
+                            </div>
+                        </Link>
+                    </Card>
+                ))}
+            </CardContent>
+        </Card>
+    )
+}
+
+const CreatorProducts = ({ creatorId }: { creatorId: string }) => {
+    const firestore = useFirestore();
+    const productsQuery = useMemo(() => firestore ? query(collection(firestore, 'products'), where('createdBy', '==', creatorId), limit(6)) : null, [firestore, creatorId]);
+    const { data: products, loading } = useCollection<Product>(productsQuery);
+
+    if (loading) return <Skeleton className="h-48 w-full" />;
+    if (!products || products.length === 0) return null;
+
+    return (
+        <Card>
+            <CardHeader><CardTitle>Dans sa boutique</CardTitle></CardHeader>
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {products.map(product => (
+                     <Card key={product.id} className="overflow-hidden group">
+                        <Link href={`/boutique/${product.id}`} className="block">
+                            <div className="relative aspect-video">
+                                <Image src={product.imageUrl || ''} alt={product.title} fill className="object-cover transition-transform group-hover:scale-105" />
+                            </div>
+                            <div className="p-3">
+                                <h4 className="font-semibold truncate">{product.title}</h4>
+                                <div className="flex items-center justify-between mt-2">
+                                    <span className="font-bold text-primary">{product.price} €</span>
+                                </div>
+                            </div>
+                        </Link>
+                    </Card>
+                ))}
+            </CardContent>
+        </Card>
+    )
+}
+
 
 const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: boolean }) => {
     const { user: currentUser } = useAuth();
@@ -126,14 +218,19 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
             </div>
 
             <div className="px-6 grid md:grid-cols-3 gap-8">
-               <div className="md:col-span-2 space-y-8">
+               <div className="md:col-span-3 flex flex-col gap-8">
                     <Card>
                         <CardHeader><CardTitle>À propos de moi</CardTitle></CardHeader>
                         <CardContent><p className="text-muted-foreground whitespace-pre-wrap">{user.bio || "Aucune biographie."}</p></CardContent>
                     </Card>
+
+                    <CreatorAnnonces creatorId={user.id} />
+
+                    <CreatorProducts creatorId={user.id} />
+                    
                     <Card>
                         <CardHeader><CardTitle>Galerie</CardTitle></CardHeader>
-                        <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {(user.galleryImages && user.galleryImages.length > 0) ? (
                                 user.galleryImages.map((imgUrl, i) => (
                                     <div key={i} className="aspect-square relative rounded-md overflow-hidden group">
@@ -141,7 +238,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                                     </div>
                                 ))
                             ) : (
-                                Array.from({length: 6}).map((_, i) => (
+                                Array.from({length: 4}).map((_, i) => (
                                     <div key={i} className="aspect-square relative rounded-md overflow-hidden group bg-muted">
                                         <Image src={`https://picsum.photos/seed/${user.id}-gallery${i}/400/400`} alt={`Galerie ${i+1}`} fill className="object-cover group-hover:scale-105 transition-transform" />
                                     </div>
@@ -150,7 +247,6 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                         </CardContent>
                     </Card>
                </div>
-               <div className="md:col-span-1 space-y-8"></div>
             </div>
         </div>
     );
@@ -205,10 +301,27 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
     return <PageHeader title="Profil non trouvé" description="Cet utilisateur n'existe pas." />;
   }
 
+  // Handle partners redirecting to their specific profile page
+  if (user.role === 'partenaire') {
+      const router = useRouter();
+      router.replace(`/partenaire/${user.id}`);
+      return (
+         <div className="space-y-8">
+            <div className="relative mb-8">
+                <Skeleton className="h-48 w-full rounded-lg" />
+                <div className="absolute bottom-0 left-6 transform translate-y-1/2">
+                    <Skeleton className="h-32 w-32 rounded-full border-4 border-background" />
+                </div>
+            </div>
+            <div className="pt-20 px-6"><p>Redirection...</p></div>
+        </div>
+      )
+  }
+
   if (user.role === 'client') {
     return <MemberProfile user={user} isOwnProfile={isOwnProfile} />;
   }
   
-  // Default to creator/partner profile view
+  // Default to creator profile view
   return <CreatorProfile user={user} isOwnProfile={isOwnProfile} />;
 }
