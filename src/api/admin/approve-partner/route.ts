@@ -71,8 +71,8 @@ export async function POST(request: Request) {
       role: 'partenaire',
       partnerType: partnerRequest.type,
       status: 'active',
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp() as Timestamp,
+      updatedAt: FieldValue.serverTimestamp() as Timestamp,
       isVerified: true, // Partner is verified on approval
       onlineStatus: 'offline',
       referralCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
