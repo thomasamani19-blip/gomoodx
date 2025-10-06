@@ -2,7 +2,7 @@
 import type { Timestamp } from 'firebase/firestore';
 
 // Main User Roles
-export type UserRole = 'administrateur' | 'escorte' | 'client' | 'partenaire' | 'founder' | 'moderator';
+export type UserRole = 'administrateur' | 'escorte' | 'client' | 'partenaire';
 
 // User status
 export type UserStatus = 'active' | 'suspended';
@@ -29,7 +29,6 @@ export interface User {
   onlineStatus: OnlineStatus;
   lastLogin: Timestamp;
   // Compatibility fields
-  nom?: string;
   avatar?: string;
 }
 
@@ -204,5 +203,3 @@ export type MonthlyRevenue = {
     month: string;
     revenue: number;
 }
-
-    

@@ -1,6 +1,4 @@
 
-
-
 'use client';
 
 import type { UserRole } from '@/lib/types';
@@ -102,5 +100,3 @@ export function useAuth() {
   }
   return context;
 }
-
-    
