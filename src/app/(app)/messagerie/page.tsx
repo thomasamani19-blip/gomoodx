@@ -13,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Message, User } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore } from '@/firebase';
-import { addDoc, collection, serverTimestamp, query, where, orderBy, or } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, query, where, orderBy, or, Query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -28,12 +28,12 @@ export default function MessageriePage() {
 
     // 1. Fetch all messages where the current user is a participant
     const messagesQuery = useMemo(() => {
-        if (!user) return null;
+        if (!user || !firestore) return null;
         return query(
             collection(firestore, 'messages'),
             or(where('senderId', '==', user.id), where('receiverId', '==', user.id)),
             orderBy('createdAt', 'desc')
-        );
+        ) as Query<Message>;
     }, [user, firestore]);
 
     const { data: allUserMessages, loading: messagesLoading } = useCollection<Message>(messagesQuery);

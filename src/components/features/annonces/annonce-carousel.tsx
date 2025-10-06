@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Carousel,
@@ -11,10 +12,13 @@ import Image from 'next/image';
 import { useCollection } from '@/firebase';
 import type { Annonce } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { limit } from 'firebase/firestore';
 
 
 export function AnnonceCarousel() {
-  const { data: annonces, loading } = useCollection<Annonce>('services');
+  const { data: annonces, loading } = useCollection<Annonce>('services', {
+    constraints: [limit(10)]
+  });
 
   if (loading) {
     return (

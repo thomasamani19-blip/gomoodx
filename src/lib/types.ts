@@ -107,7 +107,7 @@ export interface Call {
 }
 
 // Live Session
-export type LiveStatus = 'ongoing' | 'ended';
+export type LiveStatus = 'live' | 'ended';
 
 export interface LiveSession {
     id: string;
@@ -117,14 +117,14 @@ export interface LiveSession {
     streamUrl: string;
     isPublic: boolean;
     startTime: Timestamp;
-    endTime: Timestamp;
+    endTime?: Timestamp;
     viewersCount: number;
     likes: number;
     status: LiveStatus;
     imageUrl: string;
-    imageHint: string;
-    creatorName: string;
-    price_per_minute: number;
+    imageHint?: string;
+    creatorName?: string;
+    price_per_minute?: number;
 }
 
 // Reward
@@ -185,9 +185,24 @@ export interface AIAssistant {
 
 // --- Compatibility Types for existing components ---
 
-export type Product = { id: string, name: string, imageUrl: string, imageHint: string, title: string, description: string, price: number };
-export type BlogArticle = { id: string, title: string, content: string, imageUrl: string, imageHint: string, date: string };
-export type Creator = User & { imageUrl: string; imageHint: string; name: string };
+export interface Product {
+    id: string;
+    title: string;
+    description: string;
+    price: number;
+    imageUrl: string;
+    imageHint?: string;
+}
+
+export interface BlogArticle {
+    id: string;
+    title: string;
+    content: string;
+    imageUrl: string;
+    imageHint?: string;
+    date: Timestamp;
+    authorName?: string;
+}
 
 
 export type CreatorStats = {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
@@ -42,7 +43,7 @@ export default function BlogPage() {
             <Card key={article.id} className="overflow-hidden group flex flex-col">
               <div className="relative aspect-video">
                 <Image
-                  src={article.imageUrl}
+                  src={article.imageUrl || 'https://picsum.photos/seed/blog/600/400'}
                   alt={article.title}
                   fill
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -52,7 +53,7 @@ export default function BlogPage() {
               </div>
               <CardContent className="p-6 flex flex-col flex-1">
                  <p className="text-sm text-muted-foreground mb-2">
-                    {format(new Date(article.date), "d MMMM yyyy", { locale: fr })}
+                    {article.date ? format(article.date.toDate(), "d MMMM yyyy", { locale: fr }) : 'Date inconnue'}
                 </p>
                 <h3 className="font-headline text-xl font-semibold mb-3 flex-1">{article.title}</h3>
                 <p className="text-sm text-muted-foreground line-clamp-3 mb-4">{article.content}</p>

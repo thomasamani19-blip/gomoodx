@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from "@/components/ui/badge";
 
 export default function LivePage() {
-  const { data: sessions, loading } = useCollection<LiveSession>('live');
+  const { data: sessions, loading } = useCollection<LiveSession>('lives');
 
   return (
     <div>

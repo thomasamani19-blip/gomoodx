@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Carousel,
@@ -41,7 +42,7 @@ export function ProductCarousel() {
                 <CardContent className="flex aspect-[4/3] items-center justify-center p-0 relative">
                   <Image
                     src={product.imageUrl}
-                    alt={product.name}
+                    alt={product.title}
                     fill
                     className="object-cover"
                     data-ai-hint={product.imageHint}
@@ -49,7 +50,7 @@ export function ProductCarousel() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <span className="absolute bottom-4 left-4 font-headline text-xl text-white drop-shadow-md">
-                    {product.name}
+                    {product.title}
                   </span>
                 </CardContent>
               </Card>

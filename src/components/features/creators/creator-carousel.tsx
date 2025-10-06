@@ -13,12 +13,12 @@ import { useCollection } from '@/firebase';
 import type { User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMemo } from 'react';
-import { query, where } from 'firebase/firestore';
+import { query, where, limit } from 'firebase/firestore';
 
 
 export function CreatorCarousel() {
     const creatorsQuery = useMemo(() => {
-        return query(where('role', '==', 'escorte'));
+        return query(where('role', '==', 'escorte'), limit(10));
     }, []);
 
   const { data: creators, loading } = useCollection<User>('users', {

@@ -90,7 +90,7 @@ export function AppSidebar() {
   const { user } = useAuth();
   const pathname = usePathname();
   const isMobile = useIsMobile();
-  const navItems = user?.role ? navConfig[user.role] : [];
+  const navItems = user?.role ? navConfig[user.role] || [] : [];
 
   const renderMenuItems = () => (
     <SidebarMenu>

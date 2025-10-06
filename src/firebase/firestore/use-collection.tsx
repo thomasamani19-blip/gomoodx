@@ -17,28 +17,33 @@ import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
 export interface UseCollectionOptions {
-  constraints?: QueryConstraint[];
+  constraints?: QueryConstraint[] | null;
   listen?: boolean;
 }
 
 function useMemoizedQuery(
   firestore: Firestore,
-  path: string | null,
+  pathOrQuery: string | null | Query,
   options?: UseCollectionOptions
 ) {
   return useMemo(() => {
-    if (!path) return null;
+    if (!pathOrQuery) return null;
+
+    if (typeof pathOrQuery !== 'string') {
+      return pathOrQuery;
+    }
+    
     const { constraints } = options ?? {};
-    const ref = collection(firestore, path);
+    const ref = collection(firestore, pathOrQuery);
     // Firestore's query() function is variadic, so we can spread the constraints array.
     // If constraints is undefined, it's like calling query(ref).
     return query(ref, ...(constraints || []));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firestore, path, JSON.stringify(options?.constraints)]);
+  }, [firestore, pathOrQuery, JSON.stringify(options?.constraints)]);
 }
 
 export const useCollection = <T extends DocumentData>(
-  path: string | null,
+  pathOrQuery: string | null | Query,
   options?: UseCollectionOptions
 ) => {
   const firestore = useFirestore();
@@ -46,7 +51,7 @@ export const useCollection = <T extends DocumentData>(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const queryObj = useMemoizedQuery(firestore, path, options);
+  const queryObj = useMemoizedQuery(firestore, pathOrQuery, options);
 
   useEffect(() => {
     if (!queryObj) {
@@ -79,7 +84,7 @@ export const useCollection = <T extends DocumentData>(
       },
       (err) => {
         const permissionError = new FirestorePermissionError({
-          path: (queryObj as Query).path,
+          path: queryObj.path,
           operation: 'list',
         });
         errorEmitter.emit('permission-error', permissionError);
