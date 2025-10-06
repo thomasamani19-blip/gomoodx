@@ -19,7 +19,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import type { UserRole, PartnerType } from "@/lib/types";
+import type { UserRole } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 
 export default function InscriptionPage() {

@@ -12,7 +12,7 @@ import {
     signOut,
     updateProfile
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, writeBatch, type Timestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { User } from '@/lib/types';
 import { uploadFile } from '@/lib/storage';
 
@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else if (role === 'partenaire') {
         return registerPartner(formData);
     }
-    throw new Error('Invalid role selected');
+    throw new Error('Rôle non valide sélectionné');
   }
 
   const registerClient = async (form: any) => {
@@ -85,10 +85,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       phone,
       gender,
       status: "active",
+      isVerified: false, // Default for client
       rewardPoints: 0,
       referralCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
       referralsCount: 0,
       createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      onlineStatus: "offline",
     });
   
     return user;
@@ -96,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerEscort = async (form: any, verificationFiles: any) => {
     const {
+      fullName,
       displayName,
       email,
       password,
@@ -116,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
     // 🔥 Enregistrement Firestore
     await setDoc(doc(firestore, "users", user.uid), {
+      fullName,
       displayName,
       email,
       role: "escorte",
@@ -127,10 +132,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       verificationStatus: "pending",
       verificationType,
       status: "pending",
+      isVerified: false,
       rewardPoints: 0,
       referralCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
       referralsCount: 0,
       createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      onlineStatus: "offline",
     });
   
     // 🧾 Upload fichiers de vérification (si disponibles)
@@ -201,4 +209,3 @@ export function useAuth() {
   }
   return context;
 }
-

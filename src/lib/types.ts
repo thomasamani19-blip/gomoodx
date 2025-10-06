@@ -36,7 +36,7 @@ export interface User {
   bio?: string;
   isVerified: boolean;
   onlineStatus: OnlineStatus;
-  lastLogin: Timestamp;
+  lastLogin?: Timestamp;
   favorites?: string[]; // Array of creator UIDs
   location?: string;
   galleryImages?: string[];
@@ -287,9 +287,9 @@ export interface PartnerRequest {
     type: PartnerType;
     companyName: string;
     registerNumber?: string;
-    country: string;
-    city: string;
-    address: string;
+    country?: string;
+    city?: string;
+    address?: string;
     companyEmail: string;
     phone: string;
     website?: string;

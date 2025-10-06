@@ -136,6 +136,7 @@ async function seedDatabase() {
                     profileImage: profileImage,
                     bio: 'Description de profil par défaut.',
                     favorites: [],
+                    dateOfBirth: '1990-01-01', // Default DOB
                 };
 
                 if (user.data.role === 'partenaire') {
@@ -148,7 +149,7 @@ async function seedDatabase() {
                 const walletRef = doc(firestore, 'wallets', uid);
                 batch.set(walletRef, {
                     balance: Math.floor(Math.random() * 200),
-                    currency: 'XOF',
+                    currency: 'EUR',
                     totalEarned: 0,
                     totalSpent: 0,
                     status: 'active'
