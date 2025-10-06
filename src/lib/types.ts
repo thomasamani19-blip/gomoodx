@@ -302,3 +302,6 @@ export interface PartnerRequest {
     reviewedBy?: string | null;
     createdAt: Timestamp;
 }
+
+// API Payloads
+export type ContentType = 'service' | 'product';

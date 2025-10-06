@@ -1,8 +1,8 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useCollection, useFirestore, useStorage } from '@/firebase';
-import type { Product } from '@/lib/types';
+import { useCollection, useFirestore, useStorage, useDoc } from '@/firebase';
+import type { Product, Wallet } from '@/lib/types';
 import { collection, query, where, orderBy, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { useMemo, useState } from 'react';
@@ -29,14 +29,22 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 
+const SPONSOR_COST = 10;
+
 export default function GestionProduitsPage() {
   const { user, loading: authLoading } = useAuth();
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [sponsoringState, setSponsoringState] = useState<{[key: string]: boolean}>({});
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  
+  const [isConfirmingSponsor, setIsConfirmingSponsor] = useState(false);
+  const [productToSponsor, setProductToSponsor] = useState<Product | null>(null);
+  const [isSponsoring, setIsSponsoring] = useState(false);
+
+  const walletRef = useMemo(() => user && firestore ? doc(firestore, 'wallets', user.id) : null, [user, firestore]);
+  const { data: wallet, loading: walletLoading } = useDoc<Wallet>(walletRef);
 
   const produitsQuery = useMemo(() => {
     if (!user || !firestore) return null;
@@ -49,7 +57,7 @@ export default function GestionProduitsPage() {
 
   const { data: produits, loading: produitsLoading } = useCollection<Product>(produitsQuery);
 
-  const loading = authLoading || produitsLoading;
+  const loading = authLoading || produitsLoading || walletLoading;
   
   const handleDelete = async () => {
     if (!productToDelete || !firestore || !storage) return;
@@ -87,24 +95,54 @@ export default function GestionProduitsPage() {
     }
   };
 
-  const handleToggleSponsor = async (produit: Product) => {
-    if (!firestore) return;
-    setSponsoringState(prev => ({ ...prev, [produit.id]: true }));
+  const handleSponsorConfirm = async () => {
+    if (!productToSponsor || !user) return;
+    
+    setIsSponsoring(true);
     try {
-      const productRef = doc(firestore, 'products', produit.id);
-      const newSponsorState = !produit.isSponsored;
-      await updateDoc(productRef, { isSponsored: newSponsorState });
-      toast({
-        title: newSponsorState ? "Produit Sponsorisé !" : "Sponsoring retiré",
-        description: `Votre produit est maintenant ${newSponsorState ? 'mis en avant' : 'standard'}.`,
-      });
-    } catch (error) {
-       console.error("Error updating sponsor status:", error);
-       toast({ title: "Erreur", description: "Impossible de modifier le statut de sponsoring.", variant: "destructive" });
+        const response = await fetch('/api/content/sponsor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                userId: user.id,
+                contentId: productToSponsor.id,
+                contentType: 'product' 
+            }),
+        });
+
+        const result = await response.json();
+        if (response.ok && result.status === 'success') {
+            toast({
+                title: "Produit Sponsorisé !",
+                description: `Votre produit "${productToSponsor.title}" est maintenant mis en avant.`,
+            });
+        } else {
+            throw new Error(result.message || 'Une erreur est survenue.');
+        }
+
+    } catch (error: any) {
+       console.error("Error sponsoring content:", error);
+       toast({ title: "Erreur de Sponsorisation", description: error.message, variant: "destructive" });
     } finally {
-      setSponsoringState(prev => ({ ...prev, [produit.id]: false }));
+      setIsSponsoring(false);
+      setIsConfirmingSponsor(false);
+      setProductToSponsor(null);
     }
   };
+
+  const openSponsorDialog = (product: Product) => {
+    if ((wallet?.balance || 0) < SPONSOR_COST) {
+        toast({
+            title: "Solde insuffisant",
+            description: `Vous avez besoin de ${SPONSOR_COST}€ pour sponsoriser. Votre solde est de ${wallet?.balance.toFixed(2) || 0}€.`,
+            variant: "destructive",
+        });
+        return;
+    }
+    setProductToSponsor(product);
+    setIsConfirmingSponsor(true);
+  };
+
 
   return (
     <div>
@@ -168,15 +206,17 @@ export default function GestionProduitsPage() {
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                           <Button variant="ghost" size="icon" disabled={sponsoringState[produit.id]}>
-                             {sponsoringState[produit.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
+                           <Button variant="ghost" size="icon">
+                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          <DropdownMenuItem onClick={() => handleToggleSponsor(produit)}>
-                              <Star className="mr-2 h-4 w-4" />
-                              {produit.isSponsored ? 'Retirer le sponsoring' : 'Sponsoriser'}
-                          </DropdownMenuItem>
+                           {!produit.isSponsored && (
+                                <DropdownMenuItem onClick={() => openSponsorDialog(produit)}>
+                                    <Star className="mr-2 h-4 w-4" />
+                                    Sponsoriser
+                                </DropdownMenuItem>
+                            )}
                            <DropdownMenuItem asChild>
                              <Link href={`/gestion/produits/modifier/${produit.id}`}>
                                 <Pencil className="mr-2 h-4 w-4" />
@@ -210,6 +250,25 @@ export default function GestionProduitsPage() {
         </CardContent>
       </Card>
       
+      <AlertDialog open={isConfirmingSponsor} onOpenChange={setIsConfirmingSponsor}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la Sponsorisation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Mettre en avant le produit "{productToSponsor?.title}" coûtera <span className="font-bold">{SPONSOR_COST}€</span>, qui seront débités de votre portefeuille.
+              Votre solde actuel est de <span className="font-bold">{wallet?.balance?.toFixed(2) || 0}€</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSponsoring}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSponsorConfirm} disabled={isSponsoring}>
+              {isSponsoring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Confirmer et Payer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
