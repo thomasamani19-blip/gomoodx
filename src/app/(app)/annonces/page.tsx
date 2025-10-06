@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { collection } from 'firebase/firestore';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 const StarRating = ({ rating, ratingCount, className }: { rating: number, ratingCount?: number, className?: string }) => {
     const totalStars = 5;
@@ -67,16 +68,18 @@ export default function AnnoncesPage() {
           {annonces.map((annonce) => (
             <Card key={annonce.id} className="overflow-hidden group">
               <CardContent className="p-0">
-                <div className="relative aspect-video">
-                  <Image
-                    src={annonce.imageUrl || 'https://picsum.photos/seed/annonce/600/400'}
-                    alt={annonce.title}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    data-ai-hint={annonce.imageHint}
-                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                  />
-                </div>
+                <Link href={`/annonces/${annonce.id}`}>
+                  <div className="relative aspect-video">
+                    <Image
+                      src={annonce.imageUrl || 'https://picsum.photos/seed/annonce/600/400'}
+                      alt={annonce.title}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      data-ai-hint={annonce.imageHint}
+                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    />
+                  </div>
+                </Link>
                 <div className="p-4">
                   <h3 className="font-headline text-lg font-semibold truncate">{annonce.title}</h3>
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{annonce.description}</p>
@@ -85,7 +88,9 @@ export default function AnnoncesPage() {
                         <p className="text-lg font-bold text-primary">{annonce.price ? `${annonce.price} €` : 'Sur demande'}</p>
                         <StarRating rating={annonce.rating} ratingCount={annonce.ratingCount} />
                     </div>
-                     <Button variant="secondary" size="sm">Voir plus</Button>
+                     <Button variant="secondary" size="sm" asChild>
+                        <Link href={`/annonces/${annonce.id}`}>Voir plus</Link>
+                     </Button>
                    </div>
                 </div>
               </CardContent>
