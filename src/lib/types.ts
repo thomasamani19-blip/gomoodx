@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 // Main User Roles
@@ -93,6 +94,7 @@ export interface Annonce {
   rating: number;
   ratingCount?: number;
   views: number;
+  isSponsored?: boolean;
 }
 
 // Review (subcollection of Annonce)
@@ -254,6 +256,7 @@ export interface Product {
     createdBy: string; // creator or partner UID
     createdAt: Timestamp;
     productType: ProductType;
+    isSponsored?: boolean;
 }
 
 export interface BlogArticle {

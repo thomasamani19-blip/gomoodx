@@ -1,3 +1,4 @@
+
 /**
  * DEV SCRIPT: DO NOT USE IN PRODUCTION
  * This script seeds the Firestore database with some initial data for development.
@@ -171,7 +172,7 @@ async function seedDatabase() {
 
         const creatorUid = userIds['creator@test.com']?.uid || 'creator-uid-placeholder';
 
-        // Example service
+        // Example service (sponsored)
         const serviceRef = doc(collection(firestore, 'services'));
         await setDoc(serviceRef, {
             title: 'Dîner Privé aux Chandelles',
@@ -188,6 +189,7 @@ async function seedDatabase() {
             rating: 4.8,
             ratingCount: 15,
             views: 1250,
+            isSponsored: true,
         });
 
          // Add reviews to the service
@@ -217,9 +219,8 @@ async function seedDatabase() {
                 createdAt: Timestamp.now(),
             });
         }
-
         
-        // Example product
+        // Example product (sponsored)
         const productRef = doc(collection(firestore, 'products'));
         await setDoc(productRef, {
             title: 'Bougie de Massage Sensuelle',
@@ -230,6 +231,7 @@ async function seedDatabase() {
             createdBy: creatorUid,
             createdAt: Timestamp.now(),
             productType: 'physique',
+            isSponsored: true,
         });
 
         const product2Ref = doc(collection(firestore, 'products'));
@@ -242,6 +244,7 @@ async function seedDatabase() {
             createdBy: creatorUid,
             createdAt: Timestamp.now(),
             productType: 'digital',
+            isSponsored: false,
         });
 
         // Example blog post

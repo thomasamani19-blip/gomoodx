@@ -11,11 +11,17 @@ import { Button } from '@/components/ui/button';
 import { collection, query } from 'firebase/firestore';
 import Link from 'next/link';
 import { useMemo } from 'react';
+import { Badge } from '@/components/ui/badge';
 
 export default function BoutiquePage() {
   const firestore = useFirestore();
   const productsQuery = useMemo(() => firestore ? query(collection(firestore, 'products')) : null, [firestore]);
   const { data: products, loading } = useCollection<Product>(productsQuery);
+
+  const sortedProducts = useMemo(() => {
+    if (!products) return [];
+    return [...products].sort((a, b) => (b.isSponsored ? 1 : 0) - (a.isSponsored ? 1 : 0));
+  }, [products]);
 
   return (
     <div>
@@ -41,9 +47,9 @@ export default function BoutiquePage() {
         </div>
       )}
 
-      {!loading && products && products.length > 0 && (
+      {!loading && sortedProducts && sortedProducts.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products.map((product) => (
+          {sortedProducts.map((product) => (
             <Card key={product.id} className="overflow-hidden group">
                 <Link href={`/boutique/${product.id}`} className="block">
                     <CardContent className="p-0">
@@ -56,6 +62,9 @@ export default function BoutiquePage() {
                             data-ai-hint={product.imageHint}
                             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                         />
+                         {product.isSponsored && (
+                            <Badge variant="secondary" className="absolute top-2 right-2">À la une</Badge>
+                         )}
                         </div>
                         <div className="p-4">
                         <h3 className="font-headline text-lg font-semibold truncate">{product.title}</h3>
@@ -74,7 +83,7 @@ export default function BoutiquePage() {
         </div>
       )}
 
-      {!loading && (!products || products.length === 0) && (
+      {!loading && (!sortedProducts || sortedProducts.length === 0) && (
          <Card>
             <CardContent className="pt-6">
             <p className="text-muted-foreground">

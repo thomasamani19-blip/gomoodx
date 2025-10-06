@@ -13,6 +13,7 @@ import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useMemo } from 'react';
+import { Badge } from '@/components/ui/badge';
 
 const StarRating = ({ rating, ratingCount, className }: { rating: number, ratingCount?: number, className?: string }) => {
     const totalStars = 5;
@@ -42,6 +43,11 @@ export default function AnnoncesPage() {
   const annoncesQuery = useMemo(() => firestore ? query(collection(firestore, 'services')) : null, [firestore]);
   const { data: annonces, loading } = useCollection<Annonce>(annoncesQuery);
 
+  const sortedAnnonces = useMemo(() => {
+    if (!annonces) return [];
+    return [...annonces].sort((a, b) => (b.isSponsored ? 1 : 0) - (a.isSponsored ? 1 : 0));
+  }, [annonces]);
+
   return (
     <div>
       <PageHeader
@@ -65,9 +71,9 @@ export default function AnnoncesPage() {
         </div>
       )}
 
-      {!loading && annonces && annonces.length > 0 && (
+      {!loading && sortedAnnonces && sortedAnnonces.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {annonces.map((annonce) => (
+          {sortedAnnonces.map((annonce) => (
             <Card key={annonce.id} className="overflow-hidden group">
               <CardContent className="p-0">
                 <Link href={`/annonces/${annonce.id}`}>
@@ -80,6 +86,9 @@ export default function AnnoncesPage() {
                       data-ai-hint={annonce.imageHint}
                       sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     />
+                     {annonce.isSponsored && (
+                        <Badge variant="secondary" className="absolute top-2 right-2">À la une</Badge>
+                     )}
                   </div>
                 </Link>
                 <div className="p-4">
@@ -101,7 +110,7 @@ export default function AnnoncesPage() {
         </div>
       )}
 
-      {!loading && (!annonces || annonces.length === 0) && (
+      {!loading && (!sortedAnnonces || sortedAnnonces.length === 0) && (
          <Card>
             <CardContent className="pt-6">
             <p className="text-muted-foreground">
