@@ -28,7 +28,7 @@ const roleVariantMap: { [key in UserRole]: 'default' | 'secondary' | 'destructiv
     client: 'outline',
 };
 
-const statusVariantMap: { [key in UserStatus]: 'default' | 'destructive' } = {
+const statusVariantMap: { [key in UserStatus]: 'default' | 'destructive' | 'outline' } = {
     active: 'default',
     suspended: 'destructive',
     pending: 'outline',
@@ -40,17 +40,18 @@ export default function AdminUsersPage() {
     const router = useRouter();
     const firestore = useFirestore();
     const [isAllowed, setIsAllowed] = useState(false);
+    const [isCheckingPermissions, setIsCheckingPermissions] = useState(true);
 
     useEffect(() => {
-        if (!authLoading && currentUser) {
-            const isAdmin = ['founder', 'administrateur', 'moderator'].includes(currentUser.role);
-            if (isAdmin) {
+        if (!authLoading) {
+            if (currentUser && ['founder', 'administrateur', 'moderator'].includes(currentUser.role)) {
                 setIsAllowed(true);
+            } else if (!currentUser) {
+                router.push('/connexion');
             } else {
-                router.push('/dashboard');
+                 setIsAllowed(false);
             }
-        } else if (!authLoading && !currentUser) {
-            router.push('/connexion');
+            setIsCheckingPermissions(false);
         }
     }, [currentUser, authLoading, router]);
     
@@ -61,9 +62,9 @@ export default function AdminUsersPage() {
     
     const { data: users, loading: usersLoading } = useCollection<User>(usersQuery);
 
-    const loading = authLoading || (isAllowed && usersLoading);
+    const loading = authLoading || isCheckingPermissions || (isAllowed && usersLoading);
 
-    if (!authLoading && !isAllowed) {
+    if (!loading && !isAllowed) {
         return (
             <div>
                 <PageHeader title="Gestion des Utilisateurs" description="Supervisez et gérez tous les comptes de la plateforme." />
