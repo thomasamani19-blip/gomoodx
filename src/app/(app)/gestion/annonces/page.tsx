@@ -16,6 +16,7 @@ import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import Link from 'next/link';
 
 export default function GestionAnnoncesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -41,9 +42,11 @@ export default function GestionAnnoncesPage() {
           title="Gérer mes Annonces"
           description="Créez, modifiez ou supprimez vos services proposés sur la plateforme."
         />
-        <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Créer une annonce
+        <Button asChild>
+            <Link href="/gestion/annonces/creer">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Créer une annonce
+            </Link>
         </Button>
       </div>
 
