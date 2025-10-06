@@ -113,6 +113,7 @@ export interface Annonce {
   ratingCount?: number;
   views: number;
   isSponsored?: boolean;
+  isPremium?: boolean;
 }
 
 // Review (subcollection of Annonce)
@@ -209,6 +210,7 @@ export interface LiveSession {
     imageHint?: string;
     creatorName?: string;
     price_per_minute?: number;
+    isPremium?: boolean;
 }
 
 // Reward
@@ -287,6 +289,7 @@ export interface Product {
     createdAt: Timestamp;
     productType: ProductType;
     isSponsored?: boolean;
+    isPremium?: boolean;
 }
 
 export interface BlogArticle {
@@ -298,6 +301,7 @@ export interface BlogArticle {
     date: Timestamp;
     authorId: string;
     authorName?: string;
+    isPremium?: boolean;
 }
 
 
