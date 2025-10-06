@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -17,14 +16,14 @@ export default function PartenaireDashboard({ user }: { user: User }) {
         description: "Modifiez les informations, la galerie et les détails de votre profil.", 
         href: "/gestion/etablissement", 
         icon: Building,
-        show: true,
+        show: true, // Always show this
     },
     {
         title: "Gérer mes produits",
         description: "Ajoutez ou mettez à jour les articles de votre boutique.",
         href: "/gestion/produits",
         icon: ShoppingBag,
-        show: isProducer,
+        show: isProducer, // Only show for producers
     }
 ];
 
@@ -33,7 +32,7 @@ export default function PartenaireDashboard({ user }: { user: User }) {
     <div>
         <PageHeader
             title={`Tableau de bord de ${user?.displayName || 'Partenaire'}`}
-            description="Gérez les informations et les services de votre établissement ou de votre activité."
+            description="Gérez les informations et les services de votre activité."
         />
        <Card>
         <CardHeader>

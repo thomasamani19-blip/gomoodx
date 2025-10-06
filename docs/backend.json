@@ -150,6 +150,13 @@
         "partnerType": {
           "type": "string",
           "description": "Type de partenaire (establishment, producer)"
+        },
+        "produitIds": {
+          "type": "array",
+          "description": "Références aux Produits du partenaire (si de type 'producer'). (Relation: Partenaire 1:N Produit)",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
