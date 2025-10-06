@@ -265,6 +265,7 @@ export interface BlogArticle {
     imageUrl: string;
     imageHint?: string;
     date: Timestamp;
+    authorId: string;
     authorName?: string;
 }
 

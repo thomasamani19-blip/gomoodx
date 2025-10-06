@@ -4,7 +4,7 @@
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore, useStorage } from '@/firebase';
 import type { BlogArticle } from '@/lib/types';
-import { collection, query, orderBy, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, doc, deleteDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { useMemo, useState } from 'react';
 import PageHeader from '@/components/shared/page-header';
@@ -38,14 +38,14 @@ export default function GestionArticlesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [articleToDelete, setArticleToDelete] = useState<BlogArticle | null>(null);
 
-  // Pour l'instant, on récupère tous les articles. On pourra filtrer par auteur plus tard.
   const articlesQuery = useMemo(() => {
-    if (!firestore) return null;
+    if (!user || !firestore) return null;
     return query(
       collection(firestore, 'blog'),
+      where('authorId', '==', user.id),
       orderBy('date', 'desc')
     );
-  }, [firestore]);
+  }, [user, firestore]);
 
   const { data: articles, loading: articlesLoading } = useCollection<BlogArticle>(articlesQuery);
 
@@ -153,9 +153,11 @@ export default function GestionArticlesPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          <DropdownMenuItem>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Modifier
+                          <DropdownMenuItem asChild>
+                            <Link href={`/gestion/articles/modifier/${article.id}`}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Modifier
+                            </Link>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-destructive" onClick={() => setArticleToDelete(article)}>
