@@ -2,25 +2,41 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useStorage } from '@/firebase';
 import type { Product } from '@/lib/types';
-import { collection, query, where, orderBy } from 'firebase/firestore';
-import { useMemo } from 'react';
+import { collection, query, where, orderBy, doc, deleteDoc } from 'firebase/firestore';
+import { ref, deleteObject } from 'firebase/storage';
+import { useMemo, useState } from 'react';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, PlusCircle, Trash2, Loader2, Pencil } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 export default function GestionProduitsPage() {
   const { user, loading: authLoading } = useAuth();
   const firestore = useFirestore();
+  const storage = useStorage();
+  const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   const produitsQuery = useMemo(() => {
     if (!user || !firestore) return null;
@@ -34,6 +50,42 @@ export default function GestionProduitsPage() {
   const { data: produits, loading: produitsLoading } = useCollection<Product>(produitsQuery);
 
   const loading = authLoading || produitsLoading;
+  
+  const handleDelete = async () => {
+    if (!productToDelete || !firestore || !storage) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteDoc(doc(firestore, 'products', productToDelete.id));
+
+      if (productToDelete.imageUrl) {
+        try {
+            const imageRef = ref(storage, productToDelete.imageUrl);
+            await deleteObject(imageRef);
+        } catch (storageError: any) {
+            if (storageError.code !== 'storage/object-not-found') {
+                console.warn("Could not delete image from storage:", storageError.message);
+            }
+        }
+      }
+
+      toast({
+        title: "Produit supprimé",
+        description: "Le produit a été supprimé avec succès.",
+      });
+
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le produit.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setProductToDelete(null);
+    }
+  };
 
   return (
     <div>
@@ -84,7 +136,7 @@ export default function GestionProduitsPage() {
                                 alt={produit.title}
                                 width={40}
                                 height={40}
-                                className="rounded-md"
+                                className="rounded-md object-cover"
                             />
                             <span>{produit.title}</span>
                         </div>
@@ -102,7 +154,11 @@ export default function GestionProduitsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
                           <DropdownMenuItem>Modifier</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">Supprimer</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive" onClick={() => setProductToDelete(produit)}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Supprimer
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -124,6 +180,25 @@ export default function GestionProduitsPage() {
           )}
         </CardContent>
       </Card>
+      
+      <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Le produit "{productToDelete?.title}" sera définitivement supprimé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
