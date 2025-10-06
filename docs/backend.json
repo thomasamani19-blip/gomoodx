@@ -148,8 +148,8 @@
           "description": "Role du partenaire (client, escorte, partenaire, administrateur)."
         },
         "partnerType": {
-            "type": "string",
-            "description": "Type de partenaire (establishment, producer)"
+          "type": "string",
+          "description": "Type de partenaire (establishment, producer)"
         }
       },
       "required": [
@@ -277,7 +277,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Produit",
       "type": "object",
-      "description": "Représente un produit vendu par un partenaire (hôtel, etc.).",
+      "description": "Représente un produit vendu par un créateur ou un partenaire producteur.",
       "properties": {
         "id": {
           "type": "string",
@@ -285,7 +285,7 @@
         },
         "partenaireId": {
           "type": "string",
-          "description": "Référence au Partenaire qui vend le produit. (Relation: Partenaire 1:N Produit)"
+          "description": "Référence au Partenaire ou Créateur qui vend le produit."
         },
         "nom": {
           "type": "string",

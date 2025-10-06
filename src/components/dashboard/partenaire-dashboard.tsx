@@ -6,11 +6,26 @@ import type { User } from "@/lib/types";
 import PageHeader from "../shared/page-header";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { Building } from "lucide-react";
+import { Building, ShoppingBag } from "lucide-react";
 
 export default function PartenaireDashboard({ user }: { user: User }) {
+  const isProducer = user.partnerType === 'producer';
+
   const managementTools = [
-    { title: "Gérer mon profil", description: "Modifiez les informations, la galerie et les détails de votre profil.", href: "/gestion/etablissement", icon: Building },
+    { 
+        title: "Gérer mon profil", 
+        description: "Modifiez les informations, la galerie et les détails de votre profil.", 
+        href: "/gestion/etablissement", 
+        icon: Building,
+        show: true,
+    },
+    {
+        title: "Gérer mes produits",
+        description: "Ajoutez ou mettez à jour les articles de votre boutique.",
+        href: "/gestion/produits",
+        icon: ShoppingBag,
+        show: isProducer,
+    }
 ];
 
 
@@ -26,7 +41,7 @@ export default function PartenaireDashboard({ user }: { user: User }) {
           <CardDescription>Mettez en valeur votre activité pour attirer de nouveaux clients.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6">
-            {managementTools.map((tool) => (
+            {managementTools.filter(tool => tool.show).map((tool) => (
                 <Link key={tool.title} href={tool.href} className="flex items-center justify-between space-x-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
                     <div className="flex-1 space-y-1">
                         <p className="text-sm font-medium leading-none flex items-center">
