@@ -21,6 +21,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 function MessagerieContent() {
     const { user, loading: authLoading } = useAuth();
@@ -34,6 +44,7 @@ function MessagerieContent() {
     const [newMessage, setNewMessage] = useState('');
     const [recentContacts, setRecentContacts] = useState<{ contact: User; lastMessage: Message }[]>([]);
     const [contactsLoading, setContactsLoading] = useState(true);
+    const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null }>({ show: false, type: null });
 
     const contactIdFromUrl = searchParams.get('contact');
     
@@ -211,28 +222,31 @@ function MessagerieContent() {
         }
     };
     
-    const handleInitiateCall = async (type: CallType) => {
-        if (!user || !selectedContact || !firestore) return;
+    const handleInitiateCall = async () => {
+        if (!user || !selectedContact || !firestore || !callConfirmation.type) return;
 
-        toast({
-            title: "Initiation de l'appel...",
-            description: `Appel ${type === 'video' ? 'vidéo' : 'vocal'} avec ${selectedContact.displayName} en cours de préparation.`
-        });
+        const callType = callConfirmation.type;
+        setCallConfirmation({ show: false, type: null });
+
+        toast({ title: "Initiation de l'appel...", description: `Appel ${callType === 'video' ? 'vidéo' : 'vocal'} avec ${selectedContact.displayName} en cours de préparation.` });
         
+        const pricePerMinute = callType === 'video' ? selectedContact.rates?.videoCallPerMinute : undefined;
+
         const callData: Omit<Call, 'id'> = {
             callerId: user.id,
             receiverId: selectedContact.id,
             callerName: user.displayName || 'Utilisateur',
             status: 'pending',
-            type: type,
+            type: callType,
             createdAt: serverTimestamp() as any,
+            ...(pricePerMinute && { pricePerMinute }),
         };
 
         try {
             const callDocRef = await addDoc(collection(firestore, 'calls'), callData);
             router.push(`/appels/${callDocRef.id}`);
         } catch (error) {
-            console.error(`Erreur lors de l'initiation de l'appel ${type}:`, error);
+            console.error(`Erreur lors de l'initiation de l'appel ${callType}:`, error);
             toast({
                 title: "Erreur d'appel",
                 description: "Impossible de démarrer l'appel. Veuillez réessayer.",
@@ -242,6 +256,8 @@ function MessagerieContent() {
     };
 
     const loading = authLoading || contactsLoading;
+    const videoCallRate = selectedContact?.rates?.videoCallPerMinute;
+
 
     return (
     <div className="h-[calc(100vh_-_10rem)] flex flex-col">
@@ -316,11 +332,11 @@ function MessagerieContent() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => handleInitiateCall('video')}>
+                                    <DropdownMenuItem onClick={() => setCallConfirmation({ show: true, type: 'video' })}>
                                         <Video className="mr-2 h-4 w-4" />
-                                        Appel Vidéo
+                                        Appel Vidéo {videoCallRate && `(${videoCallRate}€/min)`}
                                     </DropdownMenuItem>
-                                     <DropdownMenuItem onClick={() => handleInitiateCall('voice')}>
+                                     <DropdownMenuItem onClick={() => setCallConfirmation({ show: true, type: 'voice' })}>
                                         <Phone className="mr-2 h-4 w-4" />
                                         Appel Vocal
                                     </DropdownMenuItem>
@@ -376,6 +392,22 @@ function MessagerieContent() {
             )}
         </div>
       </Card>
+      <AlertDialog open={callConfirmation.show} onOpenChange={(open) => setCallConfirmation({show: open, type: null})}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Confirmer l'appel</AlertDialogTitle>
+                <AlertDialogDescription>
+                    {callConfirmation.type === 'video' && videoCallRate ? 
+                    `Lancer un appel vidéo avec ${selectedContact?.displayName} ? Cet appel sera facturé ${videoCallRate}€ par minute.` :
+                    `Lancer un appel vocal gratuit avec ${selectedContact?.displayName} ?`}
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleInitiateCall}>Confirmer</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
     );
 }
