@@ -1,15 +1,17 @@
 import type { Timestamp } from 'firebase/firestore';
 
-export type UserRole = 'admin' | 'creator' | 'member' | 'partner';
+export type UserRole = 'admin' | 'creator' | 'member' | 'partner' | 'escorte' | 'client' | 'administrateur';
 
 export interface User {
   id: string; // Corresponds to Firebase Auth UID
   fullName: string;
+  nom?: string; // For compatibility
   email: string;
   phone?: string;
   role: UserRole;
   status: 'active' | 'suspended';
   avatarUrl?: string;
+  avatar?: string; // For compatibility
   createdAt: Timestamp;
   updatedAt: Timestamp;
   bio?: string;
@@ -22,6 +24,7 @@ export interface User {
   totalVideoCalls: number;
   totalPremiumSales: number;
   totalReferredUsers: number;
+  pseudo?: string;
 }
 
 export interface Annonce {
@@ -85,14 +88,14 @@ export interface Referral {
 export interface Transaction {
   id: string;
   userId: string;
-  type: 'deposit' | 'withdraw' | 'purchase' | 'subscription';
+  type: 'deposit' | 'withdraw' | 'purchase' | 'subscription' | 'credit' | 'debit';
   amount: number;
   currency: string;
   status: 'completed' | 'pending' | 'failed';
   reference: string;
   createdAt: Timestamp;
   description?: string; // Keep for compatibility if needed
-  date?: string; // Keep for compatibility if needed
+  date: string; // Keep for compatibility if needed
 }
 
 export interface Message {
@@ -120,6 +123,19 @@ export interface Analytics {
     earnings: number;
     engagementScore: number;
     updatedAt: Timestamp;
+}
+
+export type CreatorStats = {
+    id: string;
+    monthlyRevenue: { value: number; change: number };
+    newSubscribers: { value: number; change: number };
+    profileViews: { value: number; change: number };
+    engagementRate: { value: number; change: number };
+}
+
+export type MonthlyRevenue = {
+    month: string;
+    revenue: number;
 }
 
 
@@ -161,3 +177,5 @@ export type LiveSession = {
     creatorName: string;
     creatorId: string;
 }
+
+    

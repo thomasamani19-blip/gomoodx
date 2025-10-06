@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import PageHeader from '@/components/shared/page-header';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,34 +20,39 @@ import { fr } from 'date-fns/locale';
 export default function MessageriePage() {
     const { user, loading: authLoading } = useAuth();
     const firestore = useFirestore();
+    const messageEndRef = useRef<HTMLDivElement>(null);
 
     const [selectedContact, setSelectedContact] = useState<User | null>(null);
     const [newMessage, setNewMessage] = useState('');
 
-    // Fetch all messages where the current user is either the sender or receiver
-    const messagesQueryConstraints = useMemo(() => {
-        if (!user) return [];
-        return [or(where('senderId', '==', user.id), where('receiverId', '==', user.id))];
-    }, [user]);
+    // 1. Fetch all messages where the current user is a participant
+    const messagesQuery = useMemo(() => {
+        if (!user) return null;
+        return query(
+            collection(firestore, 'messages'),
+            or(where('senderId', '==', user.id), where('receiverId', '==', user.id)),
+            orderBy('createdAt', 'desc')
+        );
+    }, [user, firestore]);
 
-    const { data: allUserMessages, loading: messagesLoading } = useCollection<Message>(
-        'messages',
-        { constraints: messagesQueryConstraints }
-    );
+    const { data: allUserMessages, loading: messagesLoading } = useCollection<Message>(messagesQuery);
     
-    // Fetch all users to map IDs to user data
+    // 2. Fetch all users to get their details (names, avatars)
     const { data: users, loading: usersLoading } = useCollection<User>('users');
 
-    // Create a list of recent contacts and their last message
-    const recentContacts = useMemo(() => {
-        if (!allUserMessages || !users || !user) return [];
+    // 3. Create a map of users for quick lookup
+    const userMap = useMemo(() => {
+        if (!users) return new Map();
+        return new Map(users.map(u => [u.id, u]));
+    }, [users]);
 
-        const userMap = new Map(users.map(u => [u.id, u]));
+    // 4. Determine recent contacts from the messages
+    const recentContacts = useMemo(() => {
+        if (!allUserMessages || !user) return [];
+        
         const conversations = new Map<string, { contact: User; lastMessage: Message }>();
 
-        const sortedMessages = [...allUserMessages].sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-
-        sortedMessages.forEach(msg => {
+        allUserMessages.forEach(msg => {
             const otherUserId = msg.senderId === user.id ? msg.receiverId : msg.senderId;
             
             if (!conversations.has(otherUserId)) {
@@ -63,10 +68,9 @@ export default function MessageriePage() {
 
         return Array.from(conversations.values());
 
-    }, [allUserMessages, users, user]);
+    }, [allUserMessages, user, userMap]);
 
-
-    // Filter messages for the selected conversation, sorted by time
+    // 5. Filter messages for the currently selected conversation
     const activeMessages = useMemo(() => {
         if (!selectedContact || !allUserMessages || !user) return [];
         
@@ -75,13 +79,14 @@ export default function MessageriePage() {
                 (msg.senderId === user.id && msg.receiverId === selectedContact.id) ||
                 (msg.senderId === selectedContact.id && msg.receiverId === user.id)
             )
-            .sort((a, b) => a.createdAt.toMillis() - b.createdAt.toMillis());
+            .sort((a, b) => (a.createdAt?.toMillis() ?? 0) - (b.createdAt?.toMillis() ?? 0));
     }, [selectedContact, allUserMessages, user]);
 
+    // Scroll to the bottom of the messages when a new message is added
+    useEffect(() => {
+        messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [activeMessages]);
 
-    const handleSelectContact = (contact: User) => {
-        setSelectedContact(contact);
-    }
 
     const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -137,18 +142,18 @@ export default function MessageriePage() {
                             "flex items-center gap-4 p-4 w-full text-left hover:bg-accent/50",
                             selectedContact?.id === contact.id && "bg-accent"
                         )}
-                        onClick={() => handleSelectContact(contact)}
+                        onClick={() => setSelectedContact(contact)}
                     >
                         <Avatar>
                             <AvatarImage src={contact.avatarUrl} alt={contact.fullName} />
-                            <AvatarFallback>{contact.fullName.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>{contact.fullName?.charAt(0) ?? '?'}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 overflow-hidden">
                             <p className="font-semibold truncate">{contact.fullName}</p>
                             <p className="text-sm text-muted-foreground truncate">{lastMessage.content}</p>
                         </div>
                          {lastMessage.createdAt && (
-                           <span className="text-xs text-muted-foreground ml-auto">
+                           <span className="text-xs text-muted-foreground ml-auto whitespace-nowrap">
                             {formatDistanceToNow(lastMessage.createdAt.toDate(), { addSuffix: true, locale: fr })}
                            </span>
                         )}
@@ -162,7 +167,7 @@ export default function MessageriePage() {
                     <div className="p-4 border-b flex items-center gap-4">
                         <Avatar>
                             <AvatarImage src={selectedContact.avatarUrl} alt={selectedContact.fullName} />
-                            <AvatarFallback>{selectedContact.fullName.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>{selectedContact.fullName?.charAt(0) ?? '?'}</AvatarFallback>
                         </Avatar>
                         <h2 className="font-semibold text-lg">{selectedContact.fullName}</h2>
                     </div>
@@ -174,7 +179,7 @@ export default function MessageriePage() {
                                     {msg.senderId !== user?.id && (
                                         <Avatar className="h-8 w-8">
                                             <AvatarImage src={selectedContact.avatarUrl} />
-                                            <AvatarFallback>{selectedContact.fullName.charAt(0)}</AvatarFallback>
+                                            <AvatarFallback>{selectedContact.fullName?.charAt(0) ?? '?'}</AvatarFallback>
                                         </Avatar>
                                     )}
                                     <div className={cn(
@@ -183,14 +188,15 @@ export default function MessageriePage() {
                                     )}>
                                         <p>{msg.content}</p>
                                     </div>
-                                     {msg.senderId === user?.id && user?.avatarUrl && (
+                                     {msg.senderId === user?.id && (
                                         <Avatar className="h-8 w-8">
                                             <AvatarImage src={user.avatarUrl} />
-                                            <AvatarFallback>{user.fullName.charAt(0)}</AvatarFallback>
+                                            <AvatarFallback>{user.fullName?.charAt(0) ?? '?'}</AvatarFallback>
                                         </Avatar>
                                     )}
                                 </div>
                             ))}
+                            <div ref={messageEndRef} />
                         </div>
                     </ScrollArea>
                     <div className="p-4 border-t mt-auto bg-card">
@@ -216,3 +222,5 @@ export default function MessageriePage() {
     </div>
     );
 }
+
+    
