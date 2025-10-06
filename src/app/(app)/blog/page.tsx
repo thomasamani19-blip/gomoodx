@@ -32,7 +32,7 @@ export default function BlogPage() {
           {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i} className="overflow-hidden">
                 <Skeleton className="w-full h-56" />
-                <CardContent className="p-4">
+                <CardContent className="p-6">
                   <Skeleton className="h-4 w-1/3 mb-2" />
                   <Skeleton className="h-6 w-full mb-3" />
                   <Skeleton className="h-4 w-full" />
@@ -50,7 +50,7 @@ export default function BlogPage() {
               <Link href={`/blog/${article.id}`} className="block">
                 <div className="relative aspect-video">
                   <Image
-                    src={article.imageUrl || 'https://picsum.photos/seed/blog/600/400'}
+                    src={article.imageUrl || `https://picsum.photos/seed/${article.id}/600/400`}
                     alt={article.title}
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -78,8 +78,8 @@ export default function BlogPage() {
 
       {!loading && (!articles || articles.length === 0) && (
          <Card>
-            <CardContent className="pt-6">
-            <p className="text-muted-foreground">
+            <CardContent className="pt-6 text-center">
+            <p className="text-muted-foreground py-8">
                 Aucun article de blog n'est disponible pour le moment.
             </p>
             </CardContent>
@@ -88,4 +88,3 @@ export default function BlogPage() {
     </div>
   );
 }
-
