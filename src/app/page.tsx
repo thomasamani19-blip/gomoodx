@@ -8,9 +8,16 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { CreatorCarousel } from '@/components/features/creators/creator-carousel';
 import { AnnonceCarousel } from '@/components/features/annonces/annonce-carousel';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Gift, Heart, Users, Search, ShieldCheck, Sparkles } from 'lucide-react';
+import { ProductCarousel } from '@/components/features/products/product-carousel';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Gift, Heart, Users, Search, ShieldCheck, Sparkles, BookOpen, ArrowRight } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useCollection, useFirestore } from '@/firebase';
+import type { BlogArticle } from '@/lib/types';
+import { collection, limit, orderBy, query } from 'firebase/firestore';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const TestimonialCard = ({ quote, author, role }: { quote: string, author: string, role: string }) => (
     <Card className="bg-card/50 border-primary/20 flex flex-col justify-between">
@@ -30,6 +37,51 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementTy
         <p className="text-muted-foreground">{description}</p>
     </div>
 )
+
+function LatestBlogPosts() {
+    const firestore = useFirestore();
+    const articlesQuery = query(collection(firestore, 'blog'), orderBy('date', 'desc'), limit(3));
+    const { data: articles, loading } = useCollection<BlogArticle>(articlesQuery);
+  
+    if (loading) {
+      return (
+        <div className="grid md:grid-cols-3 gap-8">
+            <Card><CardContent className="p-4"><Skeleton className="h-48 w-full mb-4" /><Skeleton className="h-6 w-3/4" /></CardContent></Card>
+            <Card><CardContent className="p-4"><Skeleton className="h-48 w-full mb-4" /><Skeleton className="h-6 w-3/4" /></CardContent></Card>
+            <Card><CardContent className="p-4"><Skeleton className="h-48 w-full mb-4" /><Skeleton className="h-6 w-3/4" /></CardContent></Card>
+        </div>
+      )
+    }
+  
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {articles && articles.map((article) => (
+          <Card key={article.id} className="overflow-hidden group flex flex-col">
+            <Link href="/blog">
+              <div className="relative aspect-video">
+                <Image
+                  src={article.imageUrl || 'https://picsum.photos/seed/blogpost/600/400'}
+                  alt={article.title}
+                  fill
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                />
+              </div>
+            </Link>
+            <CardContent className="p-6 flex flex-col flex-1">
+               <p className="text-sm text-muted-foreground mb-2">
+                  {article.date ? format(article.date.toDate(), "d MMMM yyyy", { locale: fr }) : 'Date inconnue'}
+              </p>
+              <h3 className="font-headline text-xl font-semibold mb-3 flex-1 line-clamp-2">{article.title}</h3>
+              <Button variant="link" asChild className="p-0 self-start">
+                  <Link href="/blog">Lire la suite <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
 
 export default function Home() {
@@ -69,7 +121,7 @@ export default function Home() {
           </div>
         </section>
 
-        <div className="space-y-24 py-16 md:py-32">
+        <div className="space-y-24 md:space-y-32 py-16 md:py-24">
         
           <section className="container mx-auto px-4">
              <div className="text-center mb-12">
@@ -96,6 +148,13 @@ export default function Home() {
                 <h2 className="font-headline text-3xl md:text-4xl font-bold">Annonces Populaires</h2>
             </div>
              <AnnonceCarousel />
+          </section>
+
+           <section className="container mx-auto px-4">
+             <div className="text-center mb-12">
+                <h2 className="font-headline text-3xl md:text-4xl font-bold">Boutique Exclusive</h2>
+            </div>
+             <ProductCarousel />
           </section>
           
            <section className="container mx-auto px-4">
@@ -126,6 +185,14 @@ export default function Home() {
 
           <section className="container mx-auto px-4">
             <div className="text-center mb-12">
+                <h2 className="font-headline text-3xl md:text-4xl font-bold">Derniers Articles du Blog</h2>
+                <p className="text-muted-foreground max-w-2xl mx-auto mt-4">Plongez dans l'univers de nos créateurs à travers leurs écrits.</p>
+            </div>
+            <LatestBlogPosts />
+          </section>
+
+          <section className="container mx-auto px-4">
+            <div className="text-center mb-12">
                 <h2 className="font-headline text-3xl md:text-4xl font-bold">Ce qu'ils en disent</h2>
             </div>
             <div className="grid md:grid-cols-2 gap-8">
@@ -141,9 +208,31 @@ export default function Home() {
                 />
             </div>
           </section>
+
+          <section className="container mx-auto px-4">
+              <Card className="bg-gradient-to-r from-secondary/80 to-primary/80 text-primary-foreground p-8 md:p-12">
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                      <div className="text-center md:text-left">
+                          <h2 className="font-headline text-3xl font-bold">Prêt à rejoindre l'expérience ?</h2>
+                          <p className="mt-2 text-lg opacity-90">Inscrivez-vous dès maintenant et découvrez un monde de contenus exclusifs.</p>
+                      </div>
+                       <div className="flex-shrink-0 flex flex-col sm:flex-row gap-4">
+                          <Button asChild size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
+                              <Link href="/inscription">Devenir Créateur</Link>
+                          </Button>
+                          <Button asChild size="lg" className="bg-background text-foreground hover:bg-background/90">
+                              <Link href="/inscription">Devenir Membre</Link>
+                          </Button>
+                      </div>
+                  </div>
+              </Card>
+          </section>
+
         </div>
       </main>
       <Footer />
     </div>
   );
 }
+
+    
