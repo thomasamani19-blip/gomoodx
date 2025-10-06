@@ -12,9 +12,9 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, Loader2, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 const statusVariantMap: { [key in PartnerRequest['status']]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
     pending: 'outline',
@@ -31,28 +31,61 @@ const statusTextMap = {
 export default function AdminPartnerRequestsPage() {
     const firestore = useFirestore();
     const { toast } = useToast();
+    const [loadingStates, setLoadingStates] = useState<{[key: string]: boolean}>({});
     
     const requestsQuery = useMemo(() => firestore ? query(collection(firestore, 'partnerRequests'), orderBy('createdAt', 'desc')) : null, [firestore]);
     const { data: requests, loading: requestsLoading } = useCollection<PartnerRequest>(requestsQuery);
 
     const handleUpdateRequest = async (id: string, status: 'approved' | 'rejected') => {
         if (!firestore) return;
-        const requestRef = doc(firestore, 'partnerRequests', id);
-        try {
-            await updateDoc(requestRef, { status: status });
-            toast({
-                title: 'Demande mise à jour',
-                description: `La demande a été marquée comme ${status === 'approved' ? 'approuvée' : 'rejetée'}.`,
-            });
-            // In a real app, approving would also trigger user creation.
-        } catch (error) {
-            console.error("Error updating partner request:", error);
-            toast({
-                title: 'Erreur',
-                description: 'Impossible de mettre à jour la demande.',
-                variant: 'destructive',
-            });
+
+        setLoadingStates(prev => ({...prev, [id]: true}));
+
+        if (status === 'rejected') {
+            const requestRef = doc(firestore, 'partnerRequests', id);
+            try {
+                await updateDoc(requestRef, { status: 'rejected' });
+                toast({
+                    title: 'Demande rejetée',
+                    description: `La demande a été marquée comme rejetée.`,
+                });
+            } catch (error) {
+                console.error("Error rejecting partner request:", error);
+                toast({
+                    title: 'Erreur',
+                    description: 'Impossible de mettre à jour la demande.',
+                    variant: 'destructive',
+                });
+            }
+        } else if (status === 'approved') {
+            try {
+                const response = await fetch('/api/admin/approve-partner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ requestId: id }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    toast({
+                        title: 'Partenaire Approuvé !',
+                        description: `Le compte pour ${result.companyName} a été créé.`,
+                    });
+                } else {
+                    throw new Error(result.message || 'Une erreur est survenue.');
+                }
+            } catch (error: any) {
+                console.error("Error approving partner request:", error);
+                toast({
+                    title: 'Erreur d\'approbation',
+                    description: error.message || "Impossible de finaliser l'approbation.",
+                    variant: 'destructive',
+                });
+            }
         }
+
+        setLoadingStates(prev => ({...prev, [id]: false}));
     };
     
     return (
@@ -105,10 +138,20 @@ export default function AdminPartnerRequestsPage() {
                                     <TableCell>
                                         {req.status === 'pending' && (
                                             <div className="flex gap-2">
-                                                <Button variant="ghost" size="icon" onClick={() => handleUpdateRequest(req.id, 'approved')}>
-                                                    <CheckCircle className="h-5 w-5 text-green-500" />
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    onClick={() => handleUpdateRequest(req.id, 'approved')}
+                                                    disabled={loadingStates[req.id]}
+                                                >
+                                                    {loadingStates[req.id] ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle className="h-5 w-5 text-green-500" />}
                                                 </Button>
-                                                <Button variant="ghost" size="icon" onClick={() => handleUpdateRequest(req.id, 'rejected')}>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    onClick={() => handleUpdateRequest(req.id, 'rejected')}
+                                                    disabled={loadingStates[req.id]}
+                                                >
                                                     <XCircle className="h-5 w-5 text-destructive" />
                                                 </Button>
                                             </div>
