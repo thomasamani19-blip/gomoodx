@@ -23,7 +23,7 @@ export default function PartenaireDashboard({ user }: { user: User }) {
         />
        <Card>
         <CardHeader>
-          <CardTitle className="font-headline">Gestion du Profil</CardTitle>
+          <CardTitle className="font-headline">Gestion du Profil & des Produits</CardTitle>
           <CardDescription>Gérez l'ensemble de vos informations et contenus.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6">
