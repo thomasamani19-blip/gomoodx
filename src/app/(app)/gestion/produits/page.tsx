@@ -213,7 +213,7 @@ export default function GestionProduitsPage() {
       <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Êtes-vous absolutely sûr ?</AlertDialogTitle>
+            <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
             <AlertDialogDescription>
               Cette action est irréversible. Le produit "{productToDelete?.title}" sera définitivement supprimé.
             </AlertDialogDescription>
