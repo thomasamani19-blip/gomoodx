@@ -412,14 +412,6 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                                 </Link>
                             </Button>
                         )}
-                         
-                         {creator && !canReserve && (
-                            <Button size="lg" variant="outline" asChild>
-                                <Link href={`/messagerie?contact=${creator.id}`}>
-                                    <MessageCircle className="mr-2 h-4 w-4" /> Contacter
-                                </Link>
-                            </Button>
-                         )}
                     </CardContent>
                  </Card>
                  {creator && (
@@ -450,5 +442,3 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
     </div>
   );
 }
-
-    
