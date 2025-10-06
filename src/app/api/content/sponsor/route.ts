@@ -1,15 +1,13 @@
 // /src/app/api/content/sponsor/route.ts
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps } from 'firebase-admin/app';
+import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import type { Annonce, Product, Wallet, Transaction, ContentType } from '@/lib/types';
 
 if (!getApps().length) {
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-        initializeApp();
-    } else {
-        console.warn("Firebase Admin SDK non initialisé. Configurez GOOGLE_APPLICATION_CREDENTIALS.");
-    }
+    initializeApp({
+        credential: applicationDefault()
+    });
 }
 
 const db = getFirestore();
@@ -56,14 +54,15 @@ export async function POST(request: Request) {
             
             // Créer une transaction de débit
             const debitTxRef = walletRef.collection('transactions').doc();
-            t.set(debitTxRef, {
+            const transactionData: Omit<Transaction, 'id'> = {
                 amount: SPONSOR_COST,
                 type: 'debit',
                 createdAt: Timestamp.now(),
                 description: `Sponsorisation: ${contentData.title}`,
                 status: 'success',
                 reference: contentId
-            } as Omit<Transaction, 'id'>);
+            };
+            t.set(debitTxRef, transactionData);
 
             // Mettre à jour le contenu pour le marquer comme sponsorisé
             t.update(contentRef, { isSponsored: true });
