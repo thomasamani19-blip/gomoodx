@@ -91,15 +91,22 @@ export function AppSidebar() {
 
   const renderLoadingSkeleton = () => (
     <div className="p-2 space-y-2">
-        {Array.from({ length: 6 }).map((_, i) => (
+        {Array.from({ length: 8 }).map((_, i) => (
              <Skeleton key={i} className="h-8 w-full" />
         ))}
     </div>
   )
 
   const renderMenuForRole = () => {
-    if (loading) return renderLoadingSkeleton();
-    if (!user) return null; // No items if no user
+    if (loading) {
+      return renderLoadingSkeleton();
+    }
+    if (!user) {
+      // It's better to show some skeleton or nothing, 
+      // but if an unauthenticated user reaches here, something is wrong.
+      // For now, let's show the client nav skeleton as a fallback.
+      return renderLoadingSkeleton();
+    }
 
     switch (user.role) {
       case 'client':
@@ -109,7 +116,7 @@ export function AppSidebar() {
             <>
                 {renderNavItems(escorteNav)}
                 <SidebarMenuItem>
-                    <span className="p-2 text-xs text-muted-foreground">Outils IA</span>
+                    <span className="p-2 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">Outils IA</span>
                 </SidebarMenuItem>
                 {renderNavItems(toolsNav)}
             </>
@@ -119,7 +126,7 @@ export function AppSidebar() {
       case 'moderator':
         return renderNavItems(adminNav);
       default:
-        // By default, maybe show client nav or nothing
+        // Default to client view to avoid blank screen
         return renderNavItems(clientNav);
     }
   }

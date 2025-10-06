@@ -22,10 +22,11 @@ export function CreatorCarousel() {
 
   if (loading) {
     return (
-        <div className="flex w-full space-x-4">
-            <Skeleton className="h-64 w-1/3" />
-            <Skeleton className="h-64 w-1/3" />
-            <Skeleton className="h-64 w-1/3" />
+        <div className="flex w-full space-x-4 overflow-hidden p-1">
+            <CarouselSkeletonItem />
+            <CarouselSkeletonItem />
+            <CarouselSkeletonItem />
+            <CarouselSkeletonItem />
         </div>
     )
   }
@@ -49,7 +50,7 @@ export function CreatorCarousel() {
                     alt={creator.displayName}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 25vw"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                   <span className="absolute bottom-4 left-4 font-headline text-2xl text-white drop-shadow-md">
@@ -66,3 +67,13 @@ export function CreatorCarousel() {
     </Carousel>
   );
 }
+
+const CarouselSkeletonItem = () => (
+    <div className="md:basis-1/2 lg:basis-1/4 flex-shrink-0 p-1 w-full">
+        <Card>
+            <CardContent className="flex aspect-[3/4] items-center justify-center p-0 relative">
+                <Skeleton className="w-full h-full" />
+            </CardContent>
+        </Card>
+    </div>
+)

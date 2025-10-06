@@ -85,10 +85,10 @@ export default function ClientDashboard({ user }: { user: User }) {
                         </div>
                     ))}
                     {!creatorsLoading && creators?.map(creator => (
-                        <div key={creator.id} className="flex flex-col items-center gap-2 group cursor-pointer">
+                        <div key={creator.id} className="flex flex-col items-center gap-2 group">
                             <Link href={`/profil/${creator.id}`} className="flex flex-col items-center gap-2 text-center">
                                 <Avatar className="h-20 w-20 border-2 border-transparent group-hover:border-primary transition-colors">
-                                    <AvatarImage src={creator.profileImage || `https://picsum.photos/seed/${creator.id}/100`} />
+                                    <AvatarImage src={creator.profileImage} alt={creator.displayName} />
                                     <AvatarFallback>{creator.displayName?.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <span className="text-sm font-medium">{creator.displayName}</span>
