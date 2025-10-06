@@ -5,7 +5,7 @@ import type { User } from "@/lib/types";
 import PageHeader from "../shared/page-header";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { Building, ShoppingBag } from "lucide-react";
+import { Building, ShoppingBag, Newspaper } from "lucide-react";
 
 export default function PartenaireDashboard({ user }: { user: User }) {
   const isProducer = user.partnerType === 'producer';
@@ -16,14 +16,21 @@ export default function PartenaireDashboard({ user }: { user: User }) {
         description: "Modifiez les informations, la galerie et les détails de votre profil.", 
         href: "/gestion/etablissement", 
         icon: Building,
-        show: true, // Always show this
+        show: true,
+    },
+    {
+        title: "Gérer mes annonces",
+        description: "Créez et gérez les services que vous proposez.",
+        href: "/gestion/annonces",
+        icon: Newspaper,
+        show: true,
     },
     {
         title: "Gérer mes produits",
         description: "Ajoutez ou mettez à jour les articles de votre boutique.",
         href: "/gestion/produits",
         icon: ShoppingBag,
-        show: isProducer, // Only show for producers
+        show: isProducer,
     }
 ];
 
