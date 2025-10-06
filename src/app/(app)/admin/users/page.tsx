@@ -49,9 +49,7 @@ export default function AdminUsersPage() {
         if (!authLoading) {
             if (currentUser && ['founder', 'administrateur', 'moderator'].includes(currentUser.role)) {
                 setIsAllowed(true);
-            } else if (!currentUser) {
-                router.push('/connexion');
-            } else {
+            } else if (currentUser) {
                  setIsAllowed(false);
             }
             setIsCheckingPermissions(false);
