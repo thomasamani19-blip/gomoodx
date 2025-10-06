@@ -33,6 +33,7 @@ import {
   Heart,
   Info,
   BookText,
+  Building,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -55,6 +56,12 @@ const escorteNav = [
   { title: 'Statistiques', href: '/statistiques', icon: BarChart3 },
   { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
   { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
+];
+
+const partenaireNav = [
+    { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+    { title: 'Profil Établissement', href: '/gestion/etablissement', icon: Building },
+    { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
 ];
 
 const toolsNav = [
@@ -108,7 +115,7 @@ export function AppSidebar() {
     }
 
     if (!user) {
-      return renderNavItems(clientNav.filter(item => ['/annonces', '/boutique', '/live', '/blog'].includes(item.href)));
+      return renderNavItems(clientNav.filter(item => ['/annonces', '/boutique', '/live', '/blog', '/recherche'].includes(item.href)));
     }
 
     switch (user.role) {
@@ -124,6 +131,8 @@ export function AppSidebar() {
                 {renderNavItems(toolsNav)}
             </>
         )
+      case 'partenaire':
+        return renderNavItems(partenaireNav);
       case 'administrateur':
       case 'founder':
       case 'moderator':
