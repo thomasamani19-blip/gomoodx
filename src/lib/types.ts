@@ -36,6 +36,7 @@ export interface User {
   lastLogin: Timestamp;
   favorites?: string[]; // Array of creator UIDs
   location?: string;
+  galleryImages?: string[];
 }
 
 // Wallet
