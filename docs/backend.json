@@ -325,42 +325,56 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Reservation",
       "type": "object",
-      "description": "Représente une réservation faite par un membre.",
+      "description": "Représente une réservation d'une annonce (service) faite par un membre.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Identifiant unique de la réservation."
         },
-        "membreId": {
+        "memberId": {
           "type": "string",
-          "description": "Référence au Membre qui a fait la réservation. (Relation: Membre 1:N Reservation)"
+          "description": "Référence au Membre qui a fait la réservation."
         },
-        "produitId": {
+        "creatorId": {
           "type": "string",
-          "description": "Référence au Produit réservé. (Relation: Produit 1:N Reservation)"
+          "description": "Référence au Créateur (Escorte) qui fournit le service."
         },
-        "dateDebut": {
+        "annonceId": {
           "type": "string",
-          "description": "Date de début de la réservation.",
+          "description": "Référence à l'Annonce (Service) qui est réservée."
+        },
+        "annonceTitle": {
+          "type": "string",
+          "description": "Titre de l'annonce pour référence rapide."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Le montant payé pour la réservation."
+        },
+        "status": {
+          "type": "string",
+          "description": "Statut de la réservation (pending, confirmed, cancelled, completed)."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Date de création de la réservation.",
           "format": "date-time"
         },
-        "dateFin": {
+        "reservationDate": {
           "type": "string",
-          "description": "Date de fin de la réservation.",
+          "description": "Date et heure pour lesquelles le service est réservé.",
           "format": "date-time"
-        },
-        "statut": {
-          "type": "string",
-          "description": "Statut de la réservation (en attente, confirmée, annulée)."
         }
       },
       "required": [
         "id",
-        "membreId",
-        "produitId",
-        "dateDebut",
-        "dateFin",
-        "statut"
+        "memberId",
+        "creatorId",
+        "annonceId",
+        "amount",
+        "status",
+        "createdAt",
+        "reservationDate"
       ]
     },
     "Message": {
@@ -491,6 +505,10 @@
       {
         "path": "/services/{serviceId}/reviews/{reviewId}",
         "description": "Subcollection for reviews on a specific service."
+      },
+      {
+        "path": "/reservations/{reservationId}",
+        "description": "Stores reservation records for services."
       },
       {
         "path": "/products/{productId}",

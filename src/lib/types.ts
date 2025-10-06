@@ -96,6 +96,21 @@ export interface Review {
   createdAt: Timestamp;
 }
 
+// Reservation
+export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
+
+export interface Reservation {
+    id: string;
+    memberId: string; // Client making the reservation
+    creatorId: string; // Creator providing the service
+    annonceId: string;
+    annonceTitle: string;
+    amount: number;
+    status: ReservationStatus;
+    createdAt: Timestamp;
+    reservationDate: Timestamp; // The date for which the service is booked
+}
+
 
 // Message
 export type MessageType = 'text' | 'image' | 'audio';
