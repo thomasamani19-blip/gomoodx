@@ -16,6 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function GestionArticlesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -41,9 +42,11 @@ export default function GestionArticlesPage() {
           title="Gérer mes Articles de Blog"
           description="Rédigez, modifiez et publiez vos articles pour votre audience."
         />
-        <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Écrire un article
+        <Button asChild>
+            <Link href="/outils-ia/generer-article">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Écrire un article (avec IA)
+            </Link>
         </Button>
       </div>
 
@@ -109,6 +112,12 @@ export default function GestionArticlesPage() {
           {!loading && (!articles || articles.length === 0) && (
             <div className="text-center py-12 text-muted-foreground">
               <p>Vous n'avez écrit aucun article pour le moment.</p>
+               <Button asChild className="mt-4">
+                 <Link href="/outils-ia/generer-article">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Écrire mon premier article
+                 </Link>
+               </Button>
             </div>
           )}
         </CardContent>
