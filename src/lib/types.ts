@@ -292,6 +292,7 @@ export interface Product {
     createdAt: Timestamp;
     productType: ProductType;
     isSponsored?: boolean;
+    isPremium?: boolean;
 }
 
 export interface BlogArticle {
