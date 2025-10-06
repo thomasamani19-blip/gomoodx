@@ -34,17 +34,13 @@ export default function InscriptionPage() {
         setIsLoading(true);
 
         const formData = new FormData(e.currentTarget);
-        const name = formData.get('name') as string;
-        const email = formData.get('email') as string;
-        const password = formData.get('password') as string;
-        const selectedRole = formData.get('role') as UserRole;
-        const partnerType = formData.get('partnerType') as PartnerType | undefined;
+        const data = Object.fromEntries(formData.entries());
 
         try {
-            await signup(email, password, name, selectedRole, partnerType);
+            await signup(data);
             toast({
                 title: "Inscription réussie !",
-                description: "Vous allez être redirigé vers votre tableau de bord.",
+                description: "Bienvenue sur GoMoodX ! Vous allez être redirigé vers votre tableau de bord.",
             });
             router.push('/dashboard');
         } catch (error: any) {
@@ -61,7 +57,7 @@ export default function InscriptionPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-md">
         <form onSubmit={handleSignup}>
             <CardHeader className="text-center">
             <GoMoodXLogo className="justify-center mb-2"/>
@@ -128,8 +124,12 @@ export default function InscriptionPage() {
             )}
 
             <div className="grid gap-2">
-                <Label htmlFor="name">Nom d'affichage</Label>
-                <Input id="name" name="name" placeholder="Votre nom" required />
+                <Label htmlFor="displayName">Nom d'affichage</Label>
+                <Input id="displayName" name="displayName" placeholder="Votre nom ou pseudo" required />
+            </div>
+             <div className="grid gap-2">
+                <Label htmlFor="dateOfBirth">Date de naissance</Label>
+                <Input id="dateOfBirth" name="dateOfBirth" type="date" required />
             </div>
             <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>

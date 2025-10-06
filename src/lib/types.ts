@@ -9,13 +9,16 @@ export type UserRole = 'administrateur' | 'escorte' | 'client' | 'partenaire' | 
 export type PartnerType = 'establishment' | 'producer';
 
 // User status
-export type UserStatus = 'active' | 'suspended';
+export type UserStatus = 'active' | 'suspended' | 'pending';
 export type OnlineStatus = 'online' | 'offline';
+export type VerificationStatus = 'pending' | 'verified' | 'rejected';
+export type VerificationType = 'selfie' | 'complete';
 
 // Base User structure
 export interface User {
   id: string; // Corresponds to Firebase Auth UID
   displayName: string;
+  fullName?: string;
   email: string;
   phone?: string;
   pseudo?: string;
@@ -37,6 +40,12 @@ export interface User {
   favorites?: string[]; // Array of creator UIDs
   location?: string;
   galleryImages?: string[];
+  dateOfBirth?: string;
+  country?: string;
+  city?: string;
+  gender?: string;
+  verificationStatus?: VerificationStatus;
+  verificationType?: VerificationType;
 }
 
 // Wallet
@@ -271,4 +280,24 @@ export type CreatorStats = {
 export type MonthlyRevenue = {
     month: string;
     revenue: number;
+}
+
+export interface PartnerRequest {
+    id: string;
+    type: PartnerType;
+    companyName: string;
+    registerNumber?: string;
+    country: string;
+    city: string;
+    address: string;
+    companyEmail: string;
+    phone: string;
+    website?: string;
+    description?: string;
+    managerName?: string;
+    managerEmail?: string;
+    managerPhone?: string;
+    status: 'pending' | 'approved' | 'rejected';
+    reviewedBy?: string | null;
+    createdAt: Timestamp;
 }
