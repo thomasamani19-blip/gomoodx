@@ -47,7 +47,7 @@ export default function DashboardPage() {
         return <AdminDashboard user={user} />;
       default:
         // This case should ideally not be reached if roles are handled correctly
-        return <p>Rôle non reconnu. Veuillez contacter le support.</p>;
+        return <ClientDashboard user={user} />;
     }
   };
 

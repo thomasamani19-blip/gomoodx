@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button"
@@ -84,13 +85,13 @@ export default function InscriptionPage() {
                         htmlFor="creator"
                         className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
                         >
-                        Créateur
+                        Escorte
                         </Label>
                     </div>
                 </RadioGroup>
             </div>
             <div className="grid gap-2">
-                <Label htmlFor="name">Nom</Label>
+                <Label htmlFor="name">Nom d'affichage</Label>
                 <Input id="name" name="name" placeholder="Votre nom" required />
             </div>
             <div className="grid gap-2">

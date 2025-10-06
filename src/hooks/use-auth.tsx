@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import type { UserRole } from '@/lib/types';
@@ -46,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 1. Create user document
     const userRef = doc(firestore, 'users', fbUser.uid);
     const newUser: Omit<User, 'id'> = {
-      nom: name,
+      displayName: name,
       email: email,
       role: role,
       status: 'active',
@@ -85,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login, 
       signup,
       logout, 
-    }), [user, firebaseUser, loading, auth, firestore]);
+    }), [user, firebaseUser, loading]);
 
   return (
     <AuthContext.Provider value={value}>

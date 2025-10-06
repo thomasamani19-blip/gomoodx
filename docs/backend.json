@@ -10,7 +10,7 @@
         "email": { "type": "string", "format": "email" },
         "phone": { "type": "string" },
         "pseudo": { "type": "string" },
-        "role": { "type": "string", "enum": ["admin", "founder", "member", "creator", "partner", "moderator"] },
+        "role": { "type": "string", "enum": ["administrateur", "founder", "client", "escorte", "partenaire", "moderator"] },
         "status": { "type": "string", "enum": ["active", "suspended"] },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" },

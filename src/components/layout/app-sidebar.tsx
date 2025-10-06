@@ -68,7 +68,11 @@ const navConfig: Record<UserRole, { title: string; href: string; icon: React.Ele
   ],
   administrateur: [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+    { title: 'Utilisateurs', href: '/admin/users', icon: Users },
+    { title: 'Modération', href: '/admin/moderation', icon: ShieldCheck },
   ],
+  founder: [],
+  moderator: [],
 };
 
 export function AppSidebar() {
@@ -112,8 +116,8 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <Link href="/profil" passHref legacyBehavior>
-              <SidebarMenuButton tooltip="Paramètres" isActive={pathname === '/profil'} asChild>
-                <a><Settings /><span>Paramètres</span></a>
+              <SidebarMenuButton tooltip="Paramètres et profil" isActive={pathname === '/profil'} asChild>
+                <a><Settings /><span>Profil & Paramètres</span></a>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
@@ -128,4 +132,3 @@ export function AppSidebar() {
       </Sidebar>
   );
 }
-

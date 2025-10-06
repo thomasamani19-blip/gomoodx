@@ -2,7 +2,7 @@
 import type { Timestamp } from 'firebase/firestore';
 
 // Main User Roles
-export type UserRole = 'administrateur' | 'escorte' | 'client' | 'partenaire';
+export type UserRole = 'administrateur' | 'escorte' | 'client' | 'partenaire' | 'founder' | 'moderator';
 
 // User status
 export type UserStatus = 'active' | 'suspended';
@@ -11,7 +11,7 @@ export type OnlineStatus = 'online' | 'offline';
 // Base User structure
 export interface User {
   id: string; // Corresponds to Firebase Auth UID
-  nom: string;
+  displayName: string;
   email: string;
   phone?: string;
   pseudo?: string;
@@ -23,11 +23,14 @@ export interface User {
   referralCode: string;
   referredBy?: string;
   referralsCount: number;
-  avatar?: string;
+  profileImage?: string;
   bio?: string;
   isVerified: boolean;
   onlineStatus: OnlineStatus;
   lastLogin: Timestamp;
+  // Compatibility fields
+  nom?: string;
+  avatar?: string;
 }
 
 // Wallet

@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useStorage } from '@/firebase';
 import { updateUserProfile } from '@/lib/user';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,17 +15,18 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { uploadAvatar } from '@/lib/storage';
+import { uploadFile } from '@/lib/storage';
 import { Textarea } from '@/components/ui/textarea';
 
 export default function ProfilPage() {
   const { user, loading: authLoading } = useAuth();
   const firestore = useFirestore();
+  const storage = useStorage();
   const router = useRouter();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [nom, setNom] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [pseudo, setPseudo] = useState('');
   const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
@@ -37,11 +39,11 @@ export default function ProfilPage() {
       router.push('/connexion');
     }
     if (user) {
-      setNom(user.nom || user.fullName || '');
+      setDisplayName(user.displayName || '');
       setPseudo(user.pseudo || '');
       setEmail(user.email || '');
       setBio(user.bio || '');
-      setAvatarPreview(user.avatarUrl || user.avatar || null);
+      setAvatarPreview(user.profileImage || null);
     }
   }, [user, authLoading, router]);
   
@@ -59,27 +61,27 @@ export default function ProfilPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !storage) return;
     
     setIsSaving(true);
 
     try {
-      let avatarUrl = user.avatarUrl;
+      let avatarUrl = user.profileImage;
 
       if (avatarFile) {
-        avatarUrl = await uploadAvatar(user.id, avatarFile);
+        const storagePath = `avatars/${user.id}/${avatarFile.name}`;
+        avatarUrl = await uploadFile(storage, storagePath, avatarFile);
       }
 
       const updatedData = {
-        nom,
+        displayName,
         pseudo,
         email,
         bio,
-        avatarUrl,
-        avatar: avatarUrl, // for compatibility
+        profileImage: avatarUrl,
       };
 
-      updateUserProfile(firestore, user.id, updatedData);
+      await updateUserProfile(firestore, user.id, updatedData);
       toast({
         title: 'Profil mis à jour',
         description: 'Vos informations ont été enregistrées avec succès.',
@@ -142,8 +144,8 @@ export default function ProfilPage() {
              <div className="flex items-center gap-6">
                 <div className="relative group">
                     <Avatar className="h-24 w-24">
-                        {avatarPreview && <AvatarImage src={avatarPreview} alt={nom} />}
-                        <AvatarFallback className="text-3xl">{nom?.charAt(0)?.toUpperCase() ?? 'U'}</AvatarFallback>
+                        {avatarPreview && <AvatarImage src={avatarPreview} alt={displayName} />}
+                        <AvatarFallback className="text-3xl">{displayName?.charAt(0)?.toUpperCase() ?? 'U'}</AvatarFallback>
                     </Avatar>
                     <button 
                         type="button"
@@ -161,17 +163,17 @@ export default function ProfilPage() {
                     />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold">{nom}</h3>
+                    <h3 className="text-xl font-bold">{displayName}</h3>
                     <p className="text-sm text-muted-foreground">@{pseudo || 'pseudo'}</p>
                 </div>
             </div>
             <div className="space-y-4">
                 <div className="space-y-2">
-                <Label htmlFor="nom">Nom complet</Label>
+                <Label htmlFor="nom">Nom d'affichage</Label>
                 <Input
                     id="nom"
-                    value={nom}
-                    onChange={(e) => setNom(e.target.value)}
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
                 />
                 </div>
                 <div className="space-y-2">
