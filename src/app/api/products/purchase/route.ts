@@ -1,3 +1,4 @@
+
 // /src/app/api/products/purchase/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase-admin/app';
