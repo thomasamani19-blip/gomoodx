@@ -3,19 +3,20 @@
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
-import type { User, Call } from '@/lib/types';
+import type { User, Call, CallType } from '@/lib/types';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, MessageCircle, Video } from 'lucide-react';
+import { Heart, MessageCircle, Video, Phone, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { doc, updateDoc, arrayUnion, arrayRemove, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export default function UserProfilePage({ params }: { params: { id: string } }) {
   const { user: currentUser, loading: authLoading } = useAuth();
@@ -56,17 +57,17 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
     }
   };
   
-    const handleInitiateCall = async () => {
+    const handleInitiateCall = async (type: CallType) => {
         if (!currentUser || !user || !firestore) return;
         
-        toast({ title: "Initiation de l'appel...", description: `Appel avec ${user.displayName} en cours de préparation.` });
+        toast({ title: "Initiation de l'appel...", description: `Appel ${type === 'video' ? 'vidéo' : 'vocal'} avec ${user.displayName} en cours de préparation.` });
 
         const callData: Omit<Call, 'id'> = {
             callerId: currentUser.id,
             receiverId: user.id,
             callerName: currentUser.displayName,
             status: 'pending',
-            type: 'video',
+            type: type,
             createdAt: serverTimestamp(),
         };
 
@@ -153,9 +154,23 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
                       </Link>
                     </Button>
                      {user.role === 'escorte' && (
-                        <Button variant="outline" onClick={handleInitiateCall}>
-                            <Video className="mr-2 h-4 w-4" /> Appeler
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline">
+                                    <Phone className="mr-2 h-4 w-4" /> Appeler <ChevronDown className="ml-2 h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuItem onClick={() => handleInitiateCall('video')}>
+                                    <Video className="mr-2 h-4 w-4" />
+                                    Appel Vidéo
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleInitiateCall('voice')}>
+                                    <Phone className="mr-2 h-4 w-4" />
+                                    Appel Vocal
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                      )}
                 </div>
             )}

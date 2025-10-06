@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useDoc, useFirestore } from '@/firebase';
 import type { Call, User } from '@/lib/types';
-import { doc, onSnapshot, updateDoc, collection, addDoc, getDocs, query, where, deleteDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, collection, addDoc, getDocs, query, writeBatch, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Phone, Mic, MicOff, Video, VideoOff, Loader2, PhoneOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -41,7 +41,7 @@ export default function CallPage({ params }: { params: { callId: string } }) {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
-  const callRef = firestore ? doc(firestore, `calls/${params.callId}`) : null;
+  const callRef = useMemo(() => firestore ? doc(firestore, `calls/${params.callId}`) : null, [firestore, params.callId]);
   const { data: callDoc, loading: callLoading } = useDoc<Call>(callRef);
 
   // Determine the other user's ID
@@ -53,19 +53,29 @@ export default function CallPage({ params }: { params: { callId: string } }) {
   // Setup peer connection and media
   useEffect(() => {
     if (!user || !firestore || !callDoc) return;
+    
+    const isVoiceCall = callDoc.type === 'voice';
+    setIsVideoOff(isVoiceCall);
 
     const peerConnection = new RTCPeerConnection(servers);
     setPc(peerConnection);
 
     const setupMedia = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: !isVoiceCall, 
+                audio: true 
+            });
+            
+            stream.getVideoTracks().forEach(track => track.enabled = !isVoiceCall);
+
             setLocalStream(stream);
             if (localVideoRef.current) localVideoRef.current.srcObject = stream;
             stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
         } catch (error) {
             console.error("Error accessing media devices.", error);
             toast({ title: "Erreur Média", description: "Impossible d'accéder à la caméra/micro.", variant: "destructive" });
+            hangUp();
         }
     };
     setupMedia();
@@ -93,10 +103,11 @@ export default function CallPage({ params }: { params: { callId: string } }) {
 
     return () => {
         peerConnection.close();
+        // Check localStream before trying to access its tracks
         localStream?.getTracks().forEach(track => track.stop());
-        remoteStream?.getTracks().forEach(track => track.stop());
     };
-  }, [user, firestore]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, firestore, callDoc?.id]); // Depend on callDoc.id to re-run if call changes
 
   // Signaling logic
   useEffect(() => {
@@ -144,7 +155,7 @@ export default function CallPage({ params }: { params: { callId: string } }) {
         if (data?.answer && user.id === callDoc.callerId) {
             addAnswer(data.answer);
         }
-        if (data?.status === 'ended') {
+        if (data?.status === 'ended' || data?.status === 'declined' || data?.status === 'missed') {
             hangUp(false); // don't update doc again
         }
     });
@@ -173,19 +184,24 @@ export default function CallPage({ params }: { params: { callId: string } }) {
     pc?.close();
     localStream?.getTracks().forEach(track => track.stop());
 
-    if (updateDb && callRef) {
+    if (updateDb && callRef && firestore) {
         await updateDoc(callRef, { status: 'ended' });
         // Optional: clean up candidates subcollections after call ends
-        const offerCandidatesQuery = query(collection(callRef, 'offerCandidates'));
-        const answerCandidatesQuery = query(collection(callRef, 'answerCandidates'));
-        const [offerSnapshot, answerSnapshot] = await Promise.all([getDocs(offerCandidatesQuery), getDocs(answerCandidatesQuery)]);
-        const batch = writeBatch(firestore);
-        offerSnapshot.forEach(doc => batch.delete(doc.ref));
-        answerSnapshot.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
+        try {
+            const offerCandidatesQuery = query(collection(callRef, 'offerCandidates'));
+            const answerCandidatesQuery = query(collection(callRef, 'answerCandidates'));
+            const [offerSnapshot, answerSnapshot] = await Promise.all([getDocs(offerCandidatesQuery), getDocs(answerCandidatesQuery)]);
+            
+            const batch = writeBatch(firestore);
+            offerSnapshot.forEach(doc => batch.delete(doc.ref));
+            answerSnapshot.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
 
-        // Optional: Delete the call document itself after a short delay
-        setTimeout(() => deleteDoc(callRef), 5000);
+             // Optional: Delete the call document itself after a short delay
+            setTimeout(() => deleteDoc(callRef), 5000);
+        } catch (error) {
+            console.error("Error during call cleanup:", error);
+        }
     }
     router.push('/messagerie');
   };
@@ -196,11 +212,15 @@ export default function CallPage({ params }: { params: { callId: string } }) {
   }
 
   const toggleVideo = () => {
+      if (callDoc?.type === 'voice') {
+          toast({ title: "Mode vocal", description: "La vidéo ne peut pas être activée pendant un appel vocal." });
+          return;
+      }
       localStream?.getVideoTracks().forEach(track => track.enabled = !track.enabled);
       setIsVideoOff(!isVideoOff);
   }
   
-  if (callLoading || authLoading) {
+  if (callLoading || authLoading || !callDoc) {
       return <div className="w-full h-screen flex items-center justify-center bg-black"><Skeleton className="w-full h-full" /></div>
   }
   
@@ -214,26 +234,40 @@ export default function CallPage({ params }: { params: { callId: string } }) {
     )
   }
 
-  const hasRemoteVideo = remoteStream && remoteStream.getVideoTracks().length > 0;
+  const hasRemoteVideo = remoteStream && remoteStream.getVideoTracks().length > 0 && remoteStream.getVideoTracks().some(t => t.enabled);
+  const isVoiceCall = callDoc.type === 'voice';
 
   return (
     <div className="relative h-screen w-screen bg-black text-white flex items-center justify-center">
-        {/* Remote Video */}
-        <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
-
+        {/* Remote Video / Audio indicator */}
+        {hasRemoteVideo && !isVoiceCall ? (
+            <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
+        ) : (
+             <div className="flex flex-col items-center justify-center text-white">
+                <Avatar className="h-40 w-40 border-4 border-primary">
+                    <AvatarImage src={otherUser?.profileImage} /> 
+                    <AvatarFallback className="text-6xl">{otherUser?.displayName?.charAt(0) || '?'}</AvatarFallback>
+                </Avatar>
+                <h2 className="text-3xl font-bold mt-6">{otherUser?.displayName}</h2>
+                <p className="text-muted-foreground mt-2">En appel {isVoiceCall ? 'vocal' : 'vidéo'}</p>
+            </div>
+        )}
+        
         {/* Local Video Preview */}
-        <Card className="absolute top-4 right-4 h-48 w-36 rounded-lg overflow-hidden border-2 border-primary bg-black">
-            <CardContent className="p-0 h-full w-full">
-                <video ref={localVideoRef} autoPlay playsInline muted className="h-full w-full object-cover scale-x-[-1]" />
-            </CardContent>
-        </Card>
+        {!isVoiceCall && (
+            <Card className="absolute top-4 right-4 h-48 w-36 rounded-lg overflow-hidden border-2 border-primary bg-black">
+                <CardContent className="p-0 h-full w-full">
+                    {localStream && <video ref={localVideoRef} autoPlay playsInline muted className="h-full w-full object-cover scale-x-[-1]" />}
+                </CardContent>
+            </Card>
+        )}
 
         {/* Call Controls */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 p-2 bg-black/50 rounded-full">
             <Button onClick={toggleMute} variant="secondary" size="icon" className="rounded-full h-14 w-14">
                 {isMuted ? <MicOff /> : <Mic />}
             </Button>
-             <Button onClick={toggleVideo} variant="secondary" size="icon" className="rounded-full h-14 w-14">
+             <Button onClick={toggleVideo} variant={isVideoOff ? 'destructive' : 'secondary'} size="icon" className="rounded-full h-14 w-14">
                 {isVideoOff ? <VideoOff /> : <Video />}
             </Button>
             <Button onClick={() => hangUp()} variant="destructive" size="icon" className="rounded-full h-16 w-16">
@@ -259,4 +293,3 @@ export default function CallPage({ params }: { params: { callId: string } }) {
     </div>
   );
 }
-
