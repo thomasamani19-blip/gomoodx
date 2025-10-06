@@ -1,9 +1,8 @@
-
 'use client';
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Menu } from 'lucide-react';
+import { Menu, ShoppingCart } from 'lucide-react';
 import { GoMoodXLogo } from '@/components/GoMoodXLogo';
 import { useAuth } from '@/hooks/use-auth';
 import { ThemeSwitcher } from '../theme-switcher';
@@ -42,6 +41,12 @@ export function Header() {
 
         <div className="flex flex-1 items-center justify-end gap-2 md:gap-4">
            <ThemeSwitcher />
+            <Button variant="ghost" size="icon" asChild>
+                <Link href="/boutique">
+                    <ShoppingCart className="h-5 w-5" />
+                    <span className="sr-only">Panier</span>
+                </Link>
+            </Button>
 
           {/* Auth buttons for desktop */}
           <div className="hidden md:flex items-center gap-2">
@@ -110,5 +115,3 @@ export function Header() {
     </header>
   );
 }
-
-    

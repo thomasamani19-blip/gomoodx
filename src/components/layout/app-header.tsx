@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, Settings, User as UserIcon } from 'lucide-react';
+import { LogOut, Settings, User as UserIcon, ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
@@ -33,11 +33,17 @@ export function AppHeader() {
           {/* Espace réservé si besoin d'autres actions */}
         </div>
         <ThemeSwitcher />
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/boutique">
+              <ShoppingCart className="h-5 w-5" />
+              <span className="sr-only">Panier</span>
+          </Link>
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
-                {user?.avatar && <AvatarImage src={user.avatar} alt={user.displayName} />}
+                {user?.profileImage && <AvatarImage src={user.profileImage} alt={user.displayName} />}
                 <AvatarFallback>{user?.displayName?.charAt(0)?.toUpperCase() ?? 'U'}</AvatarFallback>
               </Avatar>
             </Button>
