@@ -31,11 +31,11 @@ export default function Home() {
         <section className="relative h-[70vh] w-full">
           {heroImage && (
             <Image
-              src="https://images.unsplash.com/photo-1517832626593-32a3cf17142b?q=80&w=2070&auto=format&fit=crop"
-              alt="Ambiance Nuit Dorée"
+              src={heroImage.imageUrl}
+              alt={heroImage.description}
               fill
               className="object-cover opacity-50"
-              data-ai-hint="gold luxury night"
+              data-ai-hint={heroImage.imageHint}
               priority
             />
           )}
