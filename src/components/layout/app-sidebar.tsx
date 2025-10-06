@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -36,6 +35,7 @@ import {
   FileText,
   Settings,
   Film,
+  CalendarCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -45,6 +45,7 @@ const clientNav = [
   { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
   { title: 'Annonces', href: '/annonces', icon: HeartHandshake },
   { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
+  { title: 'Mes Réservations', href: '/reservations', icon: CalendarCheck },
   { title: 'Favoris', href: '/favoris', icon: Heart },
   { title: 'Boutique', href: '/boutique', icon: ShoppingBag },
   { title: 'Live', href: '/live', icon: Clapperboard },
@@ -57,12 +58,14 @@ const escorteNav = [
   { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
   { title: 'Statistiques', href: '/statistiques', icon: BarChart3 },
   { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
+  { title: 'Mes Réservations', href: '/reservations', icon: CalendarCheck },
   { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
 ];
 
 const partenaireNav = [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
     { title: 'Profil Partenaire', href: '/gestion/etablissement', icon: Building },
+    { title: 'Mes Réservations', href: '/reservations', icon: CalendarCheck },
     { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
     { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
 ];
