@@ -3,17 +3,14 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Menu, Search } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { GoMoodXLogo } from '@/components/GoMoodXLogo';
 import { useAuth } from '@/hooks/use-auth';
-import { useRouter } from 'next/navigation';
 import { ThemeSwitcher } from '../theme-switcher';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useState } from 'react';
 
 const navItems = [
-  { label: 'Accueil', href: '/' },
   { label: 'Annonces', href: '/annonces' },
   { label: 'Boutique', href: '/boutique' },
   { label: 'Live', href: '/live' },
@@ -23,17 +20,7 @@ const navItems = [
 
 export function Header() {
   const { user } = useAuth();
-  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const query = formData.get('search');
-    if (query) {
-      router.push(`/recherche?q=${query}`);
-    }
-  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -123,3 +110,5 @@ export function Header() {
     </header>
   );
 }
+
+    

@@ -5,18 +5,19 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
 import { GoMoodXLogo } from "@/components/GoMoodXLogo"
 import Link from "next/link"
-import { ArrowRight, User, Star } from "lucide-react";
+import { ArrowRight, User, Star, Building } from "lucide-react";
 
 export default function InscriptionHubPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
         <GoMoodXLogo className="justify-center mb-2"/>
         <CardTitle className="font-headline text-2xl">Rejoindre GoMoodX</CardTitle>
@@ -51,16 +52,32 @@ export default function InscriptionHubPage() {
                     </div>
                 </Card>
             </Link>
+             <Link href="/inscription/partenaire">
+                <Card className="p-6 hover:bg-accent/50 hover:border-primary transition-all">
+                    <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-4">
+                            <Building className="h-8 w-8 text-primary"/>
+                            <div>
+                                <h3 className="font-semibold text-lg">Je suis un Partenaire</h3>
+                                <p className="text-sm text-muted-foreground">Développer mon activité (hôtel, studio, etc.).</p>
+                            </div>
+                        </div>
+                         <ArrowRight className="h-5 w-5 text-muted-foreground"/>
+                    </div>
+                </Card>
+            </Link>
         </CardContent>
-        <CardContent className="text-center">
+        <CardFooter className="text-center justify-center">
             <p className="text-xs text-center text-muted-foreground">
                 Déjà membre ?{" "}
                 <Link href="/connexion" className="underline hover:text-primary">
                 Connectez-vous
                 </Link>
             </p>
-        </CardContent>
+        </CardFooter>
       </Card>
     </div>
   )
 }
+
+    

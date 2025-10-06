@@ -23,6 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { useRouter } from 'next/navigation';
 
 const TestimonialCard = ({ quote, author, role }: { quote: string, author: string, role: string }) => (
     <Card className="bg-card/50 border-primary/20 flex flex-col justify-between">
@@ -81,6 +82,28 @@ function LatestBlogPosts() {
 
 export default function Home() {
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-main');
+  const router = useRouter();
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const query = formData.get('query');
+    if (query) {
+      router.push(`/recherche?q=${query}`);
+    }
+  };
+
+  const handleAiSearch = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const form = (e.target as HTMLElement).closest('form');
+    if (form) {
+        const formData = new FormData(form);
+        const query = formData.get('query');
+        if (query) {
+            router.push(`/recherche?q=${query}&ia=true`);
+        }
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-black via-background to-background">
@@ -108,15 +131,17 @@ export default function Home() {
             
             <Card className="mt-8 w-full max-w-3xl bg-black/50 backdrop-blur-sm border-primary/20">
                 <CardContent className="p-4 md:p-6">
-                    <div className="flex w-full items-center space-x-2">
-                        <Input type="text" placeholder="Rechercher par mot-clé, créateur, ou service..." className="h-12 text-base" />
-                        <Button type="submit" size="icon" className="h-12 w-12 flex-shrink-0" aria-label="Recherche IA">
-                            <Wand2 className="h-6 w-6" />
-                        </Button>
-                        <Button type="submit" size="icon" className="h-12 w-12 flex-shrink-0" aria-label="Recherche">
-                            <Search className="h-6 w-6" />
-                        </Button>
-                    </div>
+                    <form onSubmit={handleSearch}>
+                        <div className="flex w-full items-center space-x-2">
+                            <Input name="query" type="text" placeholder="Rechercher par mot-clé, créateur, ou service..." className="h-12 text-base" />
+                            <Button type="button" size="icon" className="h-12 w-12 flex-shrink-0" aria-label="Recherche IA" onClick={handleAiSearch}>
+                                <Wand2 className="h-6 w-6" />
+                            </Button>
+                            <Button type="submit" size="icon" className="h-12 w-12 flex-shrink-0" aria-label="Recherche">
+                                <Search className="h-6 w-6" />
+                            </Button>
+                        </div>
+                    </form>
                     <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-2">
                         <div className="flex items-center space-x-2">
                             <Checkbox id="cat-rencontre" />
@@ -237,10 +262,10 @@ export default function Home() {
                       </div>
                        <div className="flex-shrink-0 flex flex-col sm:flex-row gap-4">
                           <Button asChild size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
-                              <Link href="/inscription">Devenir Créateur</Link>
+                              <Link href="/inscription/escorte">Devenir Créateur</Link>
                           </Button>
                           <Button asChild size="lg" className="bg-background text-foreground hover:bg-background/90">
-                              <Link href="/inscription">Devenir Membre</Link>
+                              <Link href="/inscription/client">Devenir Membre</Link>
                           </Button>
                       </div>
                   </div>
@@ -253,3 +278,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
