@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -5,12 +6,12 @@ import type { User } from "@/lib/types";
 import PageHeader from "../shared/page-header";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { Building, Newspaper } from "lucide-react";
+import { Building, ShoppingBag } from "lucide-react";
 
 export default function PartenaireDashboard({ user }: { user: User }) {
   const managementTools = [
     { title: "Gérer mon profil", description: "Modifiez les informations, la galerie et les détails de votre profil.", href: "/gestion/etablissement", icon: Building },
-    { title: "Gérer les produits", description: "Ajoutez ou mettez à jour les produits ou services que vous proposez.", href: "/gestion/produits", icon: Newspaper },
+    { title: "Gérer les produits", description: "Ajoutez ou mettez à jour les produits ou services que vous proposez.", href: "/gestion/produits", icon: ShoppingBag },
 ];
 
 
@@ -43,3 +44,5 @@ export default function PartenaireDashboard({ user }: { user: User }) {
     </div>
   );
 }
+
+    

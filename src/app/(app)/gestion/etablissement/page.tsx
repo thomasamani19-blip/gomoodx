@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
@@ -39,7 +40,6 @@ export default function GestionEtablissementPage() {
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState('');
-  const [pseudo, setPseudo] = useState('');
   const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
   const [location, setLocation] = useState('');
@@ -61,7 +61,6 @@ export default function GestionEtablissementPage() {
     }
     if (user) {
       setDisplayName(user.displayName || '');
-      setPseudo(user.pseudo || '');
       setEmail(user.email || '');
       setBio(user.bio || '');
       setLocation(user.location || '');
@@ -146,7 +145,6 @@ export default function GestionEtablissementPage() {
       
       const updatedData = {
         displayName,
-        pseudo,
         email,
         bio,
         location,
@@ -293,8 +291,8 @@ export default function GestionEtablissementPage() {
             </div>
              <div className="space-y-2">
                 <Label htmlFor="email">Adresse e-mail de contact</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled />
-                <p className="text-xs text-muted-foreground">L'adresse e-mail de connexion ne peut pas être modifiée.</p>
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <p className="text-xs text-muted-foreground">Cette adresse sera publique. L'e-mail de connexion reste privé.</p>
             </div>
           </CardContent>
           <CardFooter>
@@ -308,3 +306,5 @@ export default function GestionEtablissementPage() {
     </div>
   );
 }
+
+    
