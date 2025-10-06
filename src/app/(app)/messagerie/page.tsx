@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import PageHeader from '@/components/shared/page-header';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,23 +13,41 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Message, User, Call } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useDoc } from '@/firebase';
 import { addDoc, collection, serverTimestamp, query, where, orderBy, or, getDocs, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function MessageriePage() {
+function MessagerieContent() {
     const { user, loading: authLoading } = useAuth();
     const firestore = useFirestore();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const messageEndRef = useRef<HTMLDivElement>(null);
 
     const [selectedContact, setSelectedContact] = useState<User | null>(null);
     const [newMessage, setNewMessage] = useState('');
     const [recentContacts, setRecentContacts] = useState<{ contact: User; lastMessage: Message }[]>([]);
     const [contactsLoading, setContactsLoading] = useState(true);
+
+    const contactIdFromUrl = searchParams.get('contact');
+    
+    // Fetch user for contact from URL
+    const contactRef = useMemo(() => {
+        if (!firestore || !contactIdFromUrl) return null;
+        return doc(firestore, 'users', contactIdFromUrl);
+    }, [firestore, contactIdFromUrl]);
+
+    const { data: contactFromUrl, loading: contactLoading } = useDoc<User>(contactRef);
+    
+    useEffect(() => {
+        if (contactFromUrl && !contactsLoading) {
+            setSelectedContact(contactFromUrl);
+        }
+    }, [contactFromUrl, contactsLoading]);
+
 
     // 1. Fetch messages for the current user and derive contacts
     useEffect(() => {
@@ -60,6 +78,10 @@ export default function MessageriePage() {
                     }
                 });
                 
+                if (contactIdFromUrl) {
+                    contactIds.add(contactIdFromUrl);
+                }
+                
                 if (contactIds.size === 0) {
                     setRecentContacts([]);
                     setContactsLoading(false);
@@ -72,7 +94,9 @@ export default function MessageriePage() {
                 const userMap = new Map(usersSnapshot.docs.map(doc => [doc.id, { id: doc.id, ...doc.data() } as User]));
 
                 // Create the recent contacts list
-                const conversations = new Map<string, { contact: User; lastMessage: Message }>();
+                const conversations = new Map<string, { contact: User; lastMessage?: Message }>();
+
+                // Add contacts from messages
                 allUserMessages.forEach(msg => {
                     const otherUserId = msg.senderId === user.id ? msg.receiverId : msg.senderId;
                     if (!conversations.has(otherUserId)) {
@@ -85,8 +109,25 @@ export default function MessageriePage() {
                         }
                     }
                 });
+                
+                // Ensure contact from URL is in the list
+                if (contactIdFromUrl) {
+                    const contactUser = userMap.get(contactIdFromUrl);
+                    if (contactUser && !conversations.has(contactIdFromUrl)) {
+                         conversations.set(contactIdFromUrl, {
+                            contact: contactUser,
+                            lastMessage: { message: "Nouvelle conversation", createdAt: serverTimestamp()} as unknown as Message
+                         });
+                    }
+                }
+                
+                const sortedContacts = Array.from(conversations.values()).sort((a,b) => {
+                    const timeA = a.lastMessage?.createdAt?.toDate()?.getTime() || 0;
+                    const timeB = b.lastMessage?.createdAt?.toDate()?.getTime() || 0;
+                    return timeB - timeA;
+                });
 
-                setRecentContacts(Array.from(conversations.values()));
+                setRecentContacts(sortedContacts);
             } catch (error) {
                 console.error("Error fetching contacts:", error);
             } finally {
@@ -95,7 +136,7 @@ export default function MessageriePage() {
         };
 
         fetchContacts();
-    }, [user, firestore]);
+    }, [user, firestore, contactIdFromUrl]);
 
     // 2. Listen to messages for the selected contact in real-time
     const activeMessagesQuery = useMemo(() => {
@@ -297,3 +338,13 @@ export default function MessageriePage() {
     </div>
     );
 }
+
+export default function MessageriePage() {
+    return (
+        <Suspense fallback={<div>Chargement...</div>}>
+            <MessagerieContent />
+        </Suspense>
+    )
+}
+
+    

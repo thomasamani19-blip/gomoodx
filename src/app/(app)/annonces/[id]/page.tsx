@@ -78,6 +78,9 @@ const ReviewForm = ({ annonceId }: { annonceId: string }) => {
         setIsSubmitting(true);
         
         try {
+            if (!firestore) {
+                throw new Error("Firestore is not initialized");
+            }
             const reviewData = {
                 authorId: user.id,
                 authorName: user.displayName,
@@ -318,7 +321,13 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
                          <Button size="lg">Réserver maintenant</Button>
-                         <Button size="lg" variant="outline"><MessageCircle className="mr-2 h-4 w-4" /> Contacter</Button>
+                         {creator && (
+                            <Button size="lg" variant="outline" asChild>
+                                <Link href={`/messagerie?contact=${creator.id}`}>
+                                    <MessageCircle className="mr-2 h-4 w-4" /> Contacter
+                                </Link>
+                            </Button>
+                         )}
                     </CardContent>
                  </Card>
                  {creator && (
