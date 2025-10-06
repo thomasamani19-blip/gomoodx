@@ -27,18 +27,58 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const productRef = useMemo(() => firestore ? doc(firestore, 'products', params.id) : null, [firestore, params.id]);
   const { data: product, loading: productLoading } = useDoc<Product>(productRef);
   
-  // TODO: The product type should include creatorId to fetch creator info.
-  // const creatorRef = useMemo(() => (product?.createdBy && firestore) ? doc(firestore, 'users', product.createdBy) : null, [product, firestore]);
-  // const { data: creator, loading: creatorLoading } = useDoc<User>(creatorRef);
+  // The creatorId is now part of the Product type
+  const creatorRef = useMemo(() => (product?.createdBy && firestore) ? doc(firestore, 'users', product.createdBy) : null, [product, firestore]);
+  const { data: creator, loading: creatorLoading } = useDoc<User>(creatorRef);
 
-  const loading = productLoading; // || creatorLoading;
+  const loading = productLoading || creatorLoading;
   
   const handlePurchase = async () => {
-    toast({ title: 'Fonctionnalité à venir', description: "L'API pour finaliser l'achat sera implémentée prochainement."});
-    // Placeholder for purchase logic
-    // setIsPurchasing(true);
-    // ... call API route ...
-    // setIsPurchasing(false);
+    if (!user) {
+        toast({ title: 'Connexion requise', description: 'Vous devez être connecté pour acheter.', variant: 'destructive'});
+        router.push('/connexion');
+        return;
+    }
+
+    if (user.id === product?.createdBy) {
+        toast({ title: 'Action impossible', description: 'Vous ne pouvez pas acheter votre propre produit.', variant: 'destructive'});
+        return;
+    }
+
+    setIsPurchasing(true);
+
+    try {
+        const response = await fetch('/api/products/purchase', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                memberId: user.id,
+                productId: params.id,
+            }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'success') {
+            toast({
+                title: 'Achat réussi !',
+                description: `Vous avez acheté "${product?.title}".`,
+            });
+            // Optional: redirect to a "My Purchases" page
+            // router.push('/mes-achats');
+        } else {
+            throw new Error(result.message || 'Une erreur est survenue.');
+        }
+
+    } catch (error: any) {
+        toast({
+            title: 'Échec de l\'achat',
+            description: error.message || "Impossible de finaliser l'achat. Veuillez réessayer.",
+            variant: 'destructive',
+        });
+    } finally {
+        setIsPurchasing(false);
+    }
   };
 
 
@@ -112,8 +152,28 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                          </Button>
                     </CardContent>
                  </Card>
+                 {creator && (
+                    <Card>
+                        <CardHeader>
+                             <CardTitle>Vendu par</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center gap-4">
+                                <Avatar className="h-16 w-16">
+                                    <AvatarImage src={creator.profileImage} alt={creator.displayName} />
+                                    <AvatarFallback>{creator.displayName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <Link href={`/profil/${creator.id}`} className="font-bold hover:underline">{creator.displayName}</Link>
+                                    <p className="text-sm text-muted-foreground capitalize">{creator.role}</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
     </div>
   );
 }
+
