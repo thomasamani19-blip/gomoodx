@@ -97,9 +97,9 @@ export interface Transaction {
 
 export interface Message {
   id: string;
-  fromId: string;
-  toId: string;
-  message: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
   type: 'text' | 'image' | 'video';
   read: boolean;
   createdAt: Timestamp;

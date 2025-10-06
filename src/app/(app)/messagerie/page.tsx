@@ -24,26 +24,28 @@ export default function MessageriePage() {
     const [selectedContact, setSelectedContact] = useState<User | null>(null);
     const [newMessage, setNewMessage] = useState('');
 
-    // 1. Fetch all messages involving the current user
+    // Fetch all messages where the current user is either the sender or receiver
+    const messagesQueryConstraints = useMemo(() => {
+        if (!user) return [];
+        return [or(where('senderId', '==', user.id), where('receiverId', '==', user.id))];
+    }, [user]);
+
     const { data: allUserMessages, loading: messagesLoading } = useCollection<Message>(
         'messages',
-        user ? {
-            constraints: [or(where('senderId', '==', user.id), where('receiverId', '==', user.id))]
-        } : undefined
+        { constraints: messagesQueryConstraints }
     );
     
-    // 2. Fetch all users to map IDs to user data
+    // Fetch all users to map IDs to user data
     const { data: users, loading: usersLoading } = useCollection<User>('users');
 
-    // 3. Create a list of recent contacts and last messages
+    // Create a list of recent contacts and their last message
     const recentContacts = useMemo(() => {
         if (!allUserMessages || !users || !user) return [];
 
         const userMap = new Map(users.map(u => [u.id, u]));
         const conversations = new Map<string, { contact: User; lastMessage: Message }>();
 
-        // Sort messages to find the most recent one for each conversation
-        const sortedMessages = [...allUserMessages].sort((a, b) => b.timestamp?.toMillis() - a.timestamp?.toMillis());
+        const sortedMessages = [...allUserMessages].sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
 
         sortedMessages.forEach(msg => {
             const otherUserId = msg.senderId === user.id ? msg.receiverId : msg.senderId;
@@ -64,18 +66,17 @@ export default function MessageriePage() {
     }, [allUserMessages, users, user]);
 
 
-    const conversationId = useMemo(() => {
-        if (!user || !selectedContact) return null;
-        return [user.id, selectedContact.id].sort().join('_');
-    }, [user, selectedContact]);
-    
-    // 4. Filter messages for the selected conversation
+    // Filter messages for the selected conversation, sorted by time
     const activeMessages = useMemo(() => {
-        if (!conversationId || !allUserMessages) return [];
+        if (!selectedContact || !allUserMessages || !user) return [];
+        
         return allUserMessages
-            .filter(msg => msg.conversationId === conversationId)
-            .sort((a, b) => a.timestamp?.toMillis() - b.timestamp?.toMillis());
-    }, [conversationId, allUserMessages]);
+            .filter(msg => 
+                (msg.senderId === user.id && msg.receiverId === selectedContact.id) ||
+                (msg.senderId === selectedContact.id && msg.receiverId === user.id)
+            )
+            .sort((a, b) => a.createdAt.toMillis() - b.createdAt.toMillis());
+    }, [selectedContact, allUserMessages, user]);
 
 
     const handleSelectContact = (contact: User) => {
@@ -84,15 +85,15 @@ export default function MessageriePage() {
 
     const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!newMessage.trim() || !user || !selectedContact || !conversationId || !firestore) return;
+        if (!newMessage.trim() || !user || !selectedContact || !firestore) return;
 
         const messageData = {
-            conversationId,
             content: newMessage,
             senderId: user.id,
             receiverId: selectedContact.id,
-            timestamp: serverTimestamp(),
+            createdAt: serverTimestamp(),
             read: false,
+            type: 'text',
         };
 
         try {
@@ -139,16 +140,16 @@ export default function MessageriePage() {
                         onClick={() => handleSelectContact(contact)}
                     >
                         <Avatar>
-                            <AvatarImage src={contact.avatar} alt={contact.nom} />
-                            <AvatarFallback>{contact.nom.charAt(0)}</AvatarFallback>
+                            <AvatarImage src={contact.avatarUrl} alt={contact.fullName} />
+                            <AvatarFallback>{contact.fullName.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 overflow-hidden">
-                            <p className="font-semibold truncate">{contact.nom}</p>
+                            <p className="font-semibold truncate">{contact.fullName}</p>
                             <p className="text-sm text-muted-foreground truncate">{lastMessage.content}</p>
                         </div>
-                         {lastMessage.timestamp && (
+                         {lastMessage.createdAt && (
                            <span className="text-xs text-muted-foreground ml-auto">
-                            {formatDistanceToNow(lastMessage.timestamp.toDate(), { addSuffix: true, locale: fr })}
+                            {formatDistanceToNow(lastMessage.createdAt.toDate(), { addSuffix: true, locale: fr })}
                            </span>
                         )}
                     </button>
@@ -160,20 +161,20 @@ export default function MessageriePage() {
                 <>
                     <div className="p-4 border-b flex items-center gap-4">
                         <Avatar>
-                            <AvatarImage src={selectedContact.avatar} alt={selectedContact.nom} />
-                            <AvatarFallback>{selectedContact.nom.charAt(0)}</AvatarFallback>
+                            <AvatarImage src={selectedContact.avatarUrl} alt={selectedContact.fullName} />
+                            <AvatarFallback>{selectedContact.fullName.charAt(0)}</AvatarFallback>
                         </Avatar>
-                        <h2 className="font-semibold text-lg">{selectedContact.nom}</h2>
+                        <h2 className="font-semibold text-lg">{selectedContact.fullName}</h2>
                     </div>
                     <ScrollArea className="flex-1 p-6 bg-muted/20">
                         <div className="space-y-6">
-                            {messagesLoading && <div className="text-center text-muted-foreground">Chargement...</div>}
+                            {messagesLoading && <div className="text-center text-muted-foreground">Chargement des messages...</div>}
                             {!messagesLoading && activeMessages?.map(msg => (
                                 <div key={msg.id} className={cn("flex items-end gap-2", msg.senderId === user?.id ? 'justify-end' : '')}>
                                     {msg.senderId !== user?.id && (
                                         <Avatar className="h-8 w-8">
-                                            <AvatarImage src={selectedContact.avatar} />
-                                            <AvatarFallback>{selectedContact.nom.charAt(0)}</AvatarFallback>
+                                            <AvatarImage src={selectedContact.avatarUrl} />
+                                            <AvatarFallback>{selectedContact.fullName.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                     )}
                                     <div className={cn(
@@ -182,10 +183,10 @@ export default function MessageriePage() {
                                     )}>
                                         <p>{msg.content}</p>
                                     </div>
-                                     {msg.senderId === user?.id && user?.avatar && (
+                                     {msg.senderId === user?.id && user?.avatarUrl && (
                                         <Avatar className="h-8 w-8">
-                                            <AvatarImage src={user.avatar} />
-                                            <AvatarFallback>{user.nom.charAt(0)}</AvatarFallback>
+                                            <AvatarImage src={user.avatarUrl} />
+                                            <AvatarFallback>{user.fullName.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                     )}
                                 </div>

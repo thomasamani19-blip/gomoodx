@@ -130,14 +130,14 @@
       "title": "Message",
       "type": "object",
       "properties": {
-        "fromId": { "type": "string" },
-        "toId": { "type": "string" },
-        "message": { "type": "string" },
+        "senderId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "content": { "type": "string" },
         "type": { "type": "string", "enum": ["text", "image", "video"]},
         "read": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time"}
       },
-      "required": ["fromId", "toId", "message", "createdAt"]
+      "required": ["senderId", "receiverId", "content", "createdAt"]
     },
     "wallet": {
       "title": "Wallet",
