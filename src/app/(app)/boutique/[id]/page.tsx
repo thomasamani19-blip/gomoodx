@@ -1,12 +1,12 @@
 
-'use client';
+'use-client';
 
 import { useDoc, useFirestore } from '@/firebase';
 import type { Product, User } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import { MessageCircle, Heart, Loader2, Package, Film } from 'lucide-react';
+import { MessageCircle, Heart, Loader2, Package, Film, Download } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const productRef = useMemo(() => firestore ? doc(firestore, 'products', params.id) : null, [firestore, params.id]);
   const { data: product, loading: productLoading } = useDoc<Product>(productRef);
   
-  // The creatorId is now part of the Product type
   const creatorRef = useMemo(() => (product?.createdBy && firestore) ? doc(firestore, 'users', product.createdBy) : null, [product, firestore]);
   const { data: creator, loading: creatorLoading } = useDoc<User>(creatorRef);
 
@@ -114,6 +113,8 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   }
   
   const isPhysical = product.productType === 'physique';
+  const isFreeDigital = product.productType === 'digital' && product.price === 0;
+  const isPaidDigital = product.productType === 'digital' && product.price > 0;
 
   return (
     <div className="space-y-8">
@@ -149,8 +150,10 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
             <div className="md:col-span-1 space-y-6">
                  <Card>
                     <CardHeader className="text-center">
-                        <p className="text-4xl font-bold text-primary">{product.price} €</p>
-                         {isPhysical && <p className="text-xs text-muted-foreground">Livraison à organiser avec le vendeur.</p>}
+                        <p className="text-4xl font-bold text-primary">
+                            {isFreeDigital ? 'Gratuit' : `${product.price} €`}
+                        </p>
+                         {isPhysical && <p className="text-xs text-muted-foreground">Livraison et paiement à organiser avec le vendeur.</p>}
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
                         {isPhysical && creator ? (
@@ -159,12 +162,16 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                                     <MessageCircle className="mr-2 h-4 w-4" /> Contacter pour acheter
                                  </Link>
                              </Button>
-                        ) : (
+                        ) : isPaidDigital ? (
                              <Button size="lg" onClick={handlePurchase} disabled={isPurchasing}>
                                  {isPurchasing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                  {isPurchasing ? 'Achat en cours...' : 'Acheter maintenant'}
                              </Button>
-                        )}
+                        ) : isFreeDigital ? (
+                             <Button size="lg" disabled>
+                                <Download className="mr-2 h-4 w-4" /> Télécharger (Bientôt)
+                             </Button>
+                        ) : null}
                          <Button size="lg" variant="outline">
                             <Heart className="mr-2 h-4 w-4" /> Ajouter aux favoris
                          </Button>
