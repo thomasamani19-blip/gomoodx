@@ -39,18 +39,18 @@ export default function DashboardPage() {
 
     switch (user.role) {
       case 'escorte':
-        return <EscorteDashboard user={user as User} />;
+        return <EscorteDashboard user={user} />;
       case 'client':
-        return <ClientDashboard user={user as User} />;
+        return <ClientDashboard user={user} />;
       case 'partenaire':
-        return <PartenaireDashboard user={user as User} />;
+        return <PartenaireDashboard user={user} />;
       case 'administrateur':
       case 'founder':
       case 'moderator':
-        return <AdminDashboard user={user as User} />;
+        return <AdminDashboard user={user} />;
       default:
         // Fallback for any unexpected role, default to client view
-        return <ClientDashboard user={user as User} />;
+        return <ClientDashboard user={user} />;
     }
   };
 
@@ -60,3 +60,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

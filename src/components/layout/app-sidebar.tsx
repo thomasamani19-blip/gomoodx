@@ -41,7 +41,7 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 
-const navConfig: Record<string, { title: string; href: string; icon: React.ElementType }[]> = {
+const navConfig: Record<UserRole, { title: string; href: string; icon: React.ElementType }[]> = {
   client: [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
     { title: 'Annonces', href: '/services', icon: HeartHandshake },
@@ -73,7 +73,6 @@ const navConfig: Record<string, { title: string; href: string; icon: React.Eleme
     { title: 'Utilisateurs', href: '/admin/users', icon: Users },
     { title: 'Modération', href: '/admin/moderation', icon: ShieldCheck },
   ],
-  // Add fallback for other roles like founder and moderator
   founder: [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
     { title: 'Utilisateurs', href: '/admin/users', icon: Users },
@@ -89,7 +88,7 @@ export function AppSidebar() {
   const { user } = useAuth();
   const pathname = usePathname();
   const isMobile = useIsMobile();
-  const navItems = user?.role ? navConfig[user.role] || navConfig['client'] : [];
+  const navItems = user?.role ? navConfig[user.role] : [];
 
   const renderMenuItems = () => (
     <SidebarMenu>
@@ -141,3 +140,5 @@ export function AppSidebar() {
       </Sidebar>
   );
 }
+
+    

@@ -183,11 +183,11 @@
       "schema": { "$ref": "#/entities/user" },
       "description": "Stores user profile information."
     },
-    "/wallets/{walletId}": {
+    "/wallets/{userId}": {
       "schema": { "$ref": "#/entities/wallet" },
-      "description": "User wallets, where walletId is the same as userId."
+      "description": "User wallets, where the documentId is the same as the userId."
     },
-    "/wallets/{walletId}/transactions/{transactionId}": {
+    "/wallets/{userId}/transactions/{transactionId}": {
       "schema": { "$ref": "#/entities/transaction" },
       "description": "Subcollection for wallet transactions."
     },

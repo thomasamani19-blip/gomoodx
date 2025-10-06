@@ -14,10 +14,8 @@ import { doc, setDoc, serverTimestamp, writeBatch, type Timestamp } from 'fireba
 import { useFirestore } from '@/firebase';
 import type { User } from '@/lib/types';
 
-export interface AppUser extends User {}
-
 interface AuthContextType {
-  user: AppUser | null;
+  user: User | null;
   firebaseUser: FirebaseUser | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
@@ -78,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo(() => ({ 
-      user: user as AppUser | null, 
+      user: user as User | null, 
       firebaseUser,
       loading, 
       login, 
@@ -100,3 +98,5 @@ export function useAuth() {
   }
   return context;
 }
+
+    

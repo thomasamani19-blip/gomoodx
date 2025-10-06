@@ -80,9 +80,9 @@ export default function InscriptionPage() {
                         </Label>
                     </div>
                     <div>
-                        <RadioGroupItem value="escorte" id="creator" className="peer sr-only" />
+                        <RadioGroupItem value="escorte" id="escorte" className="peer sr-only" />
                         <Label
-                        htmlFor="creator"
+                        htmlFor="escorte"
                         className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
                         >
                         Escorte
@@ -120,3 +120,5 @@ export default function InscriptionPage() {
     </div>
   )
 }
+
+    

@@ -29,8 +29,6 @@ export interface User {
   isVerified: boolean;
   onlineStatus: OnlineStatus;
   lastLogin: Timestamp;
-  // Compatibility fields
-  avatar?: string;
 }
 
 // Wallet
@@ -87,7 +85,7 @@ export interface Message {
   id: string;
   senderId: string;
   receiverId: string;
-  content: string;
+  message: string;
   type: MessageType;
   createdAt: Timestamp;
   isRead: boolean;
@@ -204,3 +202,5 @@ export type MonthlyRevenue = {
     month: string;
     revenue: number;
 }
+
+    
