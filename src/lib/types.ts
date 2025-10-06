@@ -20,7 +20,7 @@ export interface User {
   phone?: string;
   pseudo?: string;
   role: UserRole;
-  partnerType?: PartnerType; // New field for partner differentiation
+  partnerType?: PartnerType;
   status: UserStatus;
   createdAt: Timestamp;
   updatedAt: Timestamp;
