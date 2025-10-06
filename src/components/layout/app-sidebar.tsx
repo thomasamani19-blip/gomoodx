@@ -104,8 +104,8 @@ export function AppSidebar() {
     if (loading) {
       return renderLoadingSkeleton();
     }
+
     if (!user) {
-      // Show a minimal navigation for logged-out users if they somehow reach here
       return renderNavItems(clientNav.filter(item => ['/annonces', '/boutique', '/live', '/blog'].includes(item.href)));
     }
 
