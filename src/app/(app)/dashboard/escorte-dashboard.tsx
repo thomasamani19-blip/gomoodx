@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { User as UserIcon, BookText, PenSquare, Sparkles, ShoppingBag, Newspaper, Bot } from "lucide-react";
 import Link from 'next/link';
 import type { User, CreatorStats } from "@/lib/types";
-import PageHeader from "../shared/page-header";
+import PageHeader from "@/components/shared/page-header";
 import { useDoc, useFirestore } from "@/firebase";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { doc } from "firebase/firestore";
 import { BarChart, TrendingUp, Users } from "lucide-react";
 import { useMemo } from "react";
@@ -75,21 +75,21 @@ export default function EscorteDashboard({ user }: { user: User }) {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
             title="Revenus (30j)"
-            value={stats?.monthlyRevenue?.value ? `${stats.monthlyRevenue.value.toLocaleString('fr-FR')} €` : 'N/A'}
+            value={stats?.monthlyRevenue?.value ? `${stats.monthlyRevenue.value.toLocaleString('fr-FR')} €` : '0 €'}
             change={stats?.monthlyRevenue?.change ? `${stats.monthlyRevenue.change > 0 ? '+' : ''}${stats.monthlyRevenue.change.toFixed(1)}%` : '-'}
             icon={TrendingUp}
             loading={statsLoading}
         />
         <StatCard
             title="Nouveaux Abonnés"
-            value={stats?.newSubscribers?.value ? `+${stats.newSubscribers.value}` : 'N/A'}
+            value={stats?.newSubscribers?.value ? `+${stats.newSubscribers.value}` : '0'}
             change={stats?.newSubscribers?.change ? `${stats.newSubscribers.change > 0 ? '+' : ''}${stats.newSubscribers.change} depuis hier` : '-'}
             icon={Users}
             loading={statsLoading}
         />
         <StatCard
             title="Vues de Profil (7j)"
-            value={stats?.profileViews?.value ? stats.profileViews.value.toLocaleString('fr-FR') : 'N/A'}
+            value={stats?.profileViews?.value ? stats.profileViews.value.toLocaleString('fr-FR') : '0'}
             change={stats?.profileViews?.change ? `${stats?.profileViews?.change > 0 ? '+' : ''}${stats.profileViews.change.toFixed(1)}%` : '-'}
             icon={UserIcon}
             loading={statsLoading}

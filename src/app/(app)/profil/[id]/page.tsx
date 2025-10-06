@@ -44,7 +44,7 @@ const StarRating = ({ rating, ratingCount, className }: { rating: number, rating
 };
 
 
-const CreatorAnnonces = ({ creatorId }: { creatorId: string }) => {
+const CreatorAnnonces = ({ creatorId, name }: { creatorId: string, name: string }) => {
     const firestore = useFirestore();
     const annoncesQuery = useMemo(() => firestore ? query(collection(firestore, 'services'), where('createdBy', '==', creatorId), limit(6)) : null, [firestore, creatorId]);
     const { data: annonces, loading } = useCollection<Annonce>(annoncesQuery);
@@ -77,7 +77,7 @@ const CreatorAnnonces = ({ creatorId }: { creatorId: string }) => {
     )
 }
 
-const CreatorProducts = ({ creatorId }: { creatorId: string }) => {
+const CreatorProducts = ({ creatorId, name }: { creatorId: string, name: string }) => {
     const firestore = useFirestore();
     const productsQuery = useMemo(() => firestore ? query(collection(firestore, 'products'), where('createdBy', '==', creatorId), limit(6)) : null, [firestore, creatorId]);
     const { data: products, loading } = useCollection<Product>(productsQuery);
@@ -87,7 +87,7 @@ const CreatorProducts = ({ creatorId }: { creatorId: string }) => {
 
     return (
         <Card>
-            <CardHeader><CardTitle>Dans sa boutique</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Dans la boutique de {name}</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {products.map(product => (
                      <Card key={product.id} className="overflow-hidden group">
@@ -224,9 +224,9 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                         <CardContent><p className="text-muted-foreground whitespace-pre-wrap">{user.bio || "Aucune biographie."}</p></CardContent>
                     </Card>
 
-                    <CreatorAnnonces creatorId={user.id} />
+                    <CreatorAnnonces creatorId={user.id} name={user.displayName} />
 
-                    <CreatorProducts creatorId={user.id} />
+                    <CreatorProducts creatorId={user.id} name={user.displayName} />
                     
                     <Card>
                         <CardHeader><CardTitle>Galerie</CardTitle></CardHeader>
@@ -280,6 +280,7 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   const firestore = useFirestore();
   const userRef = firestore ? doc(firestore, 'users', params.id) : null;
   const { data: user, loading: userLoading } = useDoc<User>(userRef);
+  const router = useRouter();
   
   const isOwnProfile = currentUser?.id === params.id;
 
@@ -303,7 +304,6 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
 
   // Handle partners redirecting to their specific profile page
   if (user.role === 'partenaire') {
-      const router = useRouter();
       router.replace(`/partenaire/${user.id}`);
       return (
          <div className="space-y-8">

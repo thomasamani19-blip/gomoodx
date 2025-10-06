@@ -271,7 +271,6 @@ export interface BlogArticle {
 
 
 export type CreatorStats = {
-    id: string; // creatorId
     monthlyRevenue?: { value: number; change: number };
     newSubscribers?: { value: number; change: number };
     profileViews?: { value: number; change: number };

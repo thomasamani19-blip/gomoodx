@@ -31,7 +31,7 @@ const chartConfig = {
   },
   subscribers: {
     label: 'Abonnés',
-    color: 'hsl(var(--accent))',
+    color: 'hsl(var(--secondary))',
   },
 };
 
@@ -94,7 +94,6 @@ const StatsPage = () => {
 
     const statsRef = useMemo(() => {
         if (!user || !firestore) return null;
-        // Assuming stats for a creator are stored in a document named after their user ID
         return doc(firestore, `creators/${user.id}/stats/main`);
     }, [user, firestore]);
     
@@ -109,28 +108,28 @@ const StatsPage = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard
             title="Revenus (30j)"
-            value={stats?.monthlyRevenue?.value ? `${stats.monthlyRevenue.value.toLocaleString('fr-FR')} €` : 'N/A'}
+            value={stats?.monthlyRevenue?.value ? `${stats.monthlyRevenue.value.toLocaleString('fr-FR')} €` : '0 €'}
             change={stats?.monthlyRevenue?.change ? `${stats.monthlyRevenue.change > 0 ? '+' : ''}${stats.monthlyRevenue.change.toFixed(1)}%` : '-'}
             icon={TrendingUp}
             loading={loading}
         />
         <StatCard
             title="Nouveaux Abonnés"
-            value={stats?.newSubscribers?.value ? `+${stats.newSubscribers.value}` : 'N/A'}
+            value={stats?.newSubscribers?.value ? `+${stats.newSubscribers.value}` : '0'}
             change={stats?.newSubscribers?.change ? `${stats.newSubscribers.change > 0 ? '+' : ''}${stats.newSubscribers.change} depuis hier` : '-'}
             icon={Users}
             loading={loading}
         />
         <StatCard
             title="Vues de Profil (7j)"
-            value={stats?.profileViews?.value ? stats.profileViews.value.toLocaleString('fr-FR') : 'N/A'}
+            value={stats?.profileViews?.value ? stats.profileViews.value.toLocaleString('fr-FR') : '0'}
             change={stats?.profileViews?.change ? `${stats.profileViews.change > 0 ? '+' : ''}${stats.profileViews.change.toFixed(1)}%` : '-'}
             icon={FileSearch}
             loading={loading}
         />
          <StatCard
             title="Taux d'Engagement"
-            value={stats?.engagementRate?.value ? `${stats.engagementRate.value.toFixed(1)}%` : 'N/A'}
+            value={stats?.engagementRate?.value ? `${stats.engagementRate.value.toFixed(1)}%` : '0%'}
             change={stats?.engagementRate?.change ? `${stats.engagementRate.change > 0 ? '+' : ''}${stats.engagementRate.change.toFixed(1)}%` : '-'}
             icon={BarChart}
             loading={loading}
@@ -146,13 +145,14 @@ const StatsPage = () => {
           <CardContent>
             <ChartContainer config={chartConfig}>
               <ResponsiveContainer width="100%" height={300}>
+                {loading ? <Skeleton className="w-full h-full" /> : 
                 <BarChart data={chartData}>
                   <CartesianGrid vertical={false} />
                   <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
                   <YAxis tickLine={false} axisLine={false} />
                   <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
                   <Bar dataKey="revenue" fill="var(--color-revenue)" radius={8} />
-                </BarChart>
+                </BarChart>}
               </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
@@ -166,6 +166,7 @@ const StatsPage = () => {
           <CardContent>
              <ChartContainer config={chartConfig}>
                  <ResponsiveContainer width="100%" height={300}>
+                    {loading ? <Skeleton className="w-full h-full" /> : 
                     <LineChart data={newSubscribersData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" />
@@ -173,7 +174,7 @@ const StatsPage = () => {
                         <Tooltip content={<ChartTooltipContent />} />
                         <Legend content={<ChartLegendContent />} />
                         <Line type="monotone" dataKey="new" name="Nouveaux abonnés" stroke="var(--color-subscribers)" strokeWidth={2} dot={false} />
-                    </LineChart>
+                    </LineChart>}
                 </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
@@ -187,13 +188,14 @@ const StatsPage = () => {
           <CardContent>
              <ChartContainer config={{ views: { label: 'Vues', color: 'hsl(var(--primary))' } }}>
                  <ResponsiveContainer width="100%" height={300}>
+                   {loading ? <Skeleton className="w-full h-full" /> : 
                     <AreaChart data={profileViewsData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" />
                         <YAxis />
                         <Tooltip content={<ChartTooltipContent indicator='line'/>} />
                         <Area type="monotone" dataKey="views" stroke="var(--color-views)" fill="var(--color-views)" fillOpacity={0.3} />
-                    </AreaChart>
+                    </AreaChart>}
                 </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
