@@ -23,6 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Separator } from '@/components/ui/separator';
 
 type RoomType = keyof EstablishmentPricing['roomTypes'];
 
@@ -132,6 +133,9 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
     if (!user) { router.push('/connexion'); return null; }
     if (!annonce) return <PageHeader title="Annonce introuvable"/>
 
+    const roomCost = (pricing?.roomTypes[selectedRoomType]?.price || 0) * durationHours;
+    const escortsCost = selectedEscorts.length * (annonce.price || 0);
+
     return (
         <div>
             <PageHeader title={annonce.title} description={`Réservation à l'établissement`} />
@@ -221,21 +225,24 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                                 <h4 className="font-semibold">Date et Heure</h4>
                                 <p className="text-muted-foreground">{selectedDate ? `Le ${format(selectedDate, 'PPP', {locale: fr})} à ${selectedTime} pour ${durationHours}h` : 'Non défini'}</p>
                             </div>
-                            <div>
-                                <h4 className="font-semibold">Accompagnateurs</h4>
-                                {selectedEscorts.length > 0 ? (
-                                    <>
-                                        <p className="text-muted-foreground">{selectedEscorts.map(e => e.displayName).join(', ')}</p>
-                                        <p className="text-xs text-muted-foreground">{selectedEscorts.length} x {annonce.price}€</p>
-                                    </>
-                                ) : (
-                                    <p className="text-muted-foreground">Aucun</p>
+                             <Separator />
+                             <div className="space-y-2">
+                                <h4 className="font-semibold">Détail du prix</h4>
+                                 <div className="flex justify-between text-sm text-muted-foreground">
+                                    <span>Chambre {selectedRoomType} ({pricing?.roomTypes[selectedRoomType]?.price}€ x {durationHours}h)</span>
+                                    <span>{roomCost.toFixed(2)} €</span>
+                                </div>
+                                {selectedEscorts.length > 0 && (
+                                    <div className="flex justify-between text-sm text-muted-foreground">
+                                        <span>Accompagnateurs ({annonce.price}€ x {selectedEscorts.length})</span>
+                                        <span>{escortsCost.toFixed(2)} €</span>
+                                    </div>
                                 )}
                             </div>
-                             <div className="border-t pt-4">
+                            <Separator />
+                            <div className="flex justify-between items-center">
                                 <h4 className="font-semibold">Coût total</h4>
                                 <p className="text-2xl font-bold text-primary">{totalPrice.toFixed(2)} €</p>
-                                <p className="text-xs text-muted-foreground capitalize">Chambre {selectedRoomType}: {pricing?.roomTypes[selectedRoomType]?.price}€ x {durationHours}h</p>
                             </div>
                         </CardContent>
                         <CardFooter className="flex-col gap-2">
