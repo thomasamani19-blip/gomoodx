@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -19,6 +20,16 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import Link from 'next/link';
 import { ThemeSwitcher } from '../theme-switcher';
 import { Badge } from '../ui/badge';
+import type { PlatformSubscriptionType } from '@/lib/types';
+
+
+const planNames: Record<PlatformSubscriptionType, string> = {
+    gratuit: 'Gratuit',
+    essential: 'Essentiel',
+    advanced: 'Avancé',
+    premium: 'Premium',
+    elite: 'Élite',
+};
 
 
 export function AppHeader() {
@@ -55,7 +66,12 @@ export function AppHeader() {
               <div className="flex flex-col space-y-1">
                 <div className="flex items-center gap-2">
                     <p className="text-sm font-medium leading-none">{user?.displayName}</p>
-                    {isCreatorPremium && <Badge variant="secondary" className="h-5"><Star className="h-3 w-3 mr-1"/>{user.subscription?.type}</Badge>}
+                    {isCreatorPremium && user.subscription?.type && (
+                        <Badge variant="secondary" className="h-5 capitalize">
+                            <Star className="h-3 w-3 mr-1"/>
+                            {planNames[user.subscription.type] || user.subscription.type}
+                        </Badge>
+                    )}
                 </div>
                 <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
               </div>
