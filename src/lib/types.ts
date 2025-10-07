@@ -204,7 +204,7 @@ export interface Reservation {
     status: ReservationStatus;
     createdAt: Timestamp;
     reservationDate: Timestamp; // The date for which the service is booked
-    durationHours?: number; // Duration of the stay in hours
+    durationHours?: number | null; // Duration of the stay in hours
     escorts?: { id: string; name: string, profileImage?: string }[];
     notes?: string;
 }

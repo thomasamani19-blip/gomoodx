@@ -21,6 +21,7 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { format } from 'date-fns';
 
 export default function ReserverAnnoncePage({ params }: { params: { id: string } }) {
     const { user, loading: authLoading } = useAuth();
