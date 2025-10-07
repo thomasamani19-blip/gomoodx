@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { MessageSquare, Search, Send, Video, Phone, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Message, User, Call, CallType } from '@/lib/types';
+import type { Message, User, Call, CallType, Reservation } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore, useDoc } from '@/firebase';
 import { addDoc, collection, serverTimestamp, query, where, orderBy, or, getDocs, doc, updateDoc } from 'firebase/firestore';
@@ -45,6 +45,8 @@ function MessagerieContent() {
     const [recentContacts, setRecentContacts] = useState<{ contact: User; lastMessage: Message }[]>([]);
     const [contactsLoading, setContactsLoading] = useState(true);
     const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null }>({ show: false, type: null });
+    const [unlockedContacts, setUnlockedContacts] = useState<string[]>([]);
+    const [isCheckingUnlock, setIsCheckingUnlock] = useState(false);
 
     const contactIdFromUrl = searchParams.get('contact');
     
@@ -152,6 +154,46 @@ function MessagerieContent() {
         fetchContacts();
     }, [user, firestore, contactIdFromUrl]);
 
+    // Check if contact is unlocked via Pass or active reservation
+    useEffect(() => {
+        if (!user || !selectedContact || !firestore) {
+            setUnlockedContacts([]);
+            return;
+        };
+
+        setIsCheckingUnlock(true);
+        const checkAccess = async () => {
+            let unlocked = new Set<string>(user.unlockedContacts || []);
+
+            // Check for active reservations
+            const reservationsQuery = query(
+                collection(firestore, 'reservations'),
+                where('status', '==', 'confirmed'),
+                or(
+                    // User is the member and contact is an involved escort
+                    and(
+                        where('memberId', '==', user.id),
+                        where('escorts', 'array-contains', { id: selectedContact.id, name: selectedContact.displayName, profileImage: selectedContact.profileImage, rate: selectedContact.rates?.escortPerHour || 0 })
+                    ),
+                    // User is an escort and contact is the member
+                    and(
+                        where('memberId', '==', selectedContact.id),
+                        where('escorts', 'array-contains', { id: user.id, name: user.displayName, profileImage: user.profileImage, rate: user.rates?.escortPerHour || 0 })
+                    )
+                )
+            );
+            const reservationsSnapshot = await getDocs(reservationsQuery);
+            if (!reservationsSnapshot.empty) {
+                unlocked.add(selectedContact.id);
+            }
+            setUnlockedContacts(Array.from(unlocked));
+            setIsCheckingUnlock(false);
+        };
+
+        checkAccess();
+
+    }, [user, selectedContact, firestore]);
+
     // 2. Listen to messages for the selected contact in real-time
     const activeMessagesQuery = useMemo(() => {
         if (!user || !selectedContact || !firestore) return null;
@@ -199,6 +241,15 @@ function MessagerieContent() {
     const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!newMessage.trim() || !user || !selectedContact || !firestore) return;
+        
+        if (!isCheckingUnlock && !unlockedContacts.includes(selectedContact.id)) {
+            toast({
+                title: "Accès non autorisé",
+                description: "Vous devez débloquer ce contact pour envoyer un message.",
+                variant: "destructive"
+            });
+            return;
+        }
 
         const messageData: Omit<Message, 'id'> = {
             message: newMessage,
@@ -252,6 +303,7 @@ function MessagerieContent() {
 
     const loading = authLoading || contactsLoading;
     const videoCallRate = selectedContact?.rates?.videoCallPerMinute;
+    const isContactUnlocked = selectedContact && unlockedContacts.includes(selectedContact.id);
 
 
     return (
@@ -369,8 +421,8 @@ function MessagerieContent() {
                     </ScrollArea>
                     <div className="p-4 border-t mt-auto bg-card">
                         <form className="flex items-center gap-2" onSubmit={handleSendMessage}>
-                            <Input placeholder="Écrivez votre message..." autoComplete="off" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} />
-                            <Button type="submit" size="icon" variant="ghost" disabled={!newMessage.trim()}>
+                            <Input placeholder="Écrivez votre message..." autoComplete="off" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} disabled={!isContactUnlocked || isCheckingUnlock} />
+                            <Button type="submit" size="icon" variant="ghost" disabled={!newMessage.trim() || !isContactUnlocked || isCheckingUnlock}>
                                 <Send className="h-5 w-5 text-primary" />
                             </Button>
                         </form>
