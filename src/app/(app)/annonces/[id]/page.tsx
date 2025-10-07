@@ -395,6 +395,7 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                  <Card>
                     <CardHeader className="text-center">
                         <p className="text-4xl font-bold text-primary">{annonce.price} €</p>
+                         {canReserve && <p className="text-xs text-muted-foreground">par personne</p>}
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
                         {canReserve ? (

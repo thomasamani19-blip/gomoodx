@@ -17,7 +17,7 @@ const PLATFORM_WALLET_ID = 'platform_wallet';
 
 export async function POST(request: Request) {
     try {
-        const { memberId, annonceId, reservationDate } = await request.json();
+        const { memberId, annonceId, reservationDate, escorts } = await request.json();
 
         if (!memberId || !annonceId || !reservationDate) {
             return NextResponse.json({ status: 'error', message: 'Informations manquantes pour la réservation.' }, { status: 400 });
@@ -60,9 +60,10 @@ export async function POST(request: Request) {
                 annonceId: annonceId,
                 annonceTitle: annonce.title,
                 amount: annonce.price,
-                status: 'confirmed',
+                status: 'pending', // Reservations now need confirmation
                 createdAt: Timestamp.now(),
                 reservationDate: Timestamp.fromDate(reservationDateTime),
+                escorts: escorts || [],
             };
             t.set(reservationRef, newReservation);
 
@@ -98,7 +99,7 @@ export async function POST(request: Request) {
                 description: `Commission sur réservation: ${annonce.title}`, status: 'success', reference: reservationId
             } as Omit<Transaction, 'id'>);
             
-            return { reservationId: reservationId, message: "Réservation confirmée avec succès." };
+            return { reservationId: reservationId, message: "Demande de réservation envoyée avec succès." };
         });
         
         return NextResponse.json({ status: 'success', ...reservationResult });

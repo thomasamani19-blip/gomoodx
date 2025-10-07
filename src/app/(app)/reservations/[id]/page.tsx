@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Phone, ShieldQuestion, Calendar, Tag, CreditCard, User as UserIcon } from 'lucide-react';
+import { MessageSquare, Phone, ShieldQuestion, Calendar, Tag, CreditCard, User as UserIcon, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
@@ -88,6 +88,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                 <div className="grid md:grid-cols-3 gap-6">
                     <div className="md:col-span-2 space-y-6">
                         <Skeleton className="h-48 w-full" />
+                         <Skeleton className="h-32 w-full" />
                     </div>
                     <div className="space-y-6">
                         <Skeleton className="h-64 w-full" />
@@ -110,7 +111,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
             <PageHeader title="Détails de la réservation" />
 
             <div className="grid md:grid-cols-3 gap-6 items-start">
-                <div className="md:col-span-2">
+                <div className="md:col-span-2 space-y-6">
                     <Card>
                         <CardHeader>
                             <CardTitle>{reservation.annonceTitle}</CardTitle>
@@ -149,6 +150,27 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                             </div>
                         </CardContent>
                     </Card>
+
+                    {reservation.escorts && reservation.escorts.length > 0 && (
+                        <Card>
+                             <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/>Accompagnateurs/trices</CardTitle>
+                             </CardHeader>
+                             <CardContent className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {reservation.escorts.map(escort => (
+                                    <Link key={escort.id} href={`/profil/${escort.id}`}>
+                                        <div className="flex items-center gap-3 p-2 rounded-md hover:bg-accent">
+                                            <Avatar>
+                                                <AvatarImage src={escort.profileImage} />
+                                                <AvatarFallback>{escort.name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <p className="font-medium text-sm">{escort.name}</p>
+                                        </div>
+                                    </Link>
+                                ))}
+                             </CardContent>
+                        </Card>
+                    )}
                 </div>
                 
                 {otherUser && (
@@ -199,4 +221,3 @@ export default function ReservationDetailPage({ params }: { params: { id: string
         </div>
     );
 }
-

@@ -197,13 +197,15 @@ export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'complet
 export interface Reservation {
     id: string;
     memberId: string; // Client making the reservation
-    creatorId: string; // Creator providing the service
+    creatorId: string; // Creator providing the service (establishment)
     annonceId: string;
     annonceTitle: string;
     amount: number;
     status: ReservationStatus;
     createdAt: Timestamp;
     reservationDate: Timestamp; // The date for which the service is booked
+    escorts?: { id: string; name: string, profileImage?: string }[];
+    notes?: string;
 }
 
 // Purchase
