@@ -176,6 +176,7 @@ export interface Annonce {
   ratingCount?: number;
   views: number;
   isSponsored?: boolean;
+  sponsorshipExpiresAt?: Timestamp;
 }
 
 // Review (subcollection of Annonce)
@@ -356,6 +357,7 @@ export interface Product {
     createdAt: Timestamp;
     productType: ProductType;
     isSponsored?: boolean;
+    sponsorshipExpiresAt?: Timestamp;
 }
 
 export interface BlogArticle {

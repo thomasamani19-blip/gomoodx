@@ -1,8 +1,10 @@
+
 // /src/app/api/content/sponsor/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import type { Annonce, Product, Wallet, Transaction, ContentType } from '@/lib/types';
+import { addDays } from 'date-fns';
 
 if (!getApps().length) {
     initializeApp({
@@ -12,6 +14,7 @@ if (!getApps().length) {
 
 const db = getFirestore();
 const SPONSOR_COST = 10; // Coût de 10€ pour sponsoriser
+const SPONSOR_DURATION_DAYS = 7; // Durée du sponsoring en jours
 
 export async function POST(request: Request) {
     try {
@@ -64,8 +67,12 @@ export async function POST(request: Request) {
             };
             t.set(debitTxRef, transactionData);
 
-            // Mettre à jour le contenu pour le marquer comme sponsorisé
-            t.update(contentRef, { isSponsored: true });
+            // Mettre à jour le contenu pour le marquer comme sponsorisé avec une date d'expiration
+            const expirationDate = addDays(new Date(), SPONSOR_DURATION_DAYS);
+            t.update(contentRef, { 
+                isSponsored: true,
+                sponsorshipExpiresAt: Timestamp.fromDate(expirationDate)
+            });
             
             return { message: "Contenu sponsorisé avec succès." };
         });

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -24,10 +25,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { format } from 'date-fns';
+import { format, formatDistanceToNowStrict } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const SPONSOR_COST = 10;
 
@@ -65,16 +67,13 @@ export default function GestionAnnoncesPage() {
 
     setIsDeleting(true);
     try {
-      // Delete Firestore document
       await deleteDoc(doc(firestore, 'services', annonceToDelete.id));
 
-      // Delete image from Storage if it exists and is not a placeholder
-      if (annonceToDelete.imageUrl && !annonceToDelete.imageUrl.includes('picsum.photos')) {
+      if (annonceToDelete.imageUrl) {
         try {
             const imageRef = ref(storage, annonceToDelete.imageUrl);
             await deleteObject(imageRef);
         } catch (storageError: any) {
-            // It's okay if the object doesn't exist, we can ignore that error.
             if (storageError.code !== 'storage/object-not-found') {
                 console.warn("Could not delete image from storage:", storageError.message);
             }
@@ -147,146 +146,164 @@ export default function GestionAnnoncesPage() {
     setIsConfirmingSponsor(true);
   };
 
+  const isSponsorshipActive = (annonce: Annonce) => {
+      return annonce.isSponsored && annonce.sponsorshipExpiresAt && annonce.sponsorshipExpiresAt.toDate() > new Date();
+  };
+
 
   return (
-    <div>
-      <div className="flex justify-between items-start mb-8">
-        <PageHeader
-          title="Gérer mes Annonces"
-          description="Créez, modifiez ou supprimez vos services proposés sur la plateforme."
-        />
-        <Button asChild>
-            <Link href="/gestion/annonces/creer">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Créer une annonce
-            </Link>
-        </Button>
-      </div>
+    <TooltipProvider>
+      <div>
+        <div className="flex justify-between items-start mb-8">
+          <PageHeader
+            title="Gérer mes Annonces"
+            description="Créez, modifiez ou supprimez vos services proposés sur la plateforme."
+          />
+          <Button asChild>
+              <Link href="/gestion/annonces/creer">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Créer une annonce
+              </Link>
+          </Button>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Mes Annonces</CardTitle>
-          <CardDescription>
-            {loading ? 'Chargement de vos annonces...' : `Vous avez actuellement ${annonces?.length || 0} annonce(s).`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Titre</TableHead>
-                  <TableHead>Prix</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Date de création</TableHead>
-                  <TableHead><span className="sr-only">Actions</span></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {annonces && annonces.map(annonce => (
-                  <TableRow key={annonce.id} data-state={annonce.isSponsored ? 'selected' : ''}>
-                    <TableCell className="font-medium flex items-center gap-2">
-                        {annonce.isSponsored && <Star className="h-4 w-4 text-primary" />}
-                        {annonce.title}
-                    </TableCell>
-                    <TableCell>{annonce.price.toFixed(2)} €</TableCell>
-                    <TableCell>
-                      <Badge variant={annonce.status === 'active' ? 'default' : 'secondary'}>
-                        {annonce.status === 'active' ? 'Actif' : 'Inactif'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {annonce.createdAt ? format(annonce.createdAt.toDate(), 'd MMMM yyyy', { locale: fr }) : 'N/A'}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                             <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          {!annonce.isSponsored && (
-                            <DropdownMenuItem onClick={() => openSponsorDialog(annonce)}>
-                                <Star className="mr-2 h-4 w-4" />
-                                Sponsoriser
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem asChild>
-                            <Link href={`/gestion/annonces/modifier/${annonce.id}`}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Modifier
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive" onClick={() => setAnnonceToDelete(annonce)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Supprimer
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+        <Card>
+          <CardHeader>
+            <CardTitle>Mes Annonces</CardTitle>
+            <CardDescription>
+              {loading ? 'Chargement de vos annonces...' : `Vous avez actuellement ${annonces?.length || 0} annonce(s).`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Titre</TableHead>
+                    <TableHead>Prix</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead>Date de création</TableHead>
+                    <TableHead><span className="sr-only">Actions</span></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-          {!loading && (!annonces || annonces.length === 0) && (
-            <div className="text-center py-12 text-muted-foreground">
-              <p>Vous n'avez créé aucune annonce pour le moment.</p>
-               <Button asChild className="mt-4">
-                    <Link href="/gestion/annonces/creer">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Créer ma première annonce
-                    </Link>
-                </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      
-      <AlertDialog open={isConfirmingSponsor} onOpenChange={setIsConfirmingSponsor}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la Sponsorisation</AlertDialogTitle>
-            <AlertDialogDescription>
-              Mettre en avant l'annonce "{annonceToSponsor?.title}" coûtera <span className="font-bold">{SPONSOR_COST}€</span>, qui seront débités de votre portefeuille.
-              Votre solde actuel est de <span className="font-bold">{wallet?.balance?.toFixed(2) || 0}€</span>.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSponsoring}>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSponsorConfirm} disabled={isSponsoring}>
-              {isSponsoring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Confirmer et Payer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+                </TableHeader>
+                <TableBody>
+                  {annonces && annonces.map(annonce => {
+                    const isSponsoredAndActive = isSponsorshipActive(annonce);
+                    const expiration = annonce.sponsorshipExpiresAt ? formatDistanceToNowStrict(annonce.sponsorshipExpiresAt.toDate(), { locale: fr, addSuffix: true }) : '';
+                    return (
+                    <TableRow key={annonce.id} data-state={annonce.isSponsored ? 'selected' : ''}>
+                      <TableCell className="font-medium flex items-center gap-2">
+                          {annonce.isSponsored && <Star className="h-4 w-4 text-primary" />}
+                          {annonce.title}
+                      </TableCell>
+                      <TableCell>{annonce.price.toFixed(2)} €</TableCell>
+                      <TableCell>
+                        <Badge variant={annonce.status === 'active' ? 'default' : 'secondary'}>
+                          {annonce.status === 'active' ? 'Actif' : 'Inactif'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {annonce.createdAt ? format(annonce.createdAt.toDate(), 'd MMMM yyyy', { locale: fr }) : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            {!isSponsoredAndActive && (
+                              <DropdownMenuItem onClick={() => openSponsorDialog(annonce)}>
+                                  <Star className="mr-2 h-4 w-4" />
+                                  Sponsoriser
+                              </DropdownMenuItem>
+                            )}
+                            <Tooltip>
+                              <TooltipTrigger asChild disabled={!isSponsoredAndActive}>
+                                  <DropdownMenuItem asChild disabled={isSponsoredAndActive}>
+                                    <Link href={`/gestion/annonces/modifier/${annonce.id}`}>
+                                        <Pencil className="mr-2 h-4 w-4" />
+                                        Modifier
+                                    </Link>
+                                  </DropdownMenuItem>
+                              </TooltipTrigger>
+                              {isSponsoredAndActive && (
+                                <TooltipContent>
+                                  <p>Modification bloquée jusqu'à la fin du sponsoring ({expiration}).</p>
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive" onClick={() => setAnnonceToDelete(annonce)}>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )})}
+                </TableBody>
+              </Table>
+            )}
+            {!loading && (!annonces || annonces.length === 0) && (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>Vous n'avez créé aucune annonce pour le moment.</p>
+                <Button asChild className="mt-4">
+                      <Link href="/gestion/annonces/creer">
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          Créer ma première annonce
+                      </Link>
+                  </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        <AlertDialog open={isConfirmingSponsor} onOpenChange={setIsConfirmingSponsor}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmer la Sponsorisation</AlertDialogTitle>
+              <AlertDialogDescription>
+                Mettre en avant l'annonce "{annonceToSponsor?.title}" coûtera <span className="font-bold">{SPONSOR_COST}€</span>, qui seront débités de votre portefeuille.
+                Votre solde actuel est de <span className="font-bold">{wallet?.balance?.toFixed(2) || 0}€</span>.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isSponsoring}>Annuler</AlertDialogCancel>
+              <AlertDialogAction onClick={handleSponsorConfirm} disabled={isSponsoring}>
+                {isSponsoring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Confirmer et Payer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
-      <AlertDialog open={!!annonceToDelete} onOpenChange={(open) => !open && setAnnonceToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Cette action est irréversible. L'annonce "{annonceToDelete?.title}" sera définitivement supprimée.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+        <AlertDialog open={!!annonceToDelete} onOpenChange={(open) => !open && setAnnonceToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Cette action est irréversible. L'annonce "{annonceToDelete?.title}" sera définitivement supprimée.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Supprimer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </TooltipProvider>
   );
 }

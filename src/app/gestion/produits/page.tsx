@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -23,11 +24,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { format } from 'date-fns';
+import { format, formatDistanceToNowStrict } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const SPONSOR_COST = 10;
 
@@ -145,151 +147,169 @@ export default function GestionProduitsPage() {
     setProductToSponsor(product);
     setIsConfirmingSponsor(true);
   };
-
+  
+  const isSponsorshipActive = (product: Product) => {
+      return product.isSponsored && product.sponsorshipExpiresAt && product.sponsorshipExpiresAt.toDate() > new Date();
+  };
 
   return (
-    <div>
-      <div className="flex justify-between items-start mb-8">
-        <PageHeader
-          title="Gérer mes Produits"
-          description="Créez et gérez les articles de votre boutique."
-        />
-        <Button asChild>
-            <Link href="/gestion/produits/creer">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Créer un produit
-            </Link>
-        </Button>
-      </div>
+    <TooltipProvider>
+      <div>
+        <div className="flex justify-between items-start mb-8">
+          <PageHeader
+            title="Gérer mes Produits"
+            description="Créez et gérez les articles de votre boutique."
+          />
+          <Button asChild>
+              <Link href="/gestion/produits/creer">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Créer un produit
+              </Link>
+          </Button>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Mes Produits</CardTitle>
-          <CardDescription>
-            {loading ? 'Chargement de vos produits...' : `Vous avez actuellement ${produits?.length || 0} produit(s) en vente.`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Produit</TableHead>
-                  <TableHead>Prix</TableHead>
-                  <TableHead>Date de création</TableHead>
-                  <TableHead><span className="sr-only">Actions</span></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {produits && produits.map(produit => (
-                  <TableRow key={produit.id} data-state={produit.isSponsored ? 'selected' : ''}>
-                    <TableCell className="font-medium">
-                        <div className="flex items-center gap-3">
-                            {produit.isSponsored && <Star className="h-4 w-4 text-primary" />}
-                            <Image 
-                                src={produit.imageUrl || `https://picsum.photos/seed/${produit.id}/50/50`}
-                                alt={produit.title}
-                                width={40}
-                                height={40}
-                                className="rounded-md object-cover"
-                            />
-                            <span>{produit.title}</span>
-                        </div>
-                    </TableCell>
-                    <TableCell>{produit.price.toFixed(2)} €</TableCell>
-                    <TableCell>
-                      {produit.createdAt ? format(produit.createdAt.toDate(), 'd MMMM yyyy', { locale: fr }) : 'N/A'}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                           <Button variant="ghost" size="icon">
-                             <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                           {!produit.isSponsored && (
-                                <DropdownMenuItem onClick={() => openSponsorDialog(produit)}>
-                                    <Star className="mr-2 h-4 w-4" />
-                                    Sponsoriser
-                                </DropdownMenuItem>
-                            )}
-                           <DropdownMenuItem asChild>
-                             <Link href={`/gestion/produits/modifier/${produit.id}`}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Modifier
-                             </Link>
-                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive" onClick={() => setProductToDelete(produit)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Supprimer
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+        <Card>
+          <CardHeader>
+            <CardTitle>Mes Produits</CardTitle>
+            <CardDescription>
+              {loading ? 'Chargement de vos produits...' : `Vous avez actuellement ${produits?.length || 0} produit(s) en vente.`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Produit</TableHead>
+                    <TableHead>Prix</TableHead>
+                    <TableHead>Date de création</TableHead>
+                    <TableHead><span className="sr-only">Actions</span></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-          {!loading && (!produits || produits.length === 0) && (
-            <div className="text-center py-12 text-muted-foreground">
-              <p>Vous n'avez mis aucun produit en vente pour le moment.</p>
-              <Button asChild className="mt-4">
-                    <Link href="/gestion/produits/creer">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Créer mon premier produit
-                    </Link>
-                </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      
-      <AlertDialog open={isConfirmingSponsor} onOpenChange={setIsConfirmingSponsor}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la Sponsorisation</AlertDialogTitle>
-            <AlertDialogDescription>
-              Mettre en avant le produit "{productToSponsor?.title}" coûtera <span className="font-bold">{SPONSOR_COST}€</span>, qui seront débités de votre portefeuille.
-              Votre solde actuel est de <span className="font-bold">{wallet?.balance?.toFixed(2) || 0}€</span>.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSponsoring}>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSponsorConfirm} disabled={isSponsoring}>
-              {isSponsoring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Confirmer et Payer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+                </TableHeader>
+                <TableBody>
+                  {produits && produits.map(produit => {
+                    const isSponsoredAndActive = isSponsorshipActive(produit);
+                    const expiration = produit.sponsorshipExpiresAt ? formatDistanceToNowStrict(produit.sponsorshipExpiresAt.toDate(), { locale: fr, addSuffix: true }) : '';
+                    
+                    return (
+                    <TableRow key={produit.id} data-state={produit.isSponsored ? 'selected' : ''}>
+                      <TableCell className="font-medium">
+                          <div className="flex items-center gap-3">
+                              {produit.isSponsored && <Star className="h-4 w-4 text-primary" />}
+                              <Image 
+                                  src={produit.imageUrl || `https://picsum.photos/seed/${produit.id}/50/50`}
+                                  alt={produit.title}
+                                  width={40}
+                                  height={40}
+                                  className="rounded-md object-cover"
+                              />
+                              <span>{produit.title}</span>
+                          </div>
+                      </TableCell>
+                      <TableCell>{produit.price.toFixed(2)} €</TableCell>
+                      <TableCell>
+                        {produit.createdAt ? format(produit.createdAt.toDate(), 'd MMMM yyyy', { locale: fr }) : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            {!isSponsoredAndActive && (
+                                  <DropdownMenuItem onClick={() => openSponsorDialog(produit)}>
+                                      <Star className="mr-2 h-4 w-4" />
+                                      Sponsoriser
+                                  </DropdownMenuItem>
+                              )}
+                            <Tooltip>
+                                <TooltipTrigger asChild disabled={!isSponsoredAndActive}>
+                                    <DropdownMenuItem asChild disabled={isSponsoredAndActive}>
+                                      <Link href={`/gestion/produits/modifier/${produit.id}`}>
+                                          <Pencil className="mr-2 h-4 w-4" />
+                                          Modifier
+                                      </Link>
+                                    </DropdownMenuItem>
+                                </TooltipTrigger>
+                                {isSponsoredAndActive && (
+                                  <TooltipContent>
+                                    <p>Modification bloquée jusqu'à la fin du sponsoring ({expiration}).</p>
+                                  </TooltipContent>
+                                )}
+                            </Tooltip>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive" onClick={() => setProductToDelete(produit)}>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )})}
+                </TableBody>
+              </Table>
+            )}
+            {!loading && (!produits || produits.length === 0) && (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>Vous n'avez mis aucun produit en vente pour le moment.</p>
+                <Button asChild className="mt-4">
+                      <Link href="/gestion/produits/creer">
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          Créer mon premier produit
+                      </Link>
+                  </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        <AlertDialog open={isConfirmingSponsor} onOpenChange={setIsConfirmingSponsor}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmer la Sponsorisation</AlertDialogTitle>
+              <AlertDialogDescription>
+                Mettre en avant le produit "{productToSponsor?.title}" coûtera <span className="font-bold">{SPONSOR_COST}€</span>, qui seront débités de votre portefeuille.
+                Votre solde actuel est de <span className="font-bold">{wallet?.balance?.toFixed(2) || 0}€</span>.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isSponsoring}>Annuler</AlertDialogCancel>
+              <AlertDialogAction onClick={handleSponsorConfirm} disabled={isSponsoring}>
+                {isSponsoring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Confirmer et Payer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
-      <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Cette action est irréversible. Le produit "{productToDelete?.title}" sera définitivement supprimé.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Cette action est irréversible. Le produit "{productToDelete?.title}" sera définitivement supprimé.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Supprimer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
