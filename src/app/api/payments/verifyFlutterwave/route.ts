@@ -15,7 +15,7 @@ try {
   console.error('Firebase Admin SDK initialization error:', e);
 }
 
-const creditPacks = [
+const creditPacksEUR = [
   { name: 'Essentiel', price: 20, bonus: 0 },
   { name: 'Confort', price: 50, bonus: 5 },
   { name: 'Premium', price: 100, bonus: 15 },
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
         const settingsData = settingsDoc.data() as Settings;
 
         // Check for a matching pack to add a bonus based on EUR amount
-        const pack = creditPacks.find(p => p.price === amountEUR);
+        const pack = creditPacksEUR.find(p => p.price === amountEUR);
         let creditedAmount = amountEUR + (pack ? pack.bonus : 0);
         let transactionDescription = `Rechargement ${pack ? `Pack ${pack.name}` : ''} (${amountEUR}€ ${pack && pack.bonus > 0 ? `+ ${pack.bonus}€ bonus` : ''})`;
         
