@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -56,7 +55,7 @@ export default function GestionProduitsPage() {
     );
   }, [user, firestore]);
 
-  const { data: produits, loading: produitsLoading } = useCollection<Product>(produitsQuery);
+  const { data: produits, loading: produitsLoading, setData: setProduits } = useCollection<Product>(produitsQuery);
 
   const loading = authLoading || produitsLoading || walletLoading;
   
@@ -67,7 +66,7 @@ export default function GestionProduitsPage() {
     try {
       await deleteDoc(doc(firestore, 'products', productToDelete.id));
 
-      if (productToDelete.imageUrl) {
+      if (productToDelete.imageUrl && !productToDelete.imageUrl.includes('picsum.photos')) {
         try {
             const imageRef = ref(storage, productToDelete.imageUrl);
             await deleteObject(imageRef);
@@ -77,6 +76,8 @@ export default function GestionProduitsPage() {
             }
         }
       }
+
+      setProduits(prev => prev?.filter(p => p.id !== productToDelete.id) || null);
 
       toast({
         title: "Produit supprimé",
@@ -113,6 +114,7 @@ export default function GestionProduitsPage() {
 
         const result = await response.json();
         if (response.ok && result.status === 'success') {
+            setProduits(prev => prev?.map(p => p.id === productToSponsor.id ? { ...p, isSponsored: true } : p) || null);
             toast({
                 title: "Produit Sponsorisé !",
                 description: `Votre produit "${productToSponsor.title}" est maintenant mis en avant.`,
