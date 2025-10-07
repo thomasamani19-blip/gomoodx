@@ -146,6 +146,7 @@ export interface User {
       endDate: Timestamp;
     }
   };
+  hasMadeFirstDeposit?: boolean;
 }
 
 // Wallet
@@ -377,6 +378,7 @@ export interface Settings {
     rewardPointsConversionRate?: number; // e.g., 100 points = 1 EUR
     withdrawalMinAmount?: number;
     withdrawalMaxAmount?: number;
+    welcomeBonusAmount?: number;
 }
 
 // AI Assistant Log

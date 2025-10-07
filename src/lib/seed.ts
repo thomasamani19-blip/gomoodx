@@ -120,6 +120,7 @@ async function seedDatabase() {
             rewardPointsConversionRate: 0.01, // 100 points = 1 EUR
             withdrawalMinAmount: 50,
             withdrawalMaxAmount: 5000,
+            welcomeBonusAmount: 5,
         });
         console.log('Global settings seeded.');
 
@@ -176,7 +177,8 @@ async function seedDatabase() {
                     dailyVoiceCallQuota: {
                         minutesUsed: 0,
                         lastReset: Timestamp.now(),
-                    }
+                    },
+                    hasMadeFirstDeposit: false,
                 };
 
                 if (user.data.role === 'partenaire') {

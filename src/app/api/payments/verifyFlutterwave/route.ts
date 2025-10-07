@@ -2,7 +2,8 @@
 // /src/app/api/payments/verifyFlutterwave/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue, doc } from 'firebase-admin/firestore';
+import type { User, Settings } from '@/lib/types';
 
 // Initialize Firebase Admin SDK
 try {
@@ -62,18 +63,17 @@ export async function POST(request: Request) {
       }
 
       console.log('Paiement Flutterwave vérifié avec succès:', paymentData);
-      
-      // Check for a matching pack to add a bonus
-      const pack = creditPacks.find(p => p.price === paidAmount);
-      const bonus = pack ? pack.bonus : 0;
-      const creditedAmount = paidAmount + bonus;
 
       const walletRef = db.collection('wallets').doc(userId);
+      const userRef = db.collection('users').doc(userId);
+      const settingsRef = doc(db, 'settings', 'global');
       const transactionRef = walletRef.collection('transactions').doc(paymentData.id.toString());
-
+      
       // Use a Firestore transaction to ensure atomicity
       const creditedAmountFinal = await db.runTransaction(async (t) => {
         const walletDoc = await t.get(walletRef);
+        const userDoc = await t.get(userRef);
+        const settingsDoc = await t.get(settingsRef);
         const transactionDoc = await t.get(transactionRef);
 
         // Prevent duplicate processing
@@ -81,9 +81,23 @@ export async function POST(request: Request) {
             console.warn(`La transaction ${transactionRef.id} a déjà été traitée.`);
             return walletDoc.data()?.balance || 0;
         }
+
+        const userData = userDoc.data() as User;
+        const settingsData = settingsDoc.data() as Settings;
+
+        // Check for a matching pack to add a bonus
+        const pack = creditPacks.find(p => p.price === paidAmount);
+        let creditedAmount = paidAmount + (pack ? pack.bonus : 0);
+        let transactionDescription = `Rechargement ${pack ? `Pack ${pack.name}` : ''} (${paidAmount}€ ${pack && pack.bonus > 0 ? `+ ${pack.bonus}€ bonus` : ''})`;
+        
+        // Check for first deposit bonus
+        const isFirstDeposit = !userData.hasMadeFirstDeposit;
+        if (isFirstDeposit && settingsData.welcomeBonusAmount && settingsData.welcomeBonusAmount > 0) {
+            creditedAmount += settingsData.welcomeBonusAmount;
+            transactionDescription += ` + ${settingsData.welcomeBonusAmount}€ bonus de bienvenue`;
+        }
         
         if (!walletDoc.exists) {
-            // If wallet doesn't exist, create it.
             t.set(walletRef, {
                 balance: creditedAmount,
                 currency: currency,
@@ -91,11 +105,14 @@ export async function POST(request: Request) {
                 updatedAt: FieldValue.serverTimestamp(),
             });
         } else {
-            // If wallet exists, update balance.
             t.update(walletRef, {
               balance: FieldValue.increment(creditedAmount),
               updatedAt: FieldValue.serverTimestamp(),
             });
+        }
+
+        if (isFirstDeposit) {
+            t.update(userRef, { hasMadeFirstDeposit: true });
         }
         
         // Create a new transaction record to log the event
@@ -103,7 +120,7 @@ export async function POST(request: Request) {
             amount: creditedAmount,
             type: 'deposit',
             createdAt: FieldValue.serverTimestamp(),
-            description: `Rechargement ${pack ? `Pack ${pack.name}` : ''} (${paidAmount}€ + ${bonus}€ bonus)`,
+            description: transactionDescription,
             status: 'success',
             reference: paymentData.flw_ref,
         });
@@ -111,7 +128,7 @@ export async function POST(request: Request) {
         return (walletDoc.data()?.balance || 0) + creditedAmount;
       });
 
-      return NextResponse.json({ status: 'success', message: 'Paiement vérifié et portefeuille mis à jour.', creditedAmount });
+      return NextResponse.json({ status: 'success', message: 'Paiement vérifié et portefeuille mis à jour.', creditedAmount: creditedAmountFinal });
     } else {
       console.error('La vérification du paiement Flutterwave a échoué:', result);
       return NextResponse.json({ status: 'error', message: result.message || 'La vérification du paiement a échoué.' }, { status: 400 });

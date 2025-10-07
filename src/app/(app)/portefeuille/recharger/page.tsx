@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -10,11 +11,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CreditCard, Loader2, Sparkles, Star, Gift, Ticket, Video } from 'lucide-react';
+import { CreditCard, Loader2, Sparkles, Star, Gift, Ticket, Video, Info } from 'lucide-react';
 import { FlutterWaveButton, closePaymentModal as closeFlutterwaveModal } from 'flutterwave-react-v3';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type PaymentMethod = 'flutterwave' | 'kkiapay';
 
@@ -138,6 +140,16 @@ export default function AcheterCreditsPage() {
                     <CardDescription>Sélectionnez un pack pour obtenir des crédits bonus, ou entrez un montant personnalisé. Les crédits sont ajoutés à votre portefeuille universel.</CardDescription>
                 </CardHeader>
                 <CardContent>
+                    {!user?.hasMadeFirstDeposit && (
+                        <Alert className="mb-6 bg-primary/10 border-primary/30 text-primary">
+                            <Star className="h-4 w-4 !text-primary" />
+                            <AlertTitle>Bonus de Bienvenue !</AlertTitle>
+                            <AlertDescription>
+                                Recevez <span className="font-bold">5€ de crédits offerts</span> sur votre tout premier rechargement. C'est notre façon de vous accueillir !
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
                     <RadioGroup 
                         defaultValue="100" 
                         onValueChange={(value) => {
