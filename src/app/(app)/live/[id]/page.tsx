@@ -22,14 +22,15 @@ const VIRTUAL_GIFTS = [
     { name: 'Couronne', icon: '👑', price: 100 },
 ];
 
+const FAKE_USERNAMES = ["Alex", "Julien", "Chris", "Maxime", "LoverBoy92", "Mike", "John", "David", "Thomas", "Paul"];
+
 const FAKE_COMMENTS = [
     "Super ce live !", "J'adore ce que tu fais ❤️", "Incroyable !", "Merci pour ce moment ✨",
     "Qui est de Paris ici ?", "Quelqu'un sait quelle est la musique ?", "C'est génial !", "On t'adore 😍"
 ];
 
-const ChatMessage = ({ author, message, isBot = false }: { author: string, message: string, isBot?: boolean }) => (
+const ChatMessage = ({ author, message }: { author: string, message: string }) => (
     <div className="text-sm p-2 rounded-lg flex items-start gap-2">
-        {isBot && <Bot className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />}
         <p>
             <span className="font-bold mr-2">{author}:</span>
             <span>{message}</span>
@@ -37,32 +38,33 @@ const ChatMessage = ({ author, message, isBot = false }: { author: string, messa
     </div>
 );
 
-const GiftNotification = ({ author, giftName, giftIcon, isBot = false }: { author: string, giftName: string, giftIcon: string, isBot?: boolean }) => (
+const GiftNotification = ({ author, giftName, giftIcon }: { author: string, giftName: string, giftIcon: string }) => (
      <div className="text-sm p-2 rounded-lg bg-yellow-400/10 border border-yellow-400/20 flex items-center gap-2">
-        {isBot && <Bot className="h-4 w-4 text-primary flex-shrink-0" />}
         <p className="font-bold">
             <span className="text-primary">{author}</span> a envoyé un cadeau: {giftIcon} {giftName}
         </p>
     </div>
 );
 
-function LiveChat({ sessionId, isAiLive }: { sessionId: string, isAiLive: boolean }) {
+function LiveChat({ sessionId, hostId }: { sessionId: string, hostId: string }) {
     const { user } = useAuth();
-    const [messages, setMessages] = useState<{ author: string, message: string, isBot?: boolean, type: 'comment' | 'gift', giftIcon?: string }[]>([]);
+    const [messages, setMessages] = useState<{ author: string, message: string, type: 'comment' | 'gift', giftIcon?: string }[]>([]);
 
-    // Fake AI engagement simulation for all live types
+    // Fake AI engagement simulation
     useEffect(() => {
         const addFakeEvent = () => {
+            const randomUser = FAKE_USERNAMES[Math.floor(Math.random() * FAKE_USERNAMES.length)];
             const isGift = Math.random() > 0.8; // 20% chance of being a gift
+
             if (isGift) {
                 const randomGift = VIRTUAL_GIFTS[Math.floor(Math.random() * VIRTUAL_GIFTS.length)];
                 setMessages(prev => [...prev, {
-                    author: 'Animateur IA', message: randomGift.name, isBot: true, type: 'gift', giftIcon: randomGift.icon
+                    author: randomUser, message: randomGift.name, type: 'gift', giftIcon: randomGift.icon
                 }]);
             } else {
                 const randomComment = FAKE_COMMENTS[Math.floor(Math.random() * FAKE_COMMENTS.length)];
                 setMessages(prev => [...prev, {
-                    author: 'Animateur IA', message: randomComment, isBot: true, type: 'comment'
+                    author: randomUser, message: randomComment, type: 'comment'
                 }]);
             }
         };
@@ -78,8 +80,8 @@ function LiveChat({ sessionId, isAiLive }: { sessionId: string, isAiLive: boolea
             <div className="flex-1 bg-muted rounded-md p-2 flex flex-col-reverse gap-2 overflow-y-auto">
                 {messages.slice().reverse().map((msg, index) => (
                     msg.type === 'comment'
-                        ? <ChatMessage key={index} author={msg.author} message={msg.message} isBot={msg.isBot} />
-                        : <GiftNotification key={index} author={msg.author} giftName={msg.message} giftIcon={msg.giftIcon!} isBot={msg.isBot} />
+                        ? <ChatMessage key={index} author={msg.author} message={msg.message} />
+                        : <GiftNotification key={index} author={msg.author} giftName={msg.message} giftIcon={msg.giftIcon!} />
                 ))}
                 {messages.length === 0 && <p className="text-center text-xs text-muted-foreground m-auto">Le chat est vide pour le moment.</p>}
             </div>
@@ -280,7 +282,7 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
 
         </div>
         <div className="lg:col-span-1 h-[75vh]">
-            <LiveChat sessionId={params.id} isAiLive={session.liveType === 'ai'} />
+            <LiveChat sessionId={params.id} hostId={session.hostId} />
         </div>
       </div>
     </div>

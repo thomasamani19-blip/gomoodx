@@ -7,7 +7,7 @@ import { useDoc, useFirestore } from '@/firebase';
 import type { Call, User, Wallet } from '@/lib/types';
 import { doc, onSnapshot, updateDoc, collection, addDoc, getDocs, query, writeBatch, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Phone, Mic, MicOff, Video, VideoOff, Loader2, PhoneOff } from 'lucide-react';
+import { Phone, Mic, MicOff, Video, VideoOff, Loader2, PhoneOff, Gift } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -15,6 +15,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDuration } from '@/lib/utils'; // Assuming this utility will be created
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
+
+const VIRTUAL_GIFTS = [
+    { name: 'Rose', icon: '🌹', price: 1 },
+    { name: 'Baiser', icon: '😘', price: 5 },
+    { name: 'Diamant', icon: '💎', price: 10 },
+    { name: 'Feu', icon: '🔥', price: 25 },
+    { name: 'Couronne', icon: '👑', price: 100 },
+];
 
 // Util to format seconds into MM:SS
 function formatTime(seconds: number): string {
@@ -45,6 +55,7 @@ export default function CallPage({ params }: { params: { callId: string } }) {
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [callStatus, setCallStatus] = useState<'connecting' | 'connected' | 'ended'>('connecting');
   const [callTimer, setCallTimer] = useState(0);
+  const [isSendingGift, setIsSendingGift] = useState<string | null>(null);
 
   const callRef = useMemo(() => firestore ? doc(firestore, `calls/${params.callId}`) : null, [firestore, params.callId]);
   const { data: callDoc, loading: callLoading } = useDoc<Call>(callRef);
@@ -260,6 +271,33 @@ export default function CallPage({ params }: { params: { callId: string } }) {
       localStream?.getVideoTracks().forEach(track => track.enabled = !track.enabled);
       setIsVideoOff(!isVideoOff);
   }
+
+  const handleSendGift = async (gift: {name: string, price: number}) => {
+    if (!user || !otherUser) return;
+    setIsSendingGift(gift.name);
+    try {
+        const response = await fetch('/api/gifts/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                senderId: user.id,
+                receiverId: otherUser.id,
+                gift,
+                sessionId: callDoc?.id, // Use callId as session reference for gifts
+            }),
+        });
+        const result = await response.json();
+        if(response.ok) {
+            toast({ title: 'Cadeau envoyé !', description: `Merci pour votre soutien à ${otherUser.displayName}.` });
+        } else {
+            throw new Error(result.message || 'Une erreur est survenue.');
+        }
+    } catch (error: any) {
+        toast({ title: "Erreur d'envoi du cadeau", description: error.message, variant: 'destructive' });
+    } finally {
+        setIsSendingGift(null);
+    }
+  }
   
   if (callLoading || authLoading || !callDoc) {
       return <div className="w-full h-screen flex items-center justify-center bg-black"><Skeleton className="w-full h-full" /></div>
@@ -319,6 +357,32 @@ export default function CallPage({ params }: { params: { callId: string } }) {
             <Button onClick={() => hangUp()} variant="destructive" size="icon" className="rounded-full h-16 w-16">
                 <Phone />
             </Button>
+             <Popover>
+                <PopoverTrigger asChild>
+                    <Button variant="secondary" size="icon" className="rounded-full h-14 w-14 bg-yellow-500 hover:bg-yellow-600">
+                        <Gift />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2 bg-black/70 border-primary/50 backdrop-blur-sm">
+                    <div className="flex gap-2">
+                        {VIRTUAL_GIFTS.map(gift => (
+                             <Button 
+                                key={gift.name} 
+                                variant="ghost" 
+                                className="flex flex-col h-auto p-2"
+                                onClick={() => handleSendGift(gift)}
+                                disabled={isSendingGift !== null}
+                            >
+                                {isSendingGift === gift.name ? <Loader2 className="h-6 w-6 animate-spin"/> :
+                                <>
+                                 <span className="text-2xl">{gift.icon}</span>
+                                 <span className="text-xs">{gift.price}€</span>
+                                </>}
+                             </Button>
+                        ))}
+                    </div>
+                </PopoverContent>
+            </Popover>
         </div>
 
         {callStatus === 'connecting' && (
