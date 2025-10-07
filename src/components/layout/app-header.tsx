@@ -24,7 +24,7 @@ import { Badge } from '../ui/badge';
 export function AppHeader() {
   const { user, logout } = useAuth();
   const isMobile = useIsMobile();
-  const isPremium = user?.subscription?.status === 'active';
+  const isCreatorPremium = user?.role === 'escorte' && user?.subscription?.status === 'active';
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6">
@@ -48,7 +48,7 @@ export function AppHeader() {
                 {user?.profileImage && <AvatarImage src={user.profileImage} alt={user.displayName} />}
                 <AvatarFallback>{user?.displayName?.charAt(0)?.toUpperCase() ?? 'U'}</AvatarFallback>
               </Avatar>
-               {isPremium && <Star className="absolute bottom-0 right-0 h-4 w-4 fill-primary text-primary" />}
+               {isCreatorPremium && <Star className="absolute bottom-0 right-0 h-4 w-4 fill-primary text-primary" />}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -56,7 +56,7 @@ export function AppHeader() {
               <div className="flex flex-col space-y-1">
                 <div className="flex items-center gap-2">
                     <p className="text-sm font-medium leading-none">{user?.displayName}</p>
-                    {isPremium && <Badge variant="secondary" className="h-5"><Star className="h-3 w-3 mr-1"/>Premium</Badge>}
+                    {isCreatorPremium && <Badge variant="secondary" className="h-5"><Star className="h-3 w-3 mr-1"/>Premium</Badge>}
                 </div>
                 <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
               </div>
