@@ -58,14 +58,13 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
 
     useEffect(() => {
         if (pricing && durationHours > 0 && annonce) {
-            const baseRoomPrice = pricing.basePricePerHour || 0;
-            const roomSupplement = pricing.roomTypes[selectedRoomType]?.price || 0;
-            const roomPricePerHour = baseRoomPrice + roomSupplement;
+            const basePrice = pricing.basePricePerHour || 0;
+            const roomSupplement = pricing.roomTypes[selectedRoomType]?.supplement || 0;
             
-            const roomCost = durationHours * roomPricePerHour;
+            const roomCost = durationHours * basePrice;
             const escortsCost = selectedEscorts.length * (annonce.price || 0);
             
-            const calculatedPrice = roomCost + escortsCost;
+            const calculatedPrice = roomCost + roomSupplement + escortsCost;
             setTotalPrice(calculatedPrice);
         }
     }, [pricing, durationHours, selectedRoomType, selectedEscorts, annonce]);
@@ -138,9 +137,8 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
     if (!annonce) return <PageHeader title="Annonce introuvable"/>
 
     const baseRoomPrice = pricing?.basePricePerHour || 0;
-    const roomSupplement = pricing?.roomTypes[selectedRoomType]?.price || 0;
-    const roomPricePerHour = baseRoomPrice + roomSupplement;
-    const roomCost = durationHours * roomPricePerHour;
+    const roomSupplement = pricing?.roomTypes[selectedRoomType]?.supplement || 0;
+    const roomCost = durationHours * baseRoomPrice;
     const escortsCost = selectedEscorts.length * (annonce.price || 0);
 
     return (
@@ -170,7 +168,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                                             {Object.entries(pricing.roomTypes).filter(([, room]) => room.enabled).map(([key, room]) => (
                                                 <div key={key} className="flex items-center space-x-2">
                                                     <RadioGroupItem value={key} id={key} />
-                                                    <Label htmlFor={key} className="capitalize">{key} ({key === 'standard' ? `${pricing.basePricePerHour}€/h` : `+${room.price}€/h`})</Label>
+                                                    <Label htmlFor={key} className="capitalize">{key} ({key === 'standard' ? `${pricing.basePricePerHour}€/h` : `+${room.supplement}€ total`})</Label>
                                                 </div>
                                             ))}
                                         </RadioGroup>
@@ -236,9 +234,15 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                              <div className="space-y-2">
                                 <h4 className="font-semibold">Détail du prix</h4>
                                  <div className="flex justify-between text-sm text-muted-foreground">
-                                    <span>Chambre {selectedRoomType} ({roomPricePerHour.toFixed(2)}€ x {durationHours}h)</span>
+                                    <span>Chambre ({baseRoomPrice.toFixed(2)}€ x {durationHours}h)</span>
                                     <span>{roomCost.toFixed(2)} €</span>
                                 </div>
+                                {roomSupplement > 0 && (
+                                     <div className="flex justify-between text-sm text-muted-foreground">
+                                        <span>Supplément chambre {selectedRoomType}</span>
+                                        <span>{roomSupplement.toFixed(2)} €</span>
+                                    </div>
+                                )}
                                 {selectedEscorts.length > 0 && (
                                     <div className="flex justify-between text-sm text-muted-foreground">
                                         <span>Accompagnateurs ({annonce.price}€ x {selectedEscorts.length})</span>

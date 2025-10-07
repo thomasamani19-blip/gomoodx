@@ -22,18 +22,18 @@ import type { EstablishmentPricing } from '@/lib/types';
 
 
 const formSchema = z.object({
-  basePricePerHour: z.coerce.number().min(0, "Le prix de base doit être positif."),
+  basePricePerHour: z.coerce.number().min(0, "Le prix par heure doit être positif."),
   roomTypes: z.object({
     standard: z.object({
-      price: z.literal(0).default(0), 
+      supplement: z.literal(0).default(0), 
       enabled: z.literal(true).default(true),
     }),
     comfort: z.object({
-      price: z.coerce.number().min(0), // Price is now a supplement
+      supplement: z.coerce.number().min(0),
       enabled: z.boolean(),
     }),
     luxe: z.object({
-      price: z.coerce.number().min(0), // Price is now a supplement
+      supplement: z.coerce.number().min(0),
       enabled: z.boolean(),
     }),
   }),
@@ -55,9 +55,9 @@ export default function GestionTarifsPage() {
         defaultValues: {
             basePricePerHour: 50,
             roomTypes: {
-                standard: { price: 0, enabled: true },
-                comfort: { price: 25, enabled: true },
-                luxe: { price: 100, enabled: false },
+                standard: { supplement: 0, enabled: true },
+                comfort: { supplement: 25, enabled: true },
+                luxe: { supplement: 100, enabled: false },
             }
         },
     });
@@ -68,7 +68,7 @@ export default function GestionTarifsPage() {
                 ...user.establishmentSettings.pricing,
                 roomTypes: {
                     ...user.establishmentSettings.pricing.roomTypes,
-                    standard: { price: 0, enabled: true } // Ensure standard is fixed
+                    standard: { supplement: 0, enabled: true } // Ensure standard is fixed
                 }
             });
         }
@@ -116,18 +116,17 @@ export default function GestionTarifsPage() {
                     
                     <CardContent className="space-y-8">
                         <div className="space-y-2">
-                            <Label htmlFor="basePricePerHour">Prix de la chambre Standard (par heure)</Label>
+                            <Label htmlFor="basePricePerHour">Prix de base par heure (pour chambre Standard)</Label>
                             <div className="relative">
                                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input id="basePricePerHour" type="number" className="pl-8" {...form.register('basePricePerHour')} placeholder="50" />
                             </div>
                             {form.formState.errors.basePricePerHour && <p className="text-sm text-destructive">{form.formState.errors.basePricePerHour.message}</p>}
-                            <p className="text-xs text-muted-foreground">Ce prix est le tarif de base pour une chambre standard.</p>
                         </div>
                         
                         <div className="space-y-4">
                              <CardTitle>Suppléments pour chambres supérieures</CardTitle>
-                             <CardDescription>Définissez le coût supplémentaire par heure pour les types de chambres supérieurs. Ce montant s'ajoute au prix de base.</CardDescription>
+                             <CardDescription>Définissez le coût supplémentaire fixe pour les chambres supérieures. Ce montant s'ajoute au coût total de la réservation.</CardDescription>
                             
                              {Object.entries(form.getValues().roomTypes).map(([key, value]) => {
                                 if (key === 'standard') return null; // Do not show 'standard' here
@@ -144,11 +143,11 @@ export default function GestionTarifsPage() {
                                                     type="number"
                                                     className="pl-8 w-48"
                                                     placeholder="50"
-                                                    {...form.register(`roomTypes.${roomKey}.price`)}
+                                                    {...form.register(`roomTypes.${roomKey}.supplement`)}
                                                     disabled={!form.watch(`roomTypes.${roomKey}.enabled`)}
                                                 />
                                             </div>
-                                             <p className="text-xs text-muted-foreground">Supplément par heure</p>
+                                             <p className="text-xs text-muted-foreground">Supplément total pour ce type de chambre</p>
                                         </div>
                                          <Controller
                                             name={`roomTypes.${roomKey}.enabled`}

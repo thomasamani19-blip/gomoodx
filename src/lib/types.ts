@@ -77,9 +77,9 @@ export interface Comment {
 export interface EstablishmentPricing {
   basePricePerHour: number;
   roomTypes: {
-    standard: { price: 0; enabled: true };
-    comfort: { price: number; enabled: boolean };
-    luxe: { price: number; enabled: boolean };
+    standard: { supplement: 0; enabled: true };
+    comfort: { supplement: number; enabled: boolean };
+    luxe: { supplement: number; enabled: boolean };
   };
 }
 
