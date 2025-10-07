@@ -37,7 +37,7 @@ export interface SubscriptionSettings {
   }
 }
 
-export type PlatformSubscriptionType = 'essential' | 'advanced' | 'premium' | 'elite';
+export type PlatformSubscriptionType = 'gratuit' | 'essential' | 'advanced' | 'premium' | 'elite';
 
 export interface UserSubscription {
     type: PlatformSubscriptionType;
@@ -375,6 +375,8 @@ export interface Settings {
     };
     platformCommissionRate?: number;
     rewardPointsConversionRate?: number; // e.g., 100 points = 1 EUR
+    withdrawalMinAmount?: number;
+    withdrawalMaxAmount?: number;
 }
 
 // AI Assistant Log
@@ -454,4 +456,3 @@ export interface PartnerRequest {
 
 // API Payloads
 export type ContentType = 'service' | 'product';
-

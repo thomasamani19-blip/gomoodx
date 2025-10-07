@@ -13,9 +13,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Banknote, Loader2, Info } from 'lucide-react';
 import { useDoc, useFirestore } from '@/firebase';
-import type { Wallet } from '@/lib/types';
+import type { Wallet, Settings } from '@/lib/types';
 import { doc } from 'firebase/firestore';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function RetraitPage() {
   const { user } = useAuth();
@@ -27,7 +28,11 @@ export default function RetraitPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const walletRef = useMemo(() => user ? doc(firestore, 'wallets', user.id) : null, [user, firestore]);
-  const { data: wallet } = useDoc<Wallet>(walletRef);
+  const { data: wallet, loading: walletLoading } = useDoc<Wallet>(walletRef);
+  
+  const settingsRef = useMemo(() => firestore ? doc(firestore, 'settings', 'global') : null, [firestore]);
+  const { data: settings, loading: settingsLoading } = useDoc<Settings>(settingsRef);
+
 
   const isEligibleForWithdrawal = user?.role === 'escorte' || user?.role === 'partenaire';
 
@@ -41,8 +46,19 @@ export default function RetraitPage() {
     e.preventDefault();
     if (!user || !wallet) return;
 
+    const minAmount = settings?.withdrawalMinAmount || 50;
+    const maxAmount = settings?.withdrawalMaxAmount || 5000;
+
     if (amount <= 0) {
         toast({ title: "Montant invalide", description: "Veuillez entrer un montant supérieur à zéro.", variant: "destructive" });
+        return;
+    }
+     if (amount < minAmount) {
+        toast({ title: "Montant invalide", description: `Le montant minimum de retrait est de ${minAmount}€`, variant: "destructive" });
+        return;
+    }
+     if (amount > maxAmount) {
+        toast({ title: "Montant invalide", description: `Le montant maximum de retrait est de ${maxAmount}€`, variant: "destructive" });
         return;
     }
     if (amount > wallet.balance) {
@@ -72,6 +88,22 @@ export default function RetraitPage() {
         setIsLoading(false);
     }
   };
+  
+  if (walletLoading || settingsLoading) {
+      return (
+           <div>
+                <PageHeader title="Effectuer un Retrait" description="Transférez les fonds de votre portefeuille GoMoodX." />
+                <Card className="max-w-xl mx-auto">
+                    <CardHeader><Skeleton className="h-6 w-1/3" /></CardHeader>
+                    <CardContent><Skeleton className="h-40 w-full" /></CardContent>
+                    <CardFooter><Skeleton className="h-10 w-24" /></CardFooter>
+                </Card>
+            </div>
+      )
+  }
+
+  const min = settings?.withdrawalMinAmount || 50;
+  const max = settings?.withdrawalMaxAmount || 5000;
 
   return (
     <div>
@@ -98,8 +130,11 @@ export default function RetraitPage() {
                         step="0.01"
                         value={amount}
                         onChange={(e) => setAmount(Number(e.target.value))}
-                        placeholder="Ex: 150"
+                        placeholder={`Entre ${min} et ${max}`}
+                        min={min}
+                        max={max}
                     />
+                    <p className="text-xs text-muted-foreground">Minimum : {min}€, Maximum : {max}€.</p>
                 </div>
                 <Alert>
                     <Info className="h-4 w-4" />
@@ -120,4 +155,3 @@ export default function RetraitPage() {
     </div>
   );
 }
-

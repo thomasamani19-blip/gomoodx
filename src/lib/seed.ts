@@ -117,7 +117,9 @@ async function seedDatabase() {
                 price: 5.0 // 5€ to get contact for a physical product
             },
             platformCommissionRate: 0.20, // 20% commission
-            rewardPointsConversionRate: 0.01 // 100 points = 1 EUR
+            rewardPointsConversionRate: 0.01, // 100 points = 1 EUR
+            withdrawalMinAmount: 50, // 50€ min withdrawal
+            withdrawalMaxAmount: 5000, // 5000€ max withdrawal
         });
         console.log('Global settings seeded.');
 

@@ -1,9 +1,8 @@
-
 // /src/app/api/payments/request-withdrawal/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
-import type { User, Wallet, Transaction } from '@/lib/types';
+import type { User, Wallet, Transaction, Settings } from '@/lib/types';
 
 if (!getApps().length) {
     initializeApp({
@@ -22,6 +21,7 @@ export async function POST(request: Request) {
 
         const userRef = db.collection('users').doc(userId);
         const walletRef = db.collection('wallets').doc(userId);
+        const settingsRef = db.collection('settings').doc('global');
 
         const withdrawalResult = await db.runTransaction(async (t) => {
             const userDoc = await t.get(userRef);
@@ -38,6 +38,18 @@ export async function POST(request: Request) {
 
             if (wallet.balance < amount) {
                 throw new Error("Solde insuffisant pour ce retrait.");
+            }
+            
+            const settingsDoc = await t.get(settingsRef);
+            const settings = settingsDoc.data() as Settings;
+            const minAmount = settings.withdrawalMinAmount || 50;
+            const maxAmount = settings.withdrawalMaxAmount || 5000;
+
+            if (amount < minAmount) {
+                throw new Error(`Le montant minimum de retrait est de ${minAmount.toFixed(2)}€.`);
+            }
+            if (amount > maxAmount) {
+                throw new Error(`Le montant maximum de retrait est de ${maxAmount.toFixed(2)}€.`);
             }
 
             // Mettre à jour le solde
@@ -67,4 +79,3 @@ export async function POST(request: Request) {
         return NextResponse.json({ status: 'error', message: error.message || "Une erreur interne est survenue." }, { status: 500 });
     }
 }
-
