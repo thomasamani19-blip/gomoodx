@@ -114,7 +114,6 @@ export interface Annonce {
   ratingCount?: number;
   views: number;
   isSponsored?: boolean;
-  isPremium?: boolean;
 }
 
 // Review (subcollection of Annonce)
@@ -214,7 +213,6 @@ export interface LiveSession {
     imageHint?: string;
     creatorName?: string;
     price_per_minute?: number;
-    isPremium?: boolean;
 }
 
 // Reward
