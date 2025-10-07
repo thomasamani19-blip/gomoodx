@@ -33,7 +33,7 @@ const liveSchema = z.object({
   description: z.string().min(10, "La description doit faire au moins 10 caractères."),
   image: z.any().refine(file => file instanceof File, 'Une image de couverture est requise.'),
   startTime: z.date({ required_error: "Une date et une heure sont requises."}).min(new Date(), "La date ne peut être dans le passé."),
-  isPaid: z.boolean().default(true),
+  isPaid: z.boolean().default(false),
   ticketPrice: z.coerce.number().optional(),
 }).refine(data => !data.isPaid || (data.ticketPrice && data.ticketPrice > 0), {
   message: "Le prix du ticket doit être supérieur à 0 pour un live payant.",
@@ -54,7 +54,7 @@ export default function CreerLivePage() {
     const form = useForm<LiveFormValues>({
         resolver: zodResolver(liveSchema),
         defaultValues: {
-            isPaid: true,
+            isPaid: false,
             ticketPrice: 10,
         }
     });
@@ -82,7 +82,7 @@ export default function CreerLivePage() {
                 imageHint: 'live session',
                 startTime: Timestamp.fromDate(data.startTime),
                 status: 'scheduled',
-                liveType: 'public_paid',
+                liveType: 'creator', // 'creator' for real lives, 'ai' for generated ones
                 isPublic: true,
                 ticketPrice: data.isPaid ? data.ticketPrice : 0,
                 viewersCount: 0,
@@ -112,7 +112,7 @@ export default function CreerLivePage() {
 
     return (
         <div>
-            <PageHeader title="Planifier un Live Payant" description="Créez un événement live avec accès par ticket." />
+            <PageHeader title="Planifier une Session Live" description="Créez un événement live pour votre communauté." />
             <form onSubmit={form.handleSubmit(onSubmit)}>
                 <Card>
                     <CardContent className="pt-6 grid gap-6">
@@ -190,7 +190,7 @@ export default function CreerLivePage() {
                                 <div className="flex items-center justify-between rounded-lg border p-4">
                                     <div className="space-y-0.5">
                                         <Label htmlFor="paid-switch" className="text-base flex items-center"><Ticket className="mr-2 h-4 w-4 text-primary" />Live Payant</Label>
-                                        <p className="text-sm text-muted-foreground">Vendez des tickets d'accès pour ce live.</p>
+                                        <p className="text-sm text-muted-foreground">Vendez des tickets d'accès pour ce live. Si désactivé, le live sera gratuit.</p>
                                     </div>
                                     <Switch id="paid-switch" checked={field.value} onCheckedChange={field.onChange} />
                                 </div>

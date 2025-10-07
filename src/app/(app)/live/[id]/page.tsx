@@ -24,7 +24,7 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
   const { data: session, loading: sessionLoading } = useDoc<LiveSession>(sessionRef);
   
   const purchaseQuery = useMemo(() => {
-    if (!firestore || !user || !session || session.liveType !== 'public_paid') return null;
+    if (!firestore || !user || !session || !session.ticketPrice || session.ticketPrice <= 0) return null;
     return query(
       collection(firestore, 'purchases'),
       where('memberId', '==', user.id),
@@ -36,11 +36,11 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
   const { data: purchases, loading: purchasesLoading } = useCollection<Purchase>(purchaseQuery);
 
   const hasPurchased = useMemo(() => (purchases && purchases.length > 0) || (user && session && user.id === session.hostId), [purchases, user, session]);
-  const loading = sessionLoading || authLoading || (session?.liveType === 'public_paid' ? purchasesLoading : false);
+  const loading = sessionLoading || authLoading || (session?.ticketPrice && session.ticketPrice > 0 ? purchasesLoading : false);
 
   const canWatch = useMemo(() => {
     if (!session) return false;
-    if (session.liveType === 'ai') return true; // AI lives are free
+    if (session.liveType === 'ai' || !session.ticketPrice || session.ticketPrice <= 0) return true; // AI and free lives are always watchable
     return hasPurchased;
   }, [session, hasPurchased]);
 
@@ -58,7 +58,7 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
         body: JSON.stringify({ userId: user.id, sessionId: session.id }),
       });
       const result = await response.json();
-      if (response.ok && result.status === 'success') {
+      if (response.ok && (result.status === 'success' || result.status === 'already_purchased')) {
         toast({ title: 'Ticket acheté !', description: 'Vous avez maintenant accès au live.' });
       } else {
         throw new Error(result.message || 'Une erreur est survenue.');
@@ -97,7 +97,7 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
   const headerDescription = (
     <div className="flex items-center gap-4 mt-2">
         <span>Par {session.creatorName || 'un créateur'}</span>
-        {session.ticketPrice ? (
+        {session.ticketPrice && session.ticketPrice > 0 ? (
             <Badge variant="secondary">{session.ticketPrice} €</Badge>
         ) : (
             <Badge>Gratuit</Badge>

@@ -74,7 +74,10 @@ export default function LivePage() {
                      <div className="absolute top-3 left-3">
                         {session.liveType === 'ai' ? 
                             <Badge variant="outline" className='bg-background/80'><Bot className="h-3 w-3 mr-1"/> Live IA</Badge> : 
-                            <Badge><Ticket className="h-3 w-3 mr-1"/> Ticket Payant</Badge>
+                            <Badge className={!session.ticketPrice || session.ticketPrice <= 0 ? 'bg-green-600' : 'bg-primary'}>
+                                {!session.ticketPrice || session.ticketPrice <= 0 ? 'Gratuit' : <Ticket className="h-3 w-3 mr-1"/>}
+                                {!session.ticketPrice || session.ticketPrice <= 0 ? '' : 'Payant'}
+                            </Badge>
                         }
                      </div>
                   </div>
@@ -83,7 +86,7 @@ export default function LivePage() {
                   <p className="text-sm text-muted-foreground mt-1">par {session.creatorName || 'un créateur'}</p>
                   <div className="flex items-center justify-between mt-4">
                       <p className="text-sm font-bold text-primary">
-                          {session.ticketPrice ? `${session.ticketPrice} €` : 'Gratuit'}
+                          {session.ticketPrice && session.ticketPrice > 0 ? `${session.ticketPrice} €` : 'Gratuit'}
                       </p>
                     <Button variant="secondary" size="sm" asChild>
                         <Link href={`/live/${session.id}`}>{session.status === 'live' ? 'Rejoindre' : 'Voir les détails'}</Link>

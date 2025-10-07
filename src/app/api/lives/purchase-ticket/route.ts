@@ -31,7 +31,7 @@ export async function POST(request: Request) {
             const session = sessionDoc.data() as LiveSession;
             
             const ticketPrice = session.ticketPrice || 0;
-            if (session.liveType !== 'public_paid' || ticketPrice <= 0) {
+            if (session.liveType !== 'creator' || ticketPrice <= 0) {
                  throw new Error("Cette session n'est pas payante.");
             }
 

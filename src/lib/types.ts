@@ -261,7 +261,7 @@ export interface Call {
 
 // Live Session
 export type LiveStatus = 'live' | 'ended' | 'scheduled';
-export type LiveType = 'ai' | 'public_paid' | 'private_paid';
+export type LiveType = 'ai' | 'creator';
 
 
 export interface LiveSession {
