@@ -56,12 +56,14 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
     const pricing = establishment?.establishmentSettings?.pricing;
 
     useEffect(() => {
-        if (pricing && durationHours > 0) {
+        if (pricing && durationHours > 0 && annonce) {
             const roomPrice = pricing.roomTypes[selectedRoomType]?.price || 0;
-            const calculatedPrice = durationHours * roomPrice;
+            const roomCost = durationHours * roomPrice;
+            const escortsCost = selectedEscorts.length * (annonce.price || 0);
+            const calculatedPrice = roomCost + escortsCost;
             setTotalPrice(calculatedPrice);
         }
-    }, [pricing, durationHours, selectedRoomType]);
+    }, [pricing, durationHours, selectedRoomType, selectedEscorts, annonce]);
 
 
     const filteredEscorts = useMemo(() => {
@@ -174,7 +176,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                      <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/> Étape 2: Choisissez vos accompagnateurs (Optionnel)</CardTitle>
-                            <CardDescription>Invitez des escortes pour vous accompagner.</CardDescription>
+                            <CardDescription>Invitez des escortes pour vous accompagner. Coût additionnel de {annonce.price}€ par personne.</CardDescription>
                             <Input placeholder="Rechercher une escorte..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                         </CardHeader>
                         <CardContent>
@@ -221,12 +223,19 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                             </div>
                             <div>
                                 <h4 className="font-semibold">Accompagnateurs</h4>
-                                <p className="text-muted-foreground">{selectedEscorts.length > 0 ? selectedEscorts.map(e => e.displayName).join(', ') : 'Aucun'}</p>
+                                {selectedEscorts.length > 0 ? (
+                                    <>
+                                        <p className="text-muted-foreground">{selectedEscorts.map(e => e.displayName).join(', ')}</p>
+                                        <p className="text-xs text-muted-foreground">{selectedEscorts.length} x {annonce.price}€</p>
+                                    </>
+                                ) : (
+                                    <p className="text-muted-foreground">Aucun</p>
+                                )}
                             </div>
                              <div className="border-t pt-4">
                                 <h4 className="font-semibold">Coût total</h4>
                                 <p className="text-2xl font-bold text-primary">{totalPrice.toFixed(2)} €</p>
-                                <p className="text-xs text-muted-foreground capitalize">{selectedRoomType}: {pricing?.roomTypes[selectedRoomType]?.price}€ x {durationHours}h</p>
+                                <p className="text-xs text-muted-foreground capitalize">Chambre {selectedRoomType}: {pricing?.roomTypes[selectedRoomType]?.price}€ x {durationHours}h</p>
                             </div>
                         </CardContent>
                         <CardFooter className="flex-col gap-2">
