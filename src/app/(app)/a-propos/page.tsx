@@ -17,7 +17,7 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementTy
 
 export default function AboutPage() {
   return (
-    <div>
+    <div className="space-y-16">
       <PageHeader
         title="À Propos de GoMoodX"
         description="Votre destination pour des contenus et des expériences exclusives."
