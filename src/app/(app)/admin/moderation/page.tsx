@@ -1,45 +1,127 @@
 
 'use client';
 
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import PageHeader from '@/components/shared/page-header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useCollection, useFirestore } from '@/firebase';
-import type { User, VerificationStatus } from '@/lib/types';
-import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2, XCircle, MoreHorizontal } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useMemo, useState, useEffect } from 'react';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState, useMemo } from 'react';
+import type { Post, Product, Annonce, ModerationStatus } from '@/lib/types';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Loader2, AlertTriangle, Check, X, Bot } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
+import { Badge } from '@/components/ui/badge';
 
-const statusVariantMap: { [key in VerificationStatus]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
-    pending: 'outline',
-    verified: 'default',
-    rejected: 'destructive',
-};
+type ModeratableContent = (Post | Product | Annonce) & { collectionPath: 'posts' | 'products' | 'services' };
 
-const statusTextMap = {
-    pending: 'En attente',
-    verified: 'Vérifié',
-    rejected: 'Rejeté',
-};
+function ContentCard({ content, onUpdate }: { content: ModeratableContent, onUpdate: (id: string, collectionPath: string, newStatus: ModerationStatus) => void }) {
+    const [isLoading, setIsLoading] = useState(false);
+    const { toast } = useToast();
 
-export default function AdminModerationPage() {
+    const handleUpdate = async (newStatus: ModerationStatus) => {
+        setIsLoading(true);
+        try {
+            const response = await fetch('/api/admin/moderate-content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contentId: content.id,
+                    collectionPath: content.collectionPath,
+                    newStatus: newStatus,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'La mise à jour a échoué.');
+            }
+            onUpdate(content.id, content.collectionPath, newStatus);
+            toast({ title: 'Statut mis à jour', description: `Le contenu a été ${newStatus === 'approved' ? 'approuvé' : 'rejeté'}.` });
+        } catch (error: any) {
+            toast({ title: "Erreur", description: error.message, variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    const title = 'title' in content ? content.title : content.content.substring(0, 50) + '...';
+    const description = 'description' in content ? content.description : content.content;
+    const imageUrl = 'imageUrl' in content ? content.imageUrl : 'mediaUrl' in content ? content.mediaUrl : null;
+    const authorName = 'authorName' in content ? content.authorName : 'Vendeur Inconnu';
+
+
+    return (
+        <Card>
+            <CardContent className="p-4 flex gap-4">
+                {imageUrl && (
+                    <div className="relative w-24 h-24 rounded-md overflow-hidden flex-shrink-0">
+                        <Image src={imageUrl} alt={title} fill className="object-cover" />
+                    </div>
+                )}
+                <div className="flex-1 space-y-2">
+                    <div className="flex justify-between items-start">
+                        <div>
+                             <h4 className="font-semibold line-clamp-1">{title}</h4>
+                             <p className="text-xs text-muted-foreground">Par: {authorName}</p>
+                        </div>
+                        <Badge variant="outline" className="capitalize">{content.collectionPath.slice(0, -1)}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
+                    {content.moderationReason && (
+                        <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-2 rounded-md">
+                           <Bot className="h-4 w-4 flex-shrink-0"/>
+                           <span>Raison IA : {content.moderationReason}</span>
+                        </div>
+                    )}
+                </div>
+                 <div className="flex flex-col gap-2">
+                    <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleUpdate('approved')} disabled={isLoading}>
+                       {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Check className="h-4 w-4"/>}
+                    </Button>
+                     <Button size="sm" variant="destructive" onClick={() => handleUpdate('rejected')} disabled={isLoading}>
+                       {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <X className="h-4 w-4"/>}
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
+function ModerationQueue({ collectionPath, typeLabel }: { collectionPath: 'posts' | 'products' | 'services', typeLabel: string }) {
+    const firestore = useFirestore();
+    const queryRef = useMemo(() => firestore ? query(collection(firestore, collectionPath), where('moderationStatus', '==', 'pending_review')) : null, [firestore, collectionPath]);
+    
+    const { data, loading, setData } = useCollection(queryRef);
+
+    const onUpdate = (id: string, path: string, newStatus: ModerationStatus) => {
+        if (path === collectionPath) {
+            setData(prevData => prevData?.filter(item => item.id !== id) || null);
+        }
+    };
+
+    if (loading) return <Skeleton className="h-40 w-full" />
+    if (!data || data.length === 0) {
+        return <p className="text-center text-muted-foreground py-8">Aucun {typeLabel} en attente de modération.</p>
+    }
+    
+    return (
+        <div className="space-y-4">
+            {data.map(item => <ContentCard key={item.id} content={{...item, collectionPath: collectionPath}} onUpdate={onUpdate} />)}
+        </div>
+    )
+}
+
+
+export default function AdminContentModerationPage() {
     const { user: currentUser, loading: authLoading } = useAuth();
     const router = useRouter();
-    const firestore = useFirestore();
-    const { toast } = useToast();
     const [isAllowed, setIsAllowed] = useState(false);
-    const [loadingStates, setLoadingStates] = useState<{[key: string]: boolean}>({});
-    
+
     useEffect(() => {
         if (!authLoading) {
             if (currentUser && ['founder', 'administrateur', 'moderator'].includes(currentUser.role)) {
@@ -51,51 +133,10 @@ export default function AdminModerationPage() {
         }
     }, [currentUser, authLoading, router]);
 
-    const verificationQuery = useMemo(() => isAllowed && firestore 
-        ? query(
-            collection(firestore, 'users'), 
-            where('role', '==', 'escorte'), 
-            where('verificationStatus', '==', 'pending')
-          ) 
-        : null, [isAllowed, firestore]);
-        
-    const { data: users, loading: usersLoading, setData: setUsers } = useCollection<User>(verificationQuery);
-    
-    const loading = authLoading || !isAllowed || usersLoading;
-
-    const handleUpdateVerification = async (userId: string, status: 'verified' | 'rejected') => {
-        if (!firestore) return;
-
-        setLoadingStates(prev => ({...prev, [userId]: true}));
-
-        const userRef = doc(firestore, 'users', userId);
-        try {
-            await updateDoc(userRef, { 
-                verificationStatus: status,
-                status: status === 'verified' ? 'active' : 'suspended',
-                isVerified: status === 'verified',
-            });
-            toast({
-                title: 'Statut mis à jour',
-                description: `Le créateur a été ${status === 'verified' ? 'approuvé' : 'rejeté'}.`,
-            });
-            setUsers(prev => prev?.filter(u => u.id !== userId) || null);
-        } catch (error) {
-            console.error("Error updating verification status:", error);
-            toast({
-                title: 'Erreur',
-                description: 'Impossible de mettre à jour le statut.',
-                variant: 'destructive',
-            });
-        } finally {
-            setLoadingStates(prev => ({...prev, [userId]: false}));
-        }
-    };
-    
-    if (!isAllowed && !authLoading) {
+     if (!isAllowed && !authLoading) {
         return (
              <div>
-                <PageHeader title="Vérifications d'Identité" />
+                <PageHeader title="Modération de Contenu" />
                 <Card><CardHeader><CardTitle>Accès non autorisé</CardTitle></CardHeader><CardContent className="h-40 flex items-center justify-center"><p className="text-muted-foreground">Permissions insuffisantes.</p></CardContent></Card>
             </div>
         )
@@ -103,95 +144,23 @@ export default function AdminModerationPage() {
 
     return (
         <div>
-            <PageHeader
-                title="Vérifications d'Identité"
-                description="Examinez et validez les nouveaux créateurs de la plateforme."
-            />
-            <Card>
-                <CardHeader>
-                    <CardTitle>Demandes en attente</CardTitle>
-                    <CardDescription>
-                        {loading ? 'Chargement...' : `Il y a actuellement ${users?.length || 0} demande(s) en attente.`}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                   {loading ? (
-                        <div className="space-y-4">
-                            <Skeleton className="h-12 w-full" />
-                            <Skeleton className="h-12 w-full" />
-                            <Skeleton className="h-12 w-full" />
-                        </div>
-                    ) : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Créateur</TableHead>
-                                <TableHead>Type de vérification</TableHead>
-                                <TableHead>Date d'inscription</TableHead>
-                                <TableHead>Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {users && users.map(user => (
-                                <TableRow key={user.id}>
-                                    <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            <Avatar>
-                                                <AvatarImage src={user.profileImage} />
-                                                <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <p className="font-medium">{user.displayName}</p>
-                                                <p className="text-sm text-muted-foreground">{user.email}</p>
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                     <TableCell>
-                                        <Badge variant="secondary" className="capitalize">{user.verificationType === 'complete' ? 'Complète' : 'Selfie'}</Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        {user.createdAt ? format(user.createdAt.toDate(), 'd MMM yyyy', { locale: fr }) : 'N/A'}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-2">
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                onClick={() => handleUpdateVerification(user.id, 'verified')}
-                                                disabled={loadingStates[user.id]}
-                                            >
-                                                {loadingStates[user.id] ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle className="h-5 w-5 text-green-500" />}
-                                            </Button>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                onClick={() => handleUpdateVerification(user.id, 'rejected')}
-                                                disabled={loadingStates[user.id]}
-                                            >
-                                                <XCircle className="h-5 w-5 text-destructive" />
-                                            </Button>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem>Voir les documents</DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                    )}
-                    {!loading && (!users || users.length === 0) && (
-                        <p className="text-center text-muted-foreground py-8">Aucune demande de vérification en attente.</p>
-                    )}
-                </CardContent>
-            </Card>
+            <PageHeader title="Modération de Contenu" description="Examinez le contenu marqué comme suspect par l'IA." />
+            <Tabs defaultValue="posts">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="posts">Publications</TabsTrigger>
+                    <TabsTrigger value="produits">Produits</TabsTrigger>
+                    <TabsTrigger value="annonces">Annonces</TabsTrigger>
+                </TabsList>
+                <TabsContent value="posts">
+                   <ModerationQueue collectionPath="posts" typeLabel="publications" />
+                </TabsContent>
+                <TabsContent value="produits">
+                    <ModerationQueue collectionPath="products" typeLabel="produits" />
+                </TabsContent>
+                <TabsContent value="annonces">
+                    <ModerationQueue collectionPath="services" typeLabel="annonces" />
+                </TabsContent>
+            </Tabs>
         </div>
     )
 }
