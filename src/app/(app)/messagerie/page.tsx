@@ -7,13 +7,13 @@ import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Search, Send, Video, Phone, ChevronDown } from 'lucide-react';
+import { MessageSquare, Search, Send, Video, Phone, ChevronDown, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Message, User, Call, CallType, Reservation } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore, useDoc } from '@/firebase';
-import { addDoc, collection, serverTimestamp, query, where, orderBy, or, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, query, where, orderBy, or, getDocs, doc, updateDoc, and } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -45,7 +45,7 @@ function MessagerieContent() {
     const [recentContacts, setRecentContacts] = useState<{ contact: User; lastMessage: Message }[]>([]);
     const [contactsLoading, setContactsLoading] = useState(true);
     const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null }>({ show: false, type: null });
-    const [unlockedContacts, setUnlockedContacts] = useState<string[]>([]);
+    const [isContactUnlocked, setIsContactUnlocked] = useState(false);
     const [isCheckingUnlock, setIsCheckingUnlock] = useState(false);
 
     const contactIdFromUrl = searchParams.get('contact');
@@ -157,36 +157,52 @@ function MessagerieContent() {
     // Check if contact is unlocked via Pass or active reservation
     useEffect(() => {
         if (!user || !selectedContact || !firestore) {
-            setUnlockedContacts([]);
+            setIsContactUnlocked(false);
             return;
         };
 
         setIsCheckingUnlock(true);
         const checkAccess = async () => {
-            let unlocked = new Set<string>(user.unlockedContacts || []);
+            // 1. Check for Pass Contact
+            if (user.unlockedContacts?.includes(selectedContact.id)) {
+                setIsContactUnlocked(true);
+                setIsCheckingUnlock(false);
+                return;
+            }
 
-            // Check for active reservations
-            const reservationsQuery = query(
-                collection(firestore, 'reservations'),
-                where('status', '==', 'confirmed'),
-                or(
-                    // User is the member and contact is an involved escort
-                    and(
+            // 2. Check for an active, confirmed reservation between the two users
+            try {
+                const reservationsQuery = query(
+                    collection(firestore, 'reservations'),
+                    where('status', '==', 'confirmed'),
+                    // This query needs to check if user is member and contact is escort, or vice-versa
+                    // Since Firestore `or` queries on different fields are limited, we'll fetch and filter.
+                    or(
                         where('memberId', '==', user.id),
-                        where('escorts', 'array-contains', { id: selectedContact.id, name: selectedContact.displayName, profileImage: selectedContact.profileImage, rate: selectedContact.rates?.escortPerHour || 0 })
-                    ),
-                    // User is an escort and contact is the member
-                    and(
-                        where('memberId', '==', selectedContact.id),
                         where('escorts', 'array-contains', { id: user.id, name: user.displayName, profileImage: user.profileImage, rate: user.rates?.escortPerHour || 0 })
                     )
-                )
-            );
-            const reservationsSnapshot = await getDocs(reservationsQuery);
-            if (!reservationsSnapshot.empty) {
-                unlocked.add(selectedContact.id);
+                );
+                const reservationsSnapshot = await getDocs(reservationsQuery);
+                const hasActiveReservation = reservationsSnapshot.docs.some(doc => {
+                    const res = doc.data() as Reservation;
+                    const isMember = res.memberId === user.id && res.escorts.some(e => e.id === selectedContact.id);
+                    const isEscort = res.escorts.some(e => e.id === user.id) && res.memberId === selectedContact.id;
+                    // Check if reservation is still valid (not ended yet)
+                    const isStillActive = res.reservationDate.toDate().getTime() + (res.durationHours || 0) * 3600 * 1000 > Date.now();
+                    return (isMember || isEscort) && isStillActive;
+                });
+
+                if (hasActiveReservation) {
+                    setIsContactUnlocked(true);
+                } else {
+                    setIsContactUnlocked(false);
+                }
+
+            } catch (e) {
+                console.error("Error checking for reservations:", e);
+                setIsContactUnlocked(false);
             }
-            setUnlockedContacts(Array.from(unlocked));
+            
             setIsCheckingUnlock(false);
         };
 
@@ -242,7 +258,7 @@ function MessagerieContent() {
         e.preventDefault();
         if (!newMessage.trim() || !user || !selectedContact || !firestore) return;
         
-        if (!isCheckingUnlock && !unlockedContacts.includes(selectedContact.id)) {
+        if (!isContactUnlocked) {
             toast({
                 title: "Accès non autorisé",
                 description: "Vous devez débloquer ce contact pour envoyer un message.",
@@ -303,7 +319,6 @@ function MessagerieContent() {
 
     const loading = authLoading || contactsLoading;
     const videoCallRate = selectedContact?.rates?.videoCallPerMinute;
-    const isContactUnlocked = selectedContact && unlockedContacts.includes(selectedContact.id);
 
 
     return (
@@ -466,5 +481,3 @@ export default function MessageriePage() {
         </Suspense>
     )
 }
-
-    
