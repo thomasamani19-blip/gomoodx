@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from "@/components/ui/button"
@@ -18,11 +17,12 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function InscriptionEscortePage() {
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const { signup } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
@@ -116,7 +116,17 @@ export default function InscriptionEscortePage() {
                 </div>
                 <div className="grid gap-2">
                     <Label htmlFor="password">Mot de passe</Label>
-                    <Input id="password" name="password" type="password" required />
+                    <div className="relative">
+                        <Input id="password" name="password" type={showPassword ? 'text' : 'password'} required />
+                         <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
+                          aria-label={showPassword ? "Cacher le mot de passe" : "Afficher le mot de passe"}
+                        >
+                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
+                    </div>
                 </div>
                 <CardDescription className="text-xs">
                     Votre nom complet n'est utilisé que pour la vérification et ne sera jamais public. Une vérification d'identité sera requise.
