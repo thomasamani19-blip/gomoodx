@@ -108,6 +108,15 @@ export interface User {
     lastReset: Timestamp;
   };
   unlockedContacts?: string[]; // Array of seller UIDs for which contact has been purchased
+  creatorSubscriptions?: { // For members subscribing to creators
+    [creatorId: string]: {
+      tierId: string;
+      tierName: string;
+      status: SubscriptionStatus;
+      startDate: Timestamp;
+      endDate: Timestamp;
+    }
+  };
 }
 
 // Wallet
@@ -188,6 +197,7 @@ export interface Reservation {
 
 // Purchase
 export type PurchaseContentType = 'product' | 'article';
+export type PurchaseStatus = 'completed' | 'refunded';
 
 export interface Purchase {
   id: string;

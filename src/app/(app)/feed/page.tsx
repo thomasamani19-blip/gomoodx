@@ -34,11 +34,15 @@ function CreatePost() {
             toast({ title: "Contenu vide", description: "Veuillez écrire un message ou ajouter une image.", variant: "destructive"});
             return;
         }
+        if (!user) {
+            toast({ title: "Non authentifié", description: "Vous devez être connecté pour publier.", variant: "destructive"});
+            return;
+        }
         setIsLoading(true);
 
         const formData = new FormData();
         formData.append('content', content);
-        formData.append('authorId', user!.id);
+        formData.append('authorId', user.id);
         if (image) {
             formData.append('image', image);
         }
