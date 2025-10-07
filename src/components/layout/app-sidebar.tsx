@@ -43,6 +43,7 @@ import {
   Crown,
   Video,
   GanttChart,
+  Banknote,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -99,6 +100,7 @@ const adminNav = [
   { title: 'Demandes Partenaires', href: '/admin/demandes-partenaires', icon: FileText },
   { title: 'Vérifications', href: '/admin/moderation', icon: ShieldCheck },
   { title: 'Portefeuille Plateforme', href: '/admin/portefeuille', icon: Wallet },
+  { title: 'Gestion des Retraits', href: '/admin/retraits', icon: Banknote },
   { title: "Fil d'actualité", href: '/feed', icon: Newspaper },
 ];
 
@@ -157,10 +159,12 @@ export function AppSidebar() {
         )
       case 'partenaire':
         return renderNavItems(partenaireNav);
-      case 'administrateur':
       case 'founder':
-      case 'moderator':
         return renderNavItems(adminNav);
+      case 'administrateur':
+        return renderNavItems(adminNav.filter(i => i.href !== '/admin/portefeuille' && i.href !== '/admin/retraits'));
+      case 'moderator':
+        return renderNavItems(adminNav.filter(i => ['/dashboard', '/admin/moderation', '/feed'].includes(i.href)));
       default:
         // Default to client view to avoid blank screen
         return renderNavItems(clientNav);
