@@ -601,5 +601,3 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   // Default to creator/producer profile view
   return <CreatorProfile user={user} isOwnProfile={isOwnProfile} />;
 }
-
-    
