@@ -8,11 +8,59 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Heart, MessageSquare } from 'lucide-react';
+import { Heart, MessageSquare, Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 export default function PostCard({ post }: { post: Post }) {
-    
+    const { user, loading: authLoading } = useAuth();
+    const { toast } = useToast();
+    const router = useRouter();
+
+    // Optimistic UI states
+    const [isLiked, setIsLiked] = useState(user ? post.likes.includes(user.id) : false);
+    const [likeCount, setLikeCount] = useState(post.likes?.length || 0);
+    const [isLiking, setIsLiking] = useState(false);
+
     const formattedDate = post.createdAt?.toDate ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true, locale: fr }) : '...';
+
+    const handleLike = async () => {
+        if (!user) {
+            toast({ title: "Connexion requise", description: "Vous devez être connecté pour aimer une publication.", variant: "destructive" });
+            router.push('/connexion');
+            return;
+        }
+        if (isLiking) return;
+
+        setIsLiking(true);
+
+        // Optimistic update
+        const originallyLiked = isLiked;
+        setIsLiked(!originallyLiked);
+        setLikeCount(prev => originallyLiked ? prev - 1 : prev + 1);
+
+        try {
+            const response = await fetch('/api/posts/like', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ postId: post.id, userId: user.id }),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Une erreur est survenue.");
+            }
+        } catch (error: any) {
+            // Revert optimistic update on failure
+            setIsLiked(originallyLiked);
+            setLikeCount(prev => originallyLiked ? prev + 1 : prev - 1);
+            toast({ title: "Erreur", description: error.message, variant: "destructive" });
+        } finally {
+            setIsLiking(false);
+        }
+    };
 
     return (
         <Card>
@@ -39,9 +87,13 @@ export default function PostCard({ post }: { post: Post }) {
                 )}
             </CardContent>
             <CardFooter className="border-t pt-4 flex justify-start gap-4">
-                 <Button variant="ghost" size="sm">
-                    <Heart className="mr-2 h-4 w-4" /> 
-                    <span>{post.likes?.length || 0}</span>
+                 <Button variant="ghost" size="sm" onClick={handleLike} disabled={isLiking || authLoading}>
+                    {isLiking ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <Heart className={cn("mr-2 h-4 w-4", isLiked && "fill-red-500 text-red-500")} />
+                    )}
+                    <span>{likeCount}</span>
                 </Button>
                 <Button variant="ghost" size="sm">
                     <MessageSquare className="mr-2 h-4 w-4" />
