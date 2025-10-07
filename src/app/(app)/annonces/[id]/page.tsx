@@ -6,7 +6,7 @@ import type { Annonce, User, Review, Settings } from '@/lib/types';
 import { doc, collection, query, orderBy, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import { Star, MessageCircle, Heart, Share2, Send, Loader2, CheckCircle } from 'lucide-react';
+import { Star, MessageCircle, Heart, Share2, Send, Loader2, CheckCircle, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
@@ -272,7 +272,6 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
-  const [isReserving, setIsReserving] = useState(false);
   
   const [showContactPassDialog, setShowContactPassDialog] = useState(false);
   const [isBuyingPass, setIsBuyingPass] = useState(false);
@@ -289,47 +288,6 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
   const loading = annonceLoading || creatorLoading || settingsLoading;
   const canReserve = creator?.partnerType === 'establishment';
   
-  const handleReservation = async () => {
-    if (!user) {
-        toast({ title: 'Connexion requise', description: 'Vous devez être connecté pour réserver.', variant: 'destructive'});
-        router.push('/connexion');
-        return;
-    }
-    if (user.id === annonce?.createdBy) {
-        toast({ title: 'Action impossible', description: 'Vous ne pouvez pas réserver votre propre service.', variant: 'destructive'});
-        return;
-    }
-    setIsReserving(true);
-    try {
-        const response = await fetch('/api/reservations/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                memberId: user.id,
-                annonceId: params.id,
-                reservationDate: new Date().toISOString(), // Using current date as a placeholder
-            }),
-        });
-        const result = await response.json();
-        if (response.ok) {
-            toast({
-                title: 'Réservation confirmée !',
-                description: "Votre réservation a été effectuée avec succès.",
-            });
-        } else {
-            throw new Error(result.message || 'Une erreur est survenue.');
-        }
-    } catch (error: any) {
-        toast({
-            title: 'Échec de la réservation',
-            description: error.message || "Impossible de finaliser la réservation. Veuillez réessayer.",
-            variant: 'destructive',
-        });
-    } finally {
-        setIsReserving(false);
-    }
-  };
-
   const handleContact = () => {
     if (!user || !creator) {
         toast({ title: 'Connexion requise', variant: 'destructive' });
@@ -440,9 +398,11 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
                         {canReserve ? (
-                             <Button size="lg" onClick={handleReservation} disabled={isReserving}>
-                                {isReserving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {isReserving ? 'Réservation en cours...' : 'Réserver maintenant'}
+                             <Button size="lg" asChild>
+                                <Link href={`/annonces/${params.id}/reserver`}>
+                                    <Calendar className="mr-2 h-4 w-4" />
+                                    Faire une réservation
+                                </Link>
                             </Button>
                         ) : (
                              <Button size="lg" onClick={handleContact}>
