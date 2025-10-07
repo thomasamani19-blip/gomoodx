@@ -10,7 +10,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Heart, MessageSquare, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
@@ -20,10 +20,14 @@ export default function PostCard({ post }: { post: Post }) {
     const { toast } = useToast();
     const router = useRouter();
 
-    // Optimistic UI states
     const [isLiked, setIsLiked] = useState(user ? post.likes.includes(user.id) : false);
     const [likeCount, setLikeCount] = useState(post.likes?.length || 0);
     const [isLiking, setIsLiking] = useState(false);
+
+    useEffect(() => {
+        setIsLiked(user ? post.likes.includes(user.id) : false);
+        setLikeCount(post.likes?.length || 0);
+    }, [post.likes, user]);
 
     const formattedDate = post.createdAt?.toDate ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true, locale: fr }) : '...';
 
