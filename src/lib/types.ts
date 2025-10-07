@@ -454,3 +454,4 @@ export interface PartnerRequest {
 
 // API Payloads
 export type ContentType = 'service' | 'product';
+
