@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Post } from '@/lib/types';
