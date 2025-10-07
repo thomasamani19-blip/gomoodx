@@ -30,11 +30,13 @@ export default function AdminWalletPage() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (user?.role === 'founder') {
+      if (user && ['founder', 'administrateur'].includes(user.role)) {
         setIsAllowed(true);
       } else {
         setIsAllowed(false);
-        router.push('/dashboard');
+        if (user) { // Only redirect if user is loaded and not allowed
+          router.push('/dashboard');
+        }
       }
     }
   }, [user, authLoading, router]);
