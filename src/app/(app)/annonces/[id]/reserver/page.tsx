@@ -114,7 +114,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                     reservationDate: reservationDateTime.toISOString(),
                     durationHours: durationHours,
                     escorts: selectedEscorts.map(e => ({ id: e.id, name: e.displayName, profileImage: e.profileImage })),
-                    amount: totalPrice, // Send the calculated total price
+                    amount: totalPrice,
                     roomType: selectedRoomType,
                 }),
             });
@@ -236,7 +236,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                              <div className="space-y-2">
                                 <h4 className="font-semibold">Détail du prix</h4>
                                  <div className="flex justify-between text-sm text-muted-foreground">
-                                    <span>Chambre {selectedRoomType} ({roomPricePerHour}€ x {durationHours}h)</span>
+                                    <span>Chambre {selectedRoomType} ({roomPricePerHour.toFixed(2)}€ x {durationHours}h)</span>
                                     <span>{roomCost.toFixed(2)} €</span>
                                 </div>
                                 {selectedEscorts.length > 0 && (

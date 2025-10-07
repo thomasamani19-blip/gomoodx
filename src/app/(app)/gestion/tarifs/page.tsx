@@ -25,15 +25,15 @@ const formSchema = z.object({
   basePricePerHour: z.coerce.number().min(0, "Le prix de base doit être positif."),
   roomTypes: z.object({
     standard: z.object({
-      price: z.literal(0).default(0), // Le prix de la chambre standard est toujours 0 (c'est le prix de base)
+      price: z.literal(0).default(0), 
       enabled: z.literal(true).default(true),
     }),
     comfort: z.object({
-      price: z.coerce.number().min(0),
+      price: z.coerce.number().min(0), // Price is now a supplement
       enabled: z.boolean(),
     }),
     luxe: z.object({
-      price: z.coerce.number().min(0),
+      price: z.coerce.number().min(0), // Price is now a supplement
       enabled: z.boolean(),
     }),
   }),
@@ -56,8 +56,8 @@ export default function GestionTarifsPage() {
             basePricePerHour: 50,
             roomTypes: {
                 standard: { price: 0, enabled: true },
-                comfort: { price: 50, enabled: true },
-                luxe: { price: 150, enabled: false },
+                comfort: { price: 25, enabled: true },
+                luxe: { price: 100, enabled: false },
             }
         },
     });
@@ -68,7 +68,7 @@ export default function GestionTarifsPage() {
                 ...user.establishmentSettings.pricing,
                 roomTypes: {
                     ...user.establishmentSettings.pricing.roomTypes,
-                    standard: { price: 0, enabled: true } // S'assurer que le standard est fixe
+                    standard: { price: 0, enabled: true } // Ensure standard is fixed
                 }
             });
         }
@@ -130,7 +130,7 @@ export default function GestionTarifsPage() {
                              <CardDescription>Définissez le coût supplémentaire par heure pour les types de chambres supérieurs. Ce montant s'ajoute au prix de base.</CardDescription>
                             
                              {Object.entries(form.getValues().roomTypes).map(([key, value]) => {
-                                if (key === 'standard') return null; // Ne pas afficher le type 'standard' ici
+                                if (key === 'standard') return null; // Do not show 'standard' here
 
                                 const roomKey = key as keyof PricingFormValues['roomTypes'];
                                 return (
