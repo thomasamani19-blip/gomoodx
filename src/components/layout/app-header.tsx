@@ -48,7 +48,6 @@ export function AppHeader() {
                 {user?.profileImage && <AvatarImage src={user.profileImage} alt={user.displayName} />}
                 <AvatarFallback>{user?.displayName?.charAt(0)?.toUpperCase() ?? 'U'}</AvatarFallback>
               </Avatar>
-               {isCreatorPremium && <Star className="absolute bottom-0 right-0 h-4 w-4 fill-primary text-primary" />}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
