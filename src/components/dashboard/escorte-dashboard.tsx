@@ -5,13 +5,46 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { User as UserIcon, BookText, PenSquare, Sparkles, ShoppingBag, Newspaper, Bot, Film } from "lucide-react";
 import Link from 'next/link';
-import type { User, CreatorStats } from "@/lib/types";
+import type { User, CreatorStats, MonthlyRevenue } from "@/lib/types";
 import PageHeader from "../shared/page-header";
 import { useDoc, useFirestore } from "@/firebase";
 import { Skeleton } from "../ui/skeleton";
 import { doc } from "firebase/firestore";
-import { BarChart, TrendingUp, Users } from "lucide-react";
+import { BarChart as BarChartIcon, TrendingUp, Users } from "lucide-react";
 import { useMemo } from "react";
+import { AreaChart, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar, Area, ResponsiveContainer } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+
+
+const chartData: MonthlyRevenue[] = [
+  { month: 'Jan', revenue: 1860 },
+  { month: 'Fev', revenue: 3050 },
+  { month: 'Mar', revenue: 2370 },
+  { month: 'Avr', revenue: 730 },
+  { month: 'Mai', revenue: 2090 },
+  { month: 'Juin', revenue: 2140 },
+];
+
+const profileViewsData = [
+    { date: '01/06', views: 120 },
+    { date: '02/06', views: 180 },
+    { date: '03/06', views: 150 },
+    { date: '04/06', views: 210 },
+    { date: '05/06', views: 190 },
+    { date: '06/06', views: 250 },
+    { date: '07/06', views: 220 },
+];
+
+const chartConfig = {
+  revenue: {
+    label: 'Revenus',
+    color: 'hsl(var(--primary))',
+  },
+  views: {
+    label: 'Vues',
+    color: 'hsl(var(--primary))',
+  }
+};
 
 
 const StatCard = ({ title, value, change, icon: Icon, loading }: { title: string, value: string, change: string, icon: React.ElementType, loading: boolean}) => {
@@ -102,6 +135,50 @@ export default function EscorteDashboard({ user }: { user: User }) {
                      <Link href="/statistiques">Voir plus</Link>
                  </Button>
             </CardContent>
+        </Card>
+      </div>
+      
+       <div className="grid gap-8 md:grid-cols-2">
+         <Card>
+          <CardHeader>
+            <CardTitle>Revenus Mensuels</CardTitle>
+            <CardDescription>Évolution de vos revenus au cours des 6 derniers mois.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig}>
+              <ResponsiveContainer width="100%" height={250}>
+                {statsLoading ? <Skeleton className="w-full h-full" /> : 
+                <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid vertical={false} />
+                  <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
+                  <YAxis tickLine={false} axisLine={false} />
+                  <Tooltip content={<ChartTooltipContent indicator="dot" />} />
+                  <Area type="monotone" dataKey="revenue" stroke="var(--color-revenue)" fill="var(--color-revenue)" fillOpacity={0.3} />
+                </AreaChart>}
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+        
+         <Card>
+          <CardHeader>
+            <CardTitle>Vues de Profil (7 derniers jours)</CardTitle>
+            <CardDescription>Évolution journalière des visites sur votre profil.</CardDescription>
+          </CardHeader>
+          <CardContent>
+             <ChartContainer config={chartConfig}>
+                 <ResponsiveContainer width="100%" height={250}>
+                   {statsLoading ? <Skeleton className="w-full h-full" /> : 
+                    <BarChart data={profileViewsData}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
+                        <YAxis tickLine={false} axisLine={false} />
+                        <Tooltip content={<ChartTooltipContent indicator='line'/>} />
+                        <Bar dataKey="views" fill="var(--color-views)" radius={4} />
+                    </BarChart>}
+                </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
         </Card>
       </div>
 
