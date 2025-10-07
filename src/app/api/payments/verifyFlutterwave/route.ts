@@ -1,4 +1,5 @@
 
+
 // /src/app/api/payments/verifyFlutterwave/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
@@ -79,7 +80,8 @@ export async function POST(request: Request) {
         // Prevent duplicate processing
         if (transactionDoc.exists) {
             console.warn(`La transaction ${transactionRef.id} a déjà été traitée.`);
-            return walletDoc.data()?.balance || 0;
+            const existingTransactionData = transactionDoc.data();
+            return existingTransactionData?.amount || 0;
         }
 
         const userData = userDoc.data() as User;
@@ -125,7 +127,7 @@ export async function POST(request: Request) {
             reference: paymentData.flw_ref,
         });
 
-        return (walletDoc.data()?.balance || 0) + creditedAmount;
+        return creditedAmount;
       });
 
       return NextResponse.json({ status: 'success', message: 'Paiement vérifié et portefeuille mis à jour.', creditedAmount: creditedAmountFinal });

@@ -126,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       onlineStatus: "offline",
+      hasMadeFirstDeposit: false,
     };
 
     batch.set(userDocRef, userData);
@@ -185,6 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       onlineStatus: "offline",
+      hasMadeFirstDeposit: false,
     };
 
     batch.set(userDocRef, userData);
