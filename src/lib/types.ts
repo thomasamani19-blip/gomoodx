@@ -365,6 +365,7 @@ export interface BlogArticle {
     imageUrl: string;
     imageHint?: string;
     date: Timestamp;
+    updatedAt?: Timestamp;
     authorId: string;
     authorName?: string;
     isPremium?: boolean;

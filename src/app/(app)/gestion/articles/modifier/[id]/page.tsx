@@ -88,7 +88,7 @@ export default function ModifierArticlePage({ params }: { params: { id: string }
                 title: data.title,
                 content: data.content,
                 imageUrl: imageUrl,
-                date: serverTimestamp(), // Keep this to show it's recently updated
+                updatedAt: serverTimestamp(),
                 isPremium: data.isPremium,
                 price: data.isPremium ? data.price : 0,
             });
