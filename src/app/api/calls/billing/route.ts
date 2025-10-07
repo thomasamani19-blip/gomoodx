@@ -1,4 +1,3 @@
-
 // /src/app/api/calls/billing/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
