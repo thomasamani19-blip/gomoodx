@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -17,6 +18,7 @@ export const RechercheMultilingueInputSchema = z.object({
   query: z.string().describe("Le terme de recherche dans la langue de l'utilisateur."),
   langueSource: LanguesSupporteesSchema.describe("La langue dans laquelle la recherche est effectuée."),
   langueCible: LanguesSupporteesSchema.describe("La langue dans laquelle les résultats doivent être traduits."),
+  filtres: z.record(z.string(), z.boolean()).optional().describe("Un objet de filtres de recherche booléens (ex: { categorie_massage: true, genre_femme: true })."),
 });
 export type RechercheMultilingueInput = z.infer<typeof RechercheMultilingueInputSchema>;
 
@@ -78,8 +80,9 @@ const rechercheMultilingueFlow = ai.defineFlow(
     },
     async (input) => {
         const llmResponse = await ai.generate({
-            prompt: `Tu es un assistant de recherche multilingue. Traduis la requête de l'utilisateur si nécessaire, trouve les résultats pertinents, puis traduis ces résultats dans la langue cible.
+            prompt: `Tu es un assistant de recherche multilingue. Traduis la requête de l'utilisateur si nécessaire, applique les filtres fournis, trouve les résultats pertinents, puis traduis ces résultats dans la langue cible.
             Requête: "${input.query}"
+            Filtres: ${JSON.stringify(input.filtres || {})}
             Langue source: ${input.langueSource}
             Langue cible: ${input.langueCible}`,
             model: 'googleai/gemini-1.5-flash',

@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,7 +22,7 @@ const langues = [
     { value: 'ar', label: 'العربية' },
 ];
 
-export default function RecherchePage() {
+function RechercheComponent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
 
@@ -30,7 +31,7 @@ export default function RecherchePage() {
   const [query, setQuery] = useState(initialQuery);
   const { toast } = useToast();
 
-  const performSearch = async (searchQuery: string, langSource: string, langCible: string) => {
+  const performSearch = async (searchQuery: string, langSource: string, langCible: string, filtres: Record<string, boolean>) => {
     if (!searchQuery) return;
     setIsLoading(true);
     setResult(null);
@@ -39,6 +40,7 @@ export default function RecherchePage() {
       query: searchQuery,
       langueSource: langSource as 'fr' | 'en' | 'es' | 'it' | 'ar',
       langueCible: langCible as 'fr' | 'en' | 'es' | 'it' | 'ar',
+      filtres: filtres,
     };
 
     try {
@@ -57,18 +59,34 @@ export default function RecherchePage() {
   };
 
   useEffect(() => {
-    if (initialQuery) {
-        performSearch(initialQuery, 'fr', 'fr');
+    const filtres: Record<string, boolean> = {};
+    for (const [key, value] of searchParams.entries()) {
+        if(key !== 'q') {
+            filtres[key] = value === 'true';
+        }
+    }
+
+    if (initialQuery || Object.keys(filtres).length > 0) {
+        performSearch(initialQuery, 'fr', 'fr', filtres);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialQuery]);
+  }, [searchParams, initialQuery]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const langSource = formData.get('langueSource') as string;
     const langCible = formData.get('langueCible') as string;
-    performSearch(query, langSource, langCible);
+    
+    // Récupérer les filtres actuels de l'URL pour les conserver lors d'une nouvelle recherche manuelle
+    const filtres: Record<string, boolean> = {};
+     for (const [key, value] of searchParams.entries()) {
+        if(key !== 'q') {
+            filtres[key] = value === 'true';
+        }
+    }
+
+    performSearch(query, langSource, langCible, filtres);
   };
 
   return (
@@ -137,4 +155,12 @@ export default function RecherchePage() {
         </div>
     </div>
   );
+}
+
+export default function RecherchePage() {
+    return (
+        <Suspense fallback={<div>Chargement...</div>}>
+            <RechercheComponent />
+        </Suspense>
+    )
 }
