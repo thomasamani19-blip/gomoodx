@@ -12,14 +12,38 @@ export type UserStatus = 'active' | 'suspended' | 'pending';
 export type OnlineStatus = 'online' | 'offline';
 export type VerificationStatus = 'pending' | 'verified' | 'rejected';
 export type VerificationType = 'selfie' | 'complete';
-export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled';
 
-export interface Subscription {
-    type: 'premium_member' | 'premium_creator';
+// --- Subscription ---
+export type SubscriptionStatus = 'active' | 'cancelled' | 'expired';
+
+export interface SubscriptionTier {
+  id: string;
+  name: string;
+  price: number; // monthly
+  description: string;
+  isActive: boolean;
+}
+
+export interface SubscriptionSettings {
+  enabled: boolean;
+  tiers: {
+    [tierId: string]: SubscriptionTier;
+  }
+}
+
+export interface UserSubscription {
+    id: string; // Unique ID for the subscription
+    creatorId: string;
+    subscriberId: string;
+    tierId: string;
     status: SubscriptionStatus;
     startDate: Timestamp;
     endDate: Timestamp;
+    pricePaid: number;
+    durationMonths: number;
 }
+// --------------------
+
 
 // Base User structure
 export interface User {
@@ -53,7 +77,7 @@ export interface User {
   gender?: string;
   verificationStatus?: VerificationStatus;
   verificationType?: VerificationType;
-  subscription?: Subscription;
+  subscriptionSettings?: SubscriptionSettings; // For creators
   // Rates for creators
   rates?: {
     videoCallPerMinute?: number;

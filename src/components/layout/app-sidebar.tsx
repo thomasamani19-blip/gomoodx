@@ -36,6 +36,7 @@ import {
   Settings,
   Film,
   CalendarCheck,
+  Star,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -57,6 +58,7 @@ const clientNav = [
 const escorteNav = [
   { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
   { title: 'Statistiques', href: '/statistiques', icon: BarChart3 },
+  { title: 'Gestion Abonnement', href: '/gestion/abonnement', icon: Star },
   { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
   { title: 'Mes Réservations', href: '/reservations', icon: CalendarCheck },
   { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
