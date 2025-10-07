@@ -38,7 +38,7 @@ const tierSchema = z.object({
 
 const formSchema = z.object({
   subscriptionEnabled: z.boolean(),
-  tiers: z.array(tierSchema).max(3, "Vous ne pouvez avoir que 3 niveaux."),
+  tiers: z.array(tierSchema).max(4, "Vous ne pouvez avoir que 4 niveaux."),
 });
 
 type SubscriptionFormValues = z.infer<typeof formSchema>;
@@ -140,7 +140,7 @@ export default function GestionAbonnementPage() {
                     {subscriptionEnabled && (
                         <CardContent className="border-t pt-6">
                             <CardTitle>Niveaux d'abonnement</CardTitle>
-                            <CardDescription className="mb-4">Créez jusqu'à 3 niveaux d'abonnement. Le deuxième niveau sera mis en avant comme "Populaire".</CardDescription>
+                            <CardDescription className="mb-4">Créez jusqu'à 4 niveaux d'abonnement. Le deuxième niveau sera mis en avant comme "Populaire".</CardDescription>
                             
                             <Accordion type="multiple" defaultValue={fields.map(f => f.id)} className="w-full">
                                 {fields.map((field, index) => (
@@ -213,7 +213,7 @@ export default function GestionAbonnementPage() {
                                 ))}
                             </Accordion>
                             
-                            {fields.length < 3 && (
+                            {fields.length < 4 && (
                                 <Button 
                                     type="button" 
                                     variant="outline" 
