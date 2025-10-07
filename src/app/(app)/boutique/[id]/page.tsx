@@ -1,9 +1,9 @@
 
 'use-client';
 
-import { useDoc, useFirestore } from '@/firebase';
+import { useCollection, useDoc, useFirestore } from '@/firebase';
 import type { Product, User, Settings } from '@/lib/types';
-import { doc, collection } from 'firebase/firestore';
+import { doc, collection, query, where, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { MessageCircle, Heart, Loader2, Package, Film, Download, CheckCircle } from 'lucide-react';
@@ -27,6 +27,54 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+
+function SuggestedProducts({ currentProductId }: { currentProductId: string }) {
+    const firestore = useFirestore();
+    const suggestionsQuery = useMemo(() => {
+        if (!firestore) return null;
+        return query(
+            collection(firestore, 'products'),
+            where('__name__', '!=', currentProductId),
+            limit(4)
+        );
+    }, [firestore, currentProductId]);
+    
+    const { data: products, loading } = useCollection<Product>(suggestionsQuery);
+
+    if (loading || !products || products.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="space-y-6 mt-8">
+            <h2 className="font-headline text-2xl font-bold">Vous aimerez aussi</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {products.map((product) => (
+                    <Card key={product.id} className="overflow-hidden group">
+                        <Link href={`/boutique/${product.id}`} className="block">
+                            <CardContent className="p-0">
+                                <div className="relative aspect-video">
+                                    <Image
+                                        src={product.imageUrl || 'https://picsum.photos/seed/product/600/400'}
+                                        alt={product.title}
+                                        fill
+                                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                        data-ai-hint={product.imageHint}
+                                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                                    />
+                                </div>
+                                <div className="p-4">
+                                    <h3 className="font-headline text-lg font-semibold truncate">{product.title}</h3>
+                                    <p className="text-lg font-bold text-primary mt-2">{product.price ? `${product.price} €` : 'Prix non disponible'}</p>
+                                </div>
+                            </CardContent>
+                        </Link>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    );
+}
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
   const { user, loading: authLoading } = useAuth();
@@ -255,6 +303,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                 )}
             </div>
         </div>
+        <SuggestedProducts currentProductId={params.id} />
     </div>
     
     <AlertDialog open={showContactPassDialog} onOpenChange={setShowContactPassDialog}>

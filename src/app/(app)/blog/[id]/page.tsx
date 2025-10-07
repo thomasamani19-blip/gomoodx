@@ -3,7 +3,7 @@
 
 import { useCollection, useDoc, useFirestore } from '@/firebase';
 import type { BlogArticle, Purchase, User } from '@/lib/types';
-import { collection, doc, query, where } from 'firebase/firestore';
+import { collection, doc, query, where, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { format } from 'date-fns';
@@ -12,10 +12,10 @@ import { useMemo, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Lock } from 'lucide-react';
+import { Loader2, Lock, ArrowRight } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +45,58 @@ const Markdown = ({ content, truncate = false }: { content: string, truncate?: b
     return <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: html }} />;
 };
 
+function SuggestedArticles({ currentArticleId }: { currentArticleId: string }) {
+    const firestore = useFirestore();
+    const suggestionsQuery = useMemo(() => {
+        if (!firestore) return null;
+        return query(
+            collection(firestore, 'blog'),
+            where('__name__', '!=', currentArticleId),
+            orderBy('__name__'), // To use '!=' we must order by name
+            limit(3)
+        );
+    }, [firestore, currentArticleId]);
+    
+    const { data: articles, loading } = useCollection<BlogArticle>(suggestionsQuery);
+
+    if (loading || !articles || articles.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="mt-16">
+            <h2 className="font-headline text-2xl font-bold mb-6">Vous aimerez aussi</h2>
+            <div className="grid md:grid-cols-3 gap-6">
+                {articles.map((article) => (
+                    <Card key={article.id} className="overflow-hidden group flex flex-col">
+                        <Link href={`/blog/${article.id}`} className="block">
+                            <div className="relative aspect-video">
+                                <Image
+                                    src={article.imageUrl || `https://picsum.photos/seed/${article.id}/600/400`}
+                                    alt={article.title}
+                                    fill
+                                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                />
+                            </div>
+                        </Link>
+                        <CardContent className="p-4 flex flex-col flex-1">
+                            <h3 className="font-headline text-lg font-semibold mb-2 flex-1">
+                                <Link href={`/blog/${article.id}`} className="hover:text-primary transition-colors line-clamp-2">{article.title}</Link>
+                            </h3>
+                            <p className="text-xs text-muted-foreground mb-3">
+                                {article.date ? format(article.date.toDate(), "d MMMM yyyy", { locale: fr }) : ''}
+                            </p>
+                            <Button variant="link" asChild className="p-0 mt-auto self-start text-xs">
+                                <Link href={`/blog/${article.id}`}>Lire la suite <ArrowRight className="ml-1 h-3 w-3" /></Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    );
+}
 
 export default function ArticlePage({ params }: { params: { id: string } }) {
   const { user: currentUser, loading: authLoading } = useAuth();
@@ -141,59 +193,64 @@ export default function ArticlePage({ params }: { params: { id: string } }) {
 
   return (
     <>
-    <article className="max-w-4xl mx-auto">
-      <header className="mb-8">
-        <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden mb-8">
-            <Image
-                src={article.imageUrl || `https://picsum.photos/seed/${article.id}/1200/600`}
-                alt={article.title}
-                fill
-                className="object-cover"
-                data-ai-hint={article.imageHint}
-                priority
-            />
-             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        </div>
-        <h1 className="font-headline text-3xl md:text-5xl font-bold tracking-tight mb-4">{article.title}</h1>
-        <div className="flex items-center gap-4 text-muted-foreground">
-             {author ? (
-                <Link href={`/profil/${author.id}`} className="flex items-center gap-3 group">
-                    <Avatar className="h-12 w-12">
-                        <AvatarImage src={author.profileImage} />
-                        <AvatarFallback>{author.displayName?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                        <p className="font-semibold text-foreground group-hover:text-primary transition-colors">{author.displayName}</p>
-                        <p className="text-sm">Publié le {article.date ? format(article.date.toDate(), 'd MMMM yyyy', { locale: fr }) : 'Date inconnue'}</p>
+    <div className="max-w-4xl mx-auto">
+        <article>
+        <header className="mb-8">
+            <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden mb-8">
+                <Image
+                    src={article.imageUrl || `https://picsum.photos/seed/${article.id}/1200/600`}
+                    alt={article.title}
+                    fill
+                    className="object-cover"
+                    data-ai-hint={article.imageHint}
+                    priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            </div>
+            <h1 className="font-headline text-3xl md:text-5xl font-bold tracking-tight mb-4">{article.title}</h1>
+            <div className="flex items-center gap-4 text-muted-foreground">
+                {author ? (
+                    <Link href={`/profil/${author.id}`} className="flex items-center gap-3 group">
+                        <Avatar className="h-12 w-12">
+                            <AvatarImage src={author.profileImage} />
+                            <AvatarFallback>{author.displayName?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <p className="font-semibold text-foreground group-hover:text-primary transition-colors">{author.displayName}</p>
+                            <p className="text-sm">Publié le {article.date ? format(article.date.toDate(), 'd MMMM yyyy', { locale: fr }) : 'Date inconnue'}</p>
+                        </div>
+                    </Link>
+                ) : (
+                    <div className="flex items-center gap-3">
+                        <Skeleton className="h-12 w-12 rounded-full" />
+                        <div>
+                            <Skeleton className="h-4 w-24 mb-1" />
+                            <p className="text-sm">Publié le {article.date ? format(article.date.toDate(), 'd MMMM yyyy', { locale: fr }) : 'Date inconnue'}</p>
+                        </div>
                     </div>
-                </Link>
-             ) : (
-                <div className="flex items-center gap-3">
-                     <Skeleton className="h-12 w-12 rounded-full" />
-                     <div>
-                        <Skeleton className="h-4 w-24 mb-1" />
-                        <p className="text-sm">Publié le {article.date ? format(article.date.toDate(), 'd MMMM yyyy', { locale: fr }) : 'Date inconnue'}</p>
-                     </div>
-                </div>
-             )}
-        </div>
-      </header>
+                )}
+            </div>
+        </header>
 
-      <Card>
-        <CardContent className="pt-6 relative">
-            <Markdown content={article.content} truncate={isPremiumAndNotPurchased} />
-            {isPremiumAndNotPurchased && (
-                <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-card to-transparent flex flex-col items-center justify-end p-8">
-                    <Button onClick={() => setShowPurchaseDialog(true)} size="lg">
-                        <Lock className="mr-2 h-4 w-4"/>
-                        Acheter pour lire la suite ({article.price?.toFixed(2)}€)
-                    </Button>
-                </div>
-            )}
-        </CardContent>
-      </Card>
-      
-    </article>
+        <Card>
+            <CardContent className="pt-6 relative">
+                <Markdown content={article.content} truncate={isPremiumAndNotPurchased} />
+                {isPremiumAndNotPurchased && (
+                    <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-card to-transparent flex flex-col items-center justify-end p-8">
+                        <Button onClick={() => setShowPurchaseDialog(true)} size="lg">
+                            <Lock className="mr-2 h-4 w-4"/>
+                            Acheter pour lire la suite ({article.price?.toFixed(2)}€)
+                        </Button>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+        
+        </article>
+        
+        <SuggestedArticles currentArticleId={params.id} />
+    </div>
+
     <AlertDialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog}>
         <AlertDialogContent>
             <AlertDialogHeader>

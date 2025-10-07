@@ -3,7 +3,7 @@
 
 import { useCollection, useDoc, useFirestore, useUser } from '@/firebase';
 import type { Annonce, User, Review, Settings } from '@/lib/types';
-import { doc, collection, query, orderBy, serverTimestamp, runTransaction } from 'firebase/firestore';
+import { doc, collection, query, orderBy, serverTimestamp, runTransaction, where, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Star, MessageCircle, Heart, Share2, Send, Loader2, CheckCircle, Calendar } from 'lucide-react';
@@ -29,6 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from '@/components/ui/badge';
 
 const StarRating = ({ rating, ratingCount, className }: { rating: number, ratingCount?: number, className?: string }) => {
     const totalStars = 5;
@@ -267,6 +268,61 @@ function ReviewList({ annonceId }: { annonceId: string }) {
     );
 }
 
+function SuggestedAnnonces({ category, currentAnnonceId }: { category: string, currentAnnonceId: string }) {
+    const firestore = useFirestore();
+    const suggestionsQuery = useMemo(() => {
+        if (!firestore || !category) return null;
+        return query(
+            collection(firestore, 'services'),
+            where('category', '==', category),
+            where('__name__', '!=', currentAnnonceId),
+            limit(3)
+        );
+    }, [firestore, category, currentAnnonceId]);
+    
+    const { data: annonces, loading } = useCollection<Annonce>(suggestionsQuery);
+
+    if (loading || !annonces || annonces.length === 0) {
+        return null; // Don't render anything if loading, no suggestions, or error
+    }
+
+    return (
+        <div className="space-y-6 mt-8">
+            <h2 className="font-headline text-2xl font-bold">Vous aimerez aussi</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {annonces.map((annonce) => (
+                    <Card key={annonce.id} className="overflow-hidden group">
+                        <CardContent className="p-0">
+                            <Link href={`/annonces/${annonce.id}`}>
+                                <div className="relative aspect-video">
+                                    <Image
+                                        src={annonce.imageUrl || 'https://picsum.photos/seed/annonce/600/400'}
+                                        alt={annonce.title}
+                                        fill
+                                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                        data-ai-hint={annonce.imageHint}
+                                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                    />
+                                    {annonce.isSponsored && (
+                                        <Badge variant="secondary" className="absolute top-2 right-2">À la une</Badge>
+                                    )}
+                                </div>
+                            </Link>
+                            <div className="p-4">
+                                <h3 className="font-headline text-lg font-semibold truncate">{annonce.title}</h3>
+                                <div className="flex items-center justify-between mt-2">
+                                    <p className="font-bold text-primary">{annonce.price ? `${annonce.price} €` : 'Sur demande'}</p>
+                                    <StarRating rating={annonce.rating} ratingCount={annonce.ratingCount} />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export default function AnnonceDetailPage({ params }: { params: { id: string } }) {
   const { user } = useAuth();
   const firestore = useFirestore();
@@ -438,6 +494,7 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                 )}
             </div>
         </div>
+        <SuggestedAnnonces category={annonce.category} currentAnnonceId={annonce.id} />
     </div>
     <AlertDialog open={showContactPassDialog} onOpenChange={setShowContactPassDialog}>
         <AlertDialogContent>
