@@ -16,7 +16,7 @@ try {
 const creditPacks = [
   { name: 'Essentiel', price: 20, bonus: 0 },
   { name: 'Confort', price: 50, bonus: 5 },
-  { name 'Premium', price: 100, bonus: 15 },
+  { name: 'Premium', price: 100, bonus: 15 },
   { name: 'Élite', price: 250, bonus: 50 },
 ];
 
