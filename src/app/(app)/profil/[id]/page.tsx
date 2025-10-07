@@ -3,13 +3,13 @@
 'use client';
 
 import { useCollection, useDoc, useFirestore } from '@/firebase';
-import type { User, Call, CallType, Annonce, Product, Settings, SubscriptionTier, Reservation } from '@/lib/types';
+import type { User, Call, CallType, Annonce, Product, Settings, SubscriptionTier, Reservation, Wallet } from '@/lib/types';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, MessageCircle, Video, Phone, ChevronDown, Star, CheckCircle } from 'lucide-react';
+import { Heart, MessageCircle, Video, Phone, ChevronDown, Star, CheckCircle, Banknote } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { doc, updateDoc, arrayUnion, arrayRemove, addDoc, collection, serverTimestamp, query, where, limit, and, or, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -189,6 +189,34 @@ function SuggestedProfiles({ currentUserId }: { currentUserId: string }) {
     );
 }
 
+const AdminInfoCard = ({ userId }: { userId: string }) => {
+    const firestore = useFirestore();
+    const walletRef = useMemo(() => firestore ? doc(firestore, 'wallets', userId) : null, [firestore, userId]);
+    const { data: wallet, loading } = useDoc<Wallet>(walletRef);
+
+    if (loading) {
+        return <Card><CardHeader><CardTitle>Informations Administrateur</CardTitle></CardHeader><CardContent><Skeleton className="h-8 w-1/2" /></CardContent></Card>
+    }
+
+    return (
+        <Card className="border-destructive">
+            <CardHeader>
+                <CardTitle>Informations Administrateur</CardTitle>
+                <CardDescription>Cette section n'est visible que par l'administration.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-center gap-4">
+                    <Banknote className="h-6 w-6 text-muted-foreground" />
+                    <div>
+                        <p className="text-sm font-medium">Solde du Portefeuille</p>
+                        <p className="text-lg font-bold">{wallet?.balance.toFixed(2) || '0.00'} €</p>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
 
 const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: boolean }) => {
     const { user: currentUser } = useAuth();
@@ -196,6 +224,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
     const router = useRouter();
     const { toast } = useToast();
     const isFavorite = currentUser?.favorites?.includes(user.id);
+    const isAdmin = currentUser?.role === 'founder' || currentUser?.role === 'administrateur';
     
     const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null, isFree?: boolean, price?: number }>({ show: false, type: null, isFree: false, price: 0 });
     const [showContactPassDialog, setShowContactPassDialog] = useState(false);
@@ -466,6 +495,9 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
 
             <div className="px-6 grid md:grid-cols-3 gap-8">
                <div className="md:col-span-3 flex flex-col gap-8">
+                    
+                    {isAdmin && !isOwnProfile && <AdminInfoCard userId={user.id} />}
+
                     <Card>
                         <CardHeader><CardTitle>À propos de moi</CardTitle></CardHeader>
                         <CardContent><p className="text-muted-foreground whitespace-pre-wrap">{user.bio || "Aucune biographie."}</p></CardContent>
@@ -591,8 +623,11 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
 };
 
 const MemberProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: boolean }) => {
+    const { user: currentUser } = useAuth();
+    const isAdmin = currentUser?.role === 'founder' || currentUser?.role === 'administrateur';
     return (
-      <div className="flex flex-col items-center pt-16">
+      <div className="flex flex-col items-center pt-16 gap-8">
+        {isAdmin && !isOwnProfile && <AdminInfoCard userId={user.id} />}
         <Avatar className="h-40 w-40 border-4 border-primary mb-6">
           <AvatarImage src={user.profileImage} alt={user.displayName} />
           <AvatarFallback className="text-5xl">{user.displayName?.charAt(0)}</AvatarFallback>
@@ -663,3 +698,4 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   // Default to creator/producer profile view
   return <CreatorProfile user={user} isOwnProfile={isOwnProfile} />;
 }
+
