@@ -416,7 +416,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                                 <CardTitle>Soutenir {user.displayName}</CardTitle>
                                 <CardDescription>Abonnez-vous pour accéder à des avantages exclusifs.</CardDescription>
                             </CardHeader>
-                            <CardContent className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                            <CardContent className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                 {subscriptionTiers.map((tier, index) => (
                                     <TierCard key={tier.id} tier={tier} isPopular={index === 1} onSubscribe={handleOpenSubscriptionDialog}/>
                                 ))}
