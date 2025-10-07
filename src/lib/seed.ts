@@ -118,8 +118,8 @@ async function seedDatabase() {
             },
             platformCommissionRate: 0.20, // 20% commission
             rewardPointsConversionRate: 0.01, // 100 points = 1 EUR
-            withdrawalMinAmount: 50, // 50€ min withdrawal
-            withdrawalMaxAmount: 5000, // 5000€ max withdrawal
+            withdrawalMinAmount: 50,
+            withdrawalMaxAmount: 5000,
         });
         console.log('Global settings seeded.');
 
