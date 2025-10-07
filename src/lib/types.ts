@@ -73,7 +73,7 @@ export interface Comment {
 }
 // ------------
 
-// Establishment pricing settings
+// Pricing settings
 export interface EstablishmentPricing {
   basePricePerHour: number;
   roomTypes: {
@@ -81,6 +81,13 @@ export interface EstablishmentPricing {
     comfort: { supplement: number; enabled: boolean };
     luxe: { supplement: number; enabled: boolean };
   };
+}
+
+export interface CreatorRates {
+    videoCallPerMinute?: number;
+    voiceCallPerMinute?: number;
+    escortPerHour?: number;
+    escortOvernight?: number;
 }
 
 
@@ -122,9 +129,7 @@ export interface User {
     pricing: EstablishmentPricing;
   };
   // Rates for creators
-  rates?: {
-    videoCallPerMinute?: number;
-  };
+  rates?: CreatorRates;
   // Quotas for clients
   dailyVoiceCallQuota?: {
     minutesUsed: number;
@@ -218,7 +223,7 @@ export interface Reservation {
     createdAt: Timestamp;
     reservationDate: Timestamp; // The date for which the service is booked
     durationHours?: number | null; // Duration of the stay in hours
-    escorts?: { id: string; name: string, profileImage?: string }[];
+    escorts?: { id: string; name: string, profileImage?: string, rate: number }[];
     notes?: string;
     roomType?: string;
 }

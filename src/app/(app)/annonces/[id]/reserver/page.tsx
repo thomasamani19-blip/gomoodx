@@ -57,18 +57,21 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
     const pricing = establishment?.establishmentSettings?.pricing;
 
     useEffect(() => {
-        if (pricing && durationHours > 0 && annonce) {
-            const basePrice = pricing.basePricePerHour || 0;
+        if (pricing && durationHours > 0) {
+            const roomPricePerHour = pricing.basePricePerHour || 0;
             const roomSupplement = pricing.roomTypes[selectedRoomType]?.supplement || 0;
             
-            // Nouveau calcul
-            const roomCost = durationHours * basePrice;
-            const escortsCost = selectedEscorts.length * (annonce.price || 0);
+            const roomCost = durationHours * roomPricePerHour + roomSupplement;
             
-            const calculatedPrice = roomCost + roomSupplement + escortsCost;
+            const escortsCost = selectedEscorts.reduce((total, escort) => {
+                const escortRate = escort.rates?.escortPerHour || 0;
+                return total + (escortRate * durationHours);
+            }, 0);
+            
+            const calculatedPrice = roomCost + escortsCost;
             setTotalPrice(calculatedPrice);
         }
-    }, [pricing, durationHours, selectedRoomType, selectedEscorts, annonce]);
+    }, [pricing, durationHours, selectedRoomType, selectedEscorts]);
 
 
     const filteredEscorts = useMemo(() => {
@@ -113,7 +116,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                     annonceId: annonce.id,
                     reservationDate: reservationDateTime.toISOString(),
                     durationHours: durationHours,
-                    escorts: selectedEscorts.map(e => ({ id: e.id, name: e.displayName, profileImage: e.profileImage })),
+                    escorts: selectedEscorts.map(e => ({ id: e.id, name: e.displayName, profileImage: e.profileImage, rate: e.rates?.escortPerHour || 0 })),
                     amount: totalPrice,
                     roomType: selectedRoomType,
                 }),
@@ -139,8 +142,8 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
 
     const baseRoomPrice = pricing?.basePricePerHour || 0;
     const roomSupplement = pricing?.roomTypes[selectedRoomType]?.supplement || 0;
-    const roomCost = durationHours * baseRoomPrice;
-    const escortsCost = selectedEscorts.length * (annonce.price || 0);
+    const roomCost = durationHours * baseRoomPrice + roomSupplement;
+    const escortsCost = selectedEscorts.reduce((total, escort) => total + ((escort.rates?.escortPerHour || 0) * durationHours), 0);
 
     return (
         <div>
@@ -186,7 +189,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                      <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/> Étape 2: Choisissez vos accompagnateurs (Optionnel)</CardTitle>
-                            <CardDescription>Invitez des escortes pour vous accompagner. Coût additionnel de {annonce.price}€ par personne.</CardDescription>
+                            <CardDescription>Invitez des escortes pour vous accompagner. Le coût est calculé selon leur tarif horaire.</CardDescription>
                             <Input placeholder="Rechercher une escorte..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                         </CardHeader>
                         <CardContent>
@@ -236,7 +239,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                                 <h4 className="font-semibold">Détail du prix</h4>
                                  <div className="flex justify-between text-sm text-muted-foreground">
                                     <span>Chambre ({baseRoomPrice.toFixed(2)}€ x {durationHours}h)</span>
-                                    <span>{roomCost.toFixed(2)} €</span>
+                                    <span>{(baseRoomPrice * durationHours).toFixed(2)} €</span>
                                 </div>
                                 {roomSupplement > 0 && (
                                      <div className="flex justify-between text-sm text-muted-foreground">
@@ -246,7 +249,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                                 )}
                                 {selectedEscorts.length > 0 && (
                                     <div className="flex justify-between text-sm text-muted-foreground">
-                                        <span>Accompagnateurs ({annonce.price}€ x {selectedEscorts.length})</span>
+                                        <span>Accompagnateurs ({selectedEscorts.length})</span>
                                         <span>{escortsCost.toFixed(2)} €</span>
                                     </div>
                                 )}
