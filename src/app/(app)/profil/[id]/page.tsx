@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Heart, MessageCircle, Video, Phone, ChevronDown, Star, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { doc, updateDoc, arrayUnion, arrayRemove, addDoc, collection, serverTimestamp, query, where, limit } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, arrayRemove, addDoc, collection, serverTimestamp, query, where, limit, and, or, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -189,6 +189,53 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         }
     };
   
+    const confirmCall = async (type: CallType) => {
+        if (!currentUser || !firestore) return;
+
+        let price = 0;
+        let isFree = false;
+
+        if (type === 'voice') {
+            // Check for active confirmed reservation first
+            const reservationsQuery = query(
+                collection(firestore, 'reservations'),
+                where('status', '==', 'confirmed'),
+                or(
+                    and(where('memberId', '==', currentUser.id), where('creatorId', '==', user.id)),
+                    and(where('memberId', '==', user.id), where('creatorId', '==', currentUser.id))
+                )
+            );
+            const reservationsSnapshot = await getDocs(reservationsQuery);
+            const hasActiveReservation = reservationsSnapshot.docs.some(doc => 
+                (doc.data().reservationDate.toDate().getTime() + (doc.data().durationHours || 0) * 3600 * 1000) > Date.now()
+            );
+
+            if (hasActiveReservation) {
+                isFree = true;
+            } else {
+                // If no active reservation, check daily quota
+                const FREE_QUOTA_MINUTES = 60;
+                const lastReset = currentUser.dailyVoiceCallQuota?.lastReset.toDate();
+                const now = new Date();
+                let quotaUsed = currentUser.dailyVoiceCallQuota?.minutesUsed || 0;
+
+                if (!lastReset || now.toDateString() !== lastReset.toDateString()) {
+                    quotaUsed = 0;
+                }
+
+                if (quotaUsed < FREE_QUOTA_MINUTES) {
+                    isFree = true;
+                } else {
+                    price = globalSettings?.callRates?.voicePerMinute || 0;
+                }
+            }
+        } else if (type === 'video') {
+            price = user.rates?.videoCallPerMinute || 0;
+        }
+
+        setCallConfirmation({ show: true, type, isFree, price });
+    };
+
     const handleInitiateCall = async () => {
         if (!currentUser || !user || !firestore || !callConfirmation.type) return;
 
@@ -214,38 +261,6 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
             console.error("Erreur lors de l'initiation de l'appel :", error);
              toast({ title: "Erreur lors de l'initiation de l'appel", variant: 'destructive'});
         }
-    };
-
-    const confirmCall = (type: CallType) => {
-        if (!currentUser) return;
-        
-        let price = 0;
-        let isFree = false;
-        
-        if (type === 'video') {
-            if (user.role === 'escorte') {
-                price = user.rates?.videoCallPerMinute || 0;
-            } else if (user.role === 'partenaire' && user.partnerType === 'producer') {
-                price = globalSettings?.callRates?.videoToProducerPerMinute || 0;
-            }
-        } else if (type === 'voice') {
-            const FREE_QUOTA_MINUTES = 60; 
-            const lastReset = currentUser.dailyVoiceCallQuota?.lastReset.toDate();
-            const now = new Date();
-            let quotaUsed = currentUser.dailyVoiceCallQuota?.minutesUsed || 0;
-            
-            if (!lastReset || now.toDateString() !== lastReset.toDateString()) {
-                quotaUsed = 0;
-            }
-
-            if (quotaUsed < FREE_QUOTA_MINUTES) {
-                isFree = true;
-            } else {
-                price = globalSettings?.callRates?.voicePerMinute || 0;
-            }
-        }
-        
-        setCallConfirmation({ show: true, type, isFree, price });
     };
     
     const handleContact = () => {
@@ -329,9 +344,9 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         let totalPrice = tier.price * subscriptionDuration;
         let discount = 0;
         
-        if (durationMonths === 3) discount = tier.discounts?.quarterly || 0;
-        else if (durationMonths === 6) discount = tier.discounts?.semiAnnual || 0;
-        else if (durationMonths === 12) discount = tier.discounts?.annual || 0;
+        if (subscriptionDuration === 3) discount = tier.discounts?.quarterly || 0;
+        else if (subscriptionDuration === 6) discount = tier.discounts?.semiAnnual || 0;
+        else if (subscriptionDuration === 12) discount = tier.discounts?.annual || 0;
         
         if (discount > 0) {
             totalPrice = totalPrice * (1 - discount / 100);
@@ -493,7 +508,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                     <AlertDialogTitle>Confirmer l'appel</AlertDialogTitle>
                     <AlertDialogDescription>
                         {callConfirmation.isFree ?
-                            `Lancer un appel vocal gratuit avec ${user.displayName} ? Vous avez encore du quota gratuit.` :
+                            `Lancer un appel vocal gratuit avec ${user.displayName} ?` :
                             `Lancer un appel ${callConfirmation.type === 'video' ? 'vidéo' : 'vocal'} avec ${user.displayName} ? Cet appel sera facturé ${callConfirmation.price}€ par minute.`
                         }
                     </AlertDialogDescription>

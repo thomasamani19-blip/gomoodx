@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { MessageSquare, Search, Send, Video, Phone, ChevronDown, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Message, User, Call, CallType, Reservation } from '@/lib/types';
+import type { Message, User, Call, CallType, Reservation, Settings } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore, useDoc } from '@/firebase';
 import { addDoc, collection, serverTimestamp, query, where, orderBy, or, getDocs, doc, updateDoc, and } from 'firebase/firestore';
@@ -44,11 +44,15 @@ function MessagerieContent() {
     const [newMessage, setNewMessage] = useState('');
     const [recentContacts, setRecentContacts] = useState<{ contact: User; lastMessage: Message }[]>([]);
     const [contactsLoading, setContactsLoading] = useState(true);
-    const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null }>({ show: false, type: null });
+    const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null, isFree?: boolean, price?: number }>({ show: false, type: null, isFree: false, price: 0 });
     const [isContactUnlocked, setIsContactUnlocked] = useState(false);
     const [isCheckingUnlock, setIsCheckingUnlock] = useState(false);
+    const [hasActiveReservation, setHasActiveReservation] = useState(false);
 
     const contactIdFromUrl = searchParams.get('contact');
+
+    const settingsRef = useMemo(() => firestore ? doc(firestore, 'settings', 'global') : null, [firestore]);
+    const { data: globalSettings } = useDoc<Settings>(settingsRef);
     
     // Fetch user for contact from URL
     const contactRef = useMemo(() => {
@@ -158,6 +162,7 @@ function MessagerieContent() {
     useEffect(() => {
         if (!user || !selectedContact || !firestore) {
             setIsContactUnlocked(false);
+            setHasActiveReservation(false);
             return;
         };
 
@@ -167,6 +172,7 @@ function MessagerieContent() {
             if (user.unlockedContacts?.includes(selectedContact.id)) {
                 setIsContactUnlocked(true);
                 setIsCheckingUnlock(false);
+                setHasActiveReservation(false);
                 return;
             }
 
@@ -175,32 +181,30 @@ function MessagerieContent() {
                 const reservationsQuery = query(
                     collection(firestore, 'reservations'),
                     where('status', '==', 'confirmed'),
-                    // This query needs to check if user is member and contact is escort, or vice-versa
-                    // Since Firestore `or` queries on different fields are limited, we'll fetch and filter.
                     or(
-                        where('memberId', '==', user.id),
-                        where('escorts', 'array-contains', { id: user.id, name: user.displayName, profileImage: user.profileImage, rate: user.rates?.escortPerHour || 0 })
+                        and(where('memberId', '==', user.id), where('creatorId', '==', selectedContact.id)),
+                        and(where('memberId', '==', selectedContact.id), where('creatorId', '==', user.id))
                     )
                 );
                 const reservationsSnapshot = await getDocs(reservationsQuery);
-                const hasActiveReservation = reservationsSnapshot.docs.some(doc => {
+                const hasActiveRes = reservationsSnapshot.docs.some(doc => {
                     const res = doc.data() as Reservation;
-                    const isMember = res.memberId === user.id && res.escorts.some(e => e.id === selectedContact.id);
-                    const isEscort = res.escorts.some(e => e.id === user.id) && res.memberId === selectedContact.id;
-                    // Check if reservation is still valid (not ended yet)
                     const isStillActive = res.reservationDate.toDate().getTime() + (res.durationHours || 0) * 3600 * 1000 > Date.now();
-                    return (isMember || isEscort) && isStillActive;
+                    return isStillActive;
                 });
 
-                if (hasActiveReservation) {
+                if (hasActiveRes) {
                     setIsContactUnlocked(true);
+                    setHasActiveReservation(true);
                 } else {
                     setIsContactUnlocked(false);
+                    setHasActiveReservation(false);
                 }
 
             } catch (e) {
                 console.error("Error checking for reservations:", e);
                 setIsContactUnlocked(false);
+                setHasActiveReservation(false);
             }
             
             setIsCheckingUnlock(false);
@@ -283,6 +287,36 @@ function MessagerieContent() {
             console.error("Erreur lors de l'envoi du message:", error);
         }
     };
+
+    const confirmCall = (type: CallType) => {
+        if (!user) return;
+        
+        let price = 0;
+        let isFree = false;
+        
+        if (type === 'voice' && hasActiveReservation) {
+            isFree = true;
+        } else if (type === 'video') {
+            price = selectedContact?.rates?.videoCallPerMinute || 0;
+        } else if (type === 'voice') {
+            const FREE_QUOTA_MINUTES = 60; 
+            const lastReset = user.dailyVoiceCallQuota?.lastReset.toDate();
+            const now = new Date();
+            let quotaUsed = user.dailyVoiceCallQuota?.minutesUsed || 0;
+            
+            if (!lastReset || now.toDateString() !== lastReset.toDateString()) {
+                quotaUsed = 0;
+            }
+
+            if (quotaUsed < FREE_QUOTA_MINUTES) {
+                isFree = true;
+            } else {
+                price = globalSettings?.callRates?.voicePerMinute || 0;
+            }
+        }
+        
+        setCallConfirmation({ show: true, type, isFree, price });
+    };
     
     const handleInitiateCall = async () => {
         if (!user || !selectedContact || !firestore || !callConfirmation.type) return;
@@ -292,8 +326,6 @@ function MessagerieContent() {
 
         toast({ title: "Initiation de l'appel...", description: `Appel ${callType === 'video' ? 'vidéo' : 'vocal'} avec ${selectedContact.displayName} en cours de préparation.` });
         
-        const pricePerMinute = callType === 'video' ? selectedContact.rates?.videoCallPerMinute : undefined;
-
         const callData: Omit<Call, 'id'> = {
             callerId: user.id,
             receiverId: selectedContact.id,
@@ -301,7 +333,8 @@ function MessagerieContent() {
             status: 'pending',
             type: callType,
             createdAt: serverTimestamp() as any,
-            ...(pricePerMinute && { pricePerMinute }),
+            isFreeCall: callConfirmation.isFree,
+            pricePerMinute: callConfirmation.price,
         };
 
         try {
@@ -394,11 +427,11 @@ function MessagerieContent() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => setCallConfirmation({ show: true, type: 'video' })}>
+                                    <DropdownMenuItem onClick={() => confirmCall('video')}>
                                         <Video className="mr-2 h-4 w-4" />
                                         Appel Vidéo {videoCallRate && `(${videoCallRate}€/min)`}
                                     </DropdownMenuItem>
-                                     <DropdownMenuItem onClick={() => setCallConfirmation({ show: true, type: 'voice' })}>
+                                     <DropdownMenuItem onClick={() => confirmCall('voice')}>
                                         <Phone className="mr-2 h-4 w-4" />
                                         Appel Vocal
                                     </DropdownMenuItem>
@@ -459,9 +492,10 @@ function MessagerieContent() {
             <AlertDialogHeader>
                 <AlertDialogTitle>Confirmer l'appel</AlertDialogTitle>
                 <AlertDialogDescription>
-                    {callConfirmation.type === 'video' && videoCallRate ? 
-                    `Lancer un appel vidéo avec ${selectedContact?.displayName} ? Cet appel sera facturé ${videoCallRate}€ par minute.` :
-                    `Lancer un appel vocal gratuit avec ${selectedContact?.displayName} ?`}
+                    {callConfirmation.isFree ?
+                        `Lancer un appel vocal gratuit avec ${selectedContact?.displayName} ?` :
+                        `Lancer un appel ${callConfirmation.type === 'video' ? 'vidéo' : 'vocal'} avec ${selectedContact?.displayName} ? Cet appel sera facturé ${callConfirmation.price}€ par minute.`
+                    }
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
