@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -87,10 +88,10 @@ const toolsNav = [
 
 const adminNav = [
   { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-  { title: "Fil d'actualité", href: '/feed', icon: Newspaper },
   { title: 'Utilisateurs', href: '/admin/users', icon: Users },
   { title: 'Demandes Partenaires', href: '/admin/demandes-partenaires', icon: FileText },
   { title: 'Vérifications', href: '/admin/moderation', icon: ShieldCheck },
+  { title: "Fil d'actualité", href: '/feed', icon: Newspaper },
 ];
 
 export function AppSidebar() {

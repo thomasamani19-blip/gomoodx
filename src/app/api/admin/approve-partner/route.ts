@@ -1,8 +1,8 @@
 
 // /src/app/api/admin/approve-partner/route.ts
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, App } from 'firebase-admin/app';
-import { getFirestore, FieldValue, WriteBatch } from 'firebase-admin/firestore';
+import { initializeApp, getApps, App, applicationDefault } from 'firebase-admin/app';
+import { getFirestore, FieldValue, WriteBatch, Timestamp } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import type { PartnerRequest, User } from '@/lib/types';
 import { randomBytes } from 'crypto';
@@ -10,7 +10,9 @@ import { randomBytes } from 'crypto';
 // Initialize Firebase Admin SDK if not already done
 let adminApp: App;
 if (!getApps().length) {
-    adminApp = initializeApp();
+    adminApp = initializeApp({
+        credential: applicationDefault(),
+    });
 } else {
     adminApp = getApps()[0];
 }
@@ -25,7 +27,7 @@ const generatePassword = (length = 12) => {
 
 export async function POST(request: Request) {
   try {
-    // TODO: Add admin role verification here for security
+    // TODO: Add admin role verification here for security by checking the request headers for an auth token.
     const { requestId } = await request.json();
 
     if (!requestId) {
@@ -69,8 +71,8 @@ export async function POST(request: Request) {
       role: 'partenaire',
       partnerType: partnerRequest.type,
       status: 'active',
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp() as Timestamp,
+      updatedAt: FieldValue.serverTimestamp() as Timestamp,
       isVerified: true, // Partner is verified on approval
       onlineStatus: 'offline',
       referralCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
@@ -79,8 +81,10 @@ export async function POST(request: Request) {
       location: partnerRequest.address || `${partnerRequest.city}, ${partnerRequest.country}`,
       city: partnerRequest.city,
       country: partnerRequest.country,
+      referralsCount: 0,
+      rewardPoints: 0,
     };
-    batch.set(userRef, newUser);
+    batch.set(userRef, newUser, { merge: true });
 
     // 3. Create wallet for the new user
     const walletRef = db.collection('wallets').doc(userRecord.uid);
