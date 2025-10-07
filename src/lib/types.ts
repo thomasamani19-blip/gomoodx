@@ -211,6 +211,14 @@ export interface Review {
 
 // Reservation
 export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
+export type ConfirmationStatus = 'pending' | 'confirmed' | 'declined';
+
+export interface EscortConfirmation {
+  status: ConfirmationStatus;
+  confirmedAt?: Timestamp;
+  presenceConfirmed?: boolean;
+  presenceConfirmedAt?: Timestamp;
+}
 
 export interface Reservation {
     id: string;
@@ -226,6 +234,15 @@ export interface Reservation {
     escorts?: { id: string; name: string, profileImage?: string, rate: number }[];
     notes?: string;
     roomType?: string;
+    // Confirmation tracking
+    establishmentConfirmed?: boolean;
+    establishmentConfirmedAt?: Timestamp;
+    escortConfirmations?: {
+      [escortId: string]: EscortConfirmation;
+    };
+    // On-site presence confirmation
+    memberPresenceConfirmed?: boolean;
+    establishmentPresenceConfirmed?: boolean; // Final confirmation by establishment
 }
 
 // Purchase

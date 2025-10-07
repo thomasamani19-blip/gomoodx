@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, FieldValue, Timestamp, WriteBatch } from 'firebase-admin/firestore';
-import type { Annonce, Wallet, Reservation, Transaction, Settings, User } from '@/lib/types';
+import type { Annonce, Wallet, Reservation, Transaction, Settings, User, EscortConfirmation } from '@/lib/types';
 
 // Assurer l'initialisation de Firebase Admin
 if (!getApps().length) {
@@ -77,6 +77,17 @@ export async function POST(request: Request) {
             const reservationId = db.collection('reservations').doc().id;
             const reservationRef = db.collection('reservations').doc(reservationId);
 
+            // Initialize escort confirmations
+            const escortConfirmations: { [key: string]: EscortConfirmation } = {};
+            if (escorts && escorts.length > 0) {
+                for (const escort of escorts) {
+                    escortConfirmations[escort.id] = {
+                        status: 'pending'
+                    };
+                }
+            }
+
+
             const newReservation: Omit<Reservation, 'id'> = {
                 memberId: memberId,
                 creatorId: annonce.createdBy, // establishment ID
@@ -89,6 +100,10 @@ export async function POST(request: Request) {
                 durationHours: durationHours || null,
                 escorts: escorts || [],
                 roomType: roomType,
+                establishmentConfirmed: false,
+                escortConfirmations: escortConfirmations,
+                memberPresenceConfirmed: false,
+                establishmentPresenceConfirmed: false,
             };
             t.set(reservationRef, newReservation);
 
