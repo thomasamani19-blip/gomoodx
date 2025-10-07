@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button"
@@ -118,6 +119,10 @@ export default function InscriptionClientPage() {
                           {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                         </button>
                     </div>
+                </div>
+                 <div className="grid gap-2">
+                    <Label htmlFor="referralCode">Code de parrainage (Optionnel)</Label>
+                    <Input id="referralCode" name="referralCode" placeholder="Code d'un ami" />
                 </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
