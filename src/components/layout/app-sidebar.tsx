@@ -38,6 +38,7 @@ import {
   Film,
   CalendarCheck,
   Star,
+  Newspaper,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -45,6 +46,7 @@ import { Skeleton } from '../ui/skeleton';
 
 const clientNav = [
   { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+  { title: "Fil d'actualité", href: '/feed', icon: Newspaper },
   { title: 'Annonces', href: '/annonces', icon: HeartHandshake },
   { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
   { title: 'Mes Réservations', href: '/reservations', icon: CalendarCheck },
@@ -58,6 +60,7 @@ const clientNav = [
 
 const escorteNav = [
   { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+  { title: "Fil d'actualité", href: '/feed', icon: Newspaper },
   { title: 'Statistiques', href: '/statistiques', icon: BarChart3 },
   { title: 'Gestion Abonnement', href: '/gestion/abonnement', icon: Star },
   { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
@@ -67,6 +70,7 @@ const escorteNav = [
 
 const partenaireNav = [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+    { title: "Fil d'actualité", href: '/feed', icon: Newspaper },
     { title: 'Profil Partenaire', href: '/gestion/etablissement', icon: Building },
     { title: 'Mes Réservations', href: '/reservations', icon: CalendarCheck },
     { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
@@ -84,6 +88,7 @@ const toolsNav = [
 
 const adminNav = [
   { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+  { title: "Fil d'actualité", href: '/feed', icon: Newspaper },
   { title: 'Utilisateurs', href: '/admin/users', icon: Users },
   { title: 'Demandes Partenaires', href: '/admin/demandes-partenaires', icon: FileText },
   { title: 'Vérifications', href: '/admin/moderation', icon: ShieldCheck },
