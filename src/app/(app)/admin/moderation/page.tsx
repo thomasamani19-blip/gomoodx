@@ -14,9 +14,11 @@ import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Loader2, XCircle, MoreHorizontal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
 
 const statusVariantMap: { [key in VerificationStatus]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
     pending: 'outline',
@@ -31,19 +33,34 @@ const statusTextMap = {
 };
 
 export default function AdminModerationPage() {
+    const { user: currentUser, loading: authLoading } = useAuth();
+    const router = useRouter();
     const firestore = useFirestore();
     const { toast } = useToast();
+    const [isAllowed, setIsAllowed] = useState(false);
     const [loadingStates, setLoadingStates] = useState<{[key: string]: boolean}>({});
     
-    const verificationQuery = useMemo(() => firestore 
+    useEffect(() => {
+        if (!authLoading) {
+            if (currentUser && ['founder', 'administrateur', 'moderator'].includes(currentUser.role)) {
+                setIsAllowed(true);
+            } else {
+                 router.push('/dashboard');
+            }
+        }
+    }, [currentUser, authLoading, router]);
+
+    const verificationQuery = useMemo(() => isAllowed && firestore 
         ? query(
             collection(firestore, 'users'), 
             where('role', '==', 'escorte'), 
             where('verificationStatus', '==', 'pending')
           ) 
-        : null, [firestore]);
+        : null, [isAllowed, firestore]);
         
     const { data: users, loading: usersLoading, setData: setUsers } = useCollection<User>(verificationQuery);
+    
+    const loading = authLoading || !isAllowed || usersLoading;
 
     const handleUpdateVerification = async (userId: string, status: 'verified' | 'rejected') => {
         if (!firestore) return;
@@ -61,7 +78,6 @@ export default function AdminModerationPage() {
                 title: 'Statut mis à jour',
                 description: `Le créateur a été ${status === 'verified' ? 'approuvé' : 'rejeté'}.`,
             });
-            // Optimistically update UI to remove user from the list
             setUsers(prev => prev?.filter(u => u.id !== userId) || null);
         } catch (error) {
             console.error("Error updating verification status:", error);
@@ -75,6 +91,15 @@ export default function AdminModerationPage() {
         }
     };
     
+    if (!isAllowed && !authLoading) {
+        return (
+             <div>
+                <PageHeader title="Vérifications d'Identité" />
+                <Card><CardHeader><CardTitle>Accès non autorisé</CardTitle></CardHeader><CardContent className="h-40 flex items-center justify-center"><p className="text-muted-foreground">Permissions insuffisantes.</p></CardContent></Card>
+            </div>
+        )
+    }
+
     return (
         <div>
             <PageHeader
@@ -85,11 +110,11 @@ export default function AdminModerationPage() {
                 <CardHeader>
                     <CardTitle>Demandes en attente</CardTitle>
                     <CardDescription>
-                        {usersLoading ? 'Chargement...' : `Il y a actuellement ${users?.length || 0} demande(s) en attente.`}
+                        {loading ? 'Chargement...' : `Il y a actuellement ${users?.length || 0} demande(s) en attente.`}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                   {usersLoading ? (
+                   {loading ? (
                         <div className="space-y-4">
                             <Skeleton className="h-12 w-full" />
                             <Skeleton className="h-12 w-full" />
@@ -161,7 +186,7 @@ export default function AdminModerationPage() {
                         </TableBody>
                     </Table>
                     )}
-                    {!usersLoading && (!users || users.length === 0) && (
+                    {!loading && (!users || users.length === 0) && (
                         <p className="text-center text-muted-foreground py-8">Aucune demande de vérification en attente.</p>
                     )}
                 </CardContent>

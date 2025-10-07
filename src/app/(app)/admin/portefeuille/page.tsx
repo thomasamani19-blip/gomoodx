@@ -11,12 +11,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { doc, collection, query, orderBy } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 
 export default function AdminWalletPage() {
   const { user, loading: authLoading } = useAuth();
   const firestore = useFirestore();
+  const router = useRouter();
+  const [isAllowed, setIsAllowed] = useState(false);
   
   const walletRef = useMemo(() => firestore ? doc(firestore, 'wallets', 'platform_wallet') : null, [firestore]);
   const transactionsCollection = useMemo(() => firestore ? collection(firestore, 'wallets', 'platform_wallet', 'transactions') : null, [firestore]);
@@ -25,7 +28,30 @@ export default function AdminWalletPage() {
   const { data: wallet, loading: walletLoading } = useDoc<Wallet>(walletRef);
   const { data: transactions, loading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
 
-  const loading = authLoading || walletLoading || transactionsLoading;
+  useEffect(() => {
+    if (!authLoading) {
+      if (user?.role === 'founder') {
+        setIsAllowed(true);
+      } else {
+        router.push('/dashboard');
+      }
+    }
+  }, [user, authLoading, router]);
+
+  const loading = authLoading || walletLoading || transactionsLoading || !isAllowed;
+
+  if (!isAllowed) {
+    return (
+       <div>
+        <PageHeader title="Accès non autorisé" />
+        <Card>
+            <CardContent className="h-40 flex items-center justify-center">
+                 <p className="text-muted-foreground">Vous n'avez pas les permissions nécessaires pour accéder à cette page.</p>
+            </CardContent>
+        </Card>
+    </div>
+    )
+  }
 
   const getTransactionIcon = (type: string) => {
     switch (type) {

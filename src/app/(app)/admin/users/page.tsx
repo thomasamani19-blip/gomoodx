@@ -43,16 +43,14 @@ export default function AdminUsersPage() {
     const firestore = useFirestore();
     const { toast } = useToast();
     const [isAllowed, setIsAllowed] = useState(false);
-    const [isCheckingPermissions, setIsCheckingPermissions] = useState(true);
 
     useEffect(() => {
         if (!authLoading) {
-            if (currentUser && ['founder', 'administrateur', 'moderator'].includes(currentUser.role)) {
+            if (currentUser && ['founder', 'administrateur'].includes(currentUser.role)) {
                 setIsAllowed(true);
-            } else if (currentUser) {
-                 setIsAllowed(false);
+            } else {
+                 router.push('/dashboard');
             }
-            setIsCheckingPermissions(false);
         }
     }, [currentUser, authLoading, router]);
     
@@ -63,7 +61,7 @@ export default function AdminUsersPage() {
     
     const { data: users, loading: usersLoading, setData: setUsers } = useCollection<User>(usersQuery);
 
-    const loading = authLoading || isCheckingPermissions || (isAllowed && usersLoading);
+    const loading = authLoading || !isAllowed || (isAllowed && usersLoading);
     
     const handleUpdateStatus = async (userId: string, newStatus: UserStatus) => {
         if (!firestore) return;
@@ -72,7 +70,6 @@ export default function AdminUsersPage() {
             const userRef = doc(firestore, 'users', userId);
             await updateDoc(userRef, { status: newStatus });
             
-            // Optimistically update the UI
             setUsers(prevUsers => 
                 prevUsers?.map(user => 
                     user.id === userId ? { ...user, status: newStatus } : user
@@ -87,7 +84,7 @@ export default function AdminUsersPage() {
     }
 
 
-    if (!loading && !isAllowed) {
+    if (!isAllowed && !authLoading) {
         return (
             <div>
                 <PageHeader title="Gestion des Utilisateurs" />

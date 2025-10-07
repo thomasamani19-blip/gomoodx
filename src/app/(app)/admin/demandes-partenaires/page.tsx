@@ -14,7 +14,9 @@ import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Loader2, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
 
 const statusVariantMap: { [key in PartnerRequest['status']]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
     pending: 'outline',
@@ -29,12 +31,27 @@ const statusTextMap = {
 };
 
 export default function AdminPartnerRequestsPage() {
+    const { user: currentUser, loading: authLoading } = useAuth();
+    const router = useRouter();
     const firestore = useFirestore();
     const { toast } = useToast();
+    const [isAllowed, setIsAllowed] = useState(false);
     const [loadingStates, setLoadingStates] = useState<{[key: string]: boolean}>({});
     
-    const requestsQuery = useMemo(() => firestore ? query(collection(firestore, 'partnerRequests'), orderBy('createdAt', 'desc')) : null, [firestore]);
+    useEffect(() => {
+        if (!authLoading) {
+            if (currentUser && ['founder', 'administrateur'].includes(currentUser.role)) {
+                setIsAllowed(true);
+            } else {
+                 router.push('/dashboard');
+            }
+        }
+    }, [currentUser, authLoading, router]);
+
+    const requestsQuery = useMemo(() => isAllowed && firestore ? query(collection(firestore, 'partnerRequests'), orderBy('createdAt', 'desc')) : null, [isAllowed, firestore]);
     const { data: requests, loading: requestsLoading, setData: setRequests } = useCollection<PartnerRequest>(requestsQuery);
+    
+    const loading = authLoading || !isAllowed || requestsLoading;
 
     const handleUpdateRequest = async (id: string, status: 'approved' | 'rejected') => {
         if (!firestore) return;
@@ -49,7 +66,6 @@ export default function AdminPartnerRequestsPage() {
                     title: 'Demande rejetée',
                     description: `La demande a été marquée comme rejetée.`,
                 });
-                // Optimistically update UI
                 setRequests(prev => prev?.map(r => r.id === id ? {...r, status: 'rejected'} : r) || null);
             } catch (error) {
                 console.error("Error rejecting partner request:", error);
@@ -74,7 +90,6 @@ export default function AdminPartnerRequestsPage() {
                         title: 'Partenaire Approuvé !',
                         description: `Le compte pour ${result.companyName} a été créé.`,
                     });
-                     // Optimistically update UI
                     setRequests(prev => prev?.map(r => r.id === id ? {...r, status: 'approved'} : r) || null);
                 } else {
                     throw new Error(result.message || 'Une erreur est survenue.');
@@ -92,6 +107,15 @@ export default function AdminPartnerRequestsPage() {
         setLoadingStates(prev => ({...prev, [id]: false}));
     };
     
+    if (!isAllowed && !authLoading) {
+        return (
+             <div>
+                <PageHeader title="Demandes Partenaires" />
+                <Card><CardHeader><CardTitle>Accès non autorisé</CardTitle></CardHeader><CardContent className="h-40 flex items-center justify-center"><p className="text-muted-foreground">Permissions insuffisantes.</p></CardContent></Card>
+            </div>
+        )
+    }
+
     return (
         <div>
             <PageHeader
@@ -102,11 +126,11 @@ export default function AdminPartnerRequestsPage() {
                 <CardHeader>
                     <CardTitle>Liste des demandes</CardTitle>
                     <CardDescription>
-                        {requestsLoading ? 'Chargement...' : `Il y a actuellement ${requests?.length || 0} demande(s).`}
+                        {loading ? 'Chargement...' : `Il y a actuellement ${requests?.length || 0} demande(s).`}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                   {requestsLoading ? (
+                   {loading ? (
                         <div className="space-y-4">
                             <Skeleton className="h-10 w-full" />
                             <Skeleton className="h-10 w-full" />
@@ -168,7 +192,7 @@ export default function AdminPartnerRequestsPage() {
                         </TableBody>
                     </Table>
                     )}
-                    {!requestsLoading && (!requests || requests.length === 0) && (
+                    {!loading && (!requests || requests.length === 0) && (
                         <p className="text-center text-muted-foreground py-8">Aucune demande de partenariat pour le moment.</p>
                     )}
                 </CardContent>
