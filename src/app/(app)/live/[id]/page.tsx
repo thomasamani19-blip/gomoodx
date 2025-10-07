@@ -1,16 +1,74 @@
+
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
-import type { LiveSession } from '@/lib/types';
-import { doc } from 'firebase/firestore';
+import type { LiveSession, Purchase } from '@/lib/types';
+import { collection, doc, query, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/shared/page-header';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/use-auth';
+import { useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Loader2, Ticket, Video, CheckCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useCollection } from '@/firebase/firestore/use-collection';
 
 export default function LiveSessionPage({ params }: { params: { id: string } }) {
   const firestore = useFirestore();
-  const sessionRef = firestore ? doc(firestore, 'lives', params.id) : null;
-  const { data: session, loading } = useDoc<LiveSession>(sessionRef);
+  const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
+  const [isPurchasing, setIsPurchasing] = useState(false);
+
+  const sessionRef = useMemo(() => firestore ? doc(firestore, 'lives', params.id) : null, [firestore, params.id]);
+  const { data: session, loading: sessionLoading } = useDoc<LiveSession>(sessionRef);
+  
+  const purchaseQuery = useMemo(() => {
+    if (!firestore || !user || !session || session.liveType !== 'public_paid') return null;
+    return query(
+      collection(firestore, 'purchases'),
+      where('memberId', '==', user.id),
+      where('contentId', '==', session.id),
+      where('contentType', '==', 'live_ticket')
+    );
+  }, [firestore, user, session]);
+
+  const { data: purchases, loading: purchasesLoading } = useCollection<Purchase>(purchaseQuery);
+
+  const hasPurchased = useMemo(() => (purchases && purchases.length > 0) || (user && session && user.id === session.hostId), [purchases, user, session]);
+  const loading = sessionLoading || authLoading || (session?.liveType === 'public_paid' ? purchasesLoading : false);
+
+  const canWatch = useMemo(() => {
+    if (!session) return false;
+    if (session.liveType === 'ai') return true; // AI lives are free
+    return hasPurchased;
+  }, [session, hasPurchased]);
+
+
+  const handlePurchaseTicket = async () => {
+    if (!user || !session || !session.ticketPrice) {
+      toast({ title: "Erreur", description: "Impossible d'acheter le ticket.", variant: "destructive" });
+      return;
+    }
+    setIsPurchasing(true);
+    try {
+      const response = await fetch('/api/lives/purchase-ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, sessionId: session.id }),
+      });
+      const result = await response.json();
+      if (response.ok && result.status === 'success') {
+        toast({ title: 'Ticket acheté !', description: 'Vous avez maintenant accès au live.' });
+      } else {
+        throw new Error(result.message || 'Une erreur est survenue.');
+      }
+    } catch (error: any) {
+      toast({ title: "Erreur d'achat", description: error.message, variant: "destructive" });
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -38,18 +96,14 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
 
   const headerDescription = (
     <div className="flex items-center gap-4 mt-2">
-        <span>En direct avec {session.creatorName || 'un créateur'}</span>
-        {session.price_per_minute && session.price_per_minute > 0 ? (
-            <Badge variant="secondary">{session.price_per_minute} €/min</Badge>
+        <span>Par {session.creatorName || 'un créateur'}</span>
+        {session.ticketPrice ? (
+            <Badge variant="secondary">{session.ticketPrice} €</Badge>
         ) : (
             <Badge>Gratuit</Badge>
         )}
     </div>
   );
-  
-
-  // Check if the streamUrl is a data URL (AI generated video)
-  const isAiGenerated = session.streamUrl?.startsWith('data:video');
 
   return (
     <div>
@@ -59,21 +113,33 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
             <div className="aspect-video bg-black rounded-lg flex items-center justify-center text-white text-center">
-                {isAiGenerated ? (
-                  <video 
-                    src={session.streamUrl} 
-                    controls 
-                    autoPlay 
-                    loop 
-                    muted 
-                    className="w-full h-full rounded-lg object-cover"
-                  >
-                    Votre navigateur ne supporte pas la lecture de vidéos.
-                  </video>
+                {canWatch ? (
+                  session.streamUrl && session.streamUrl.startsWith('data:video') ? (
+                    <video 
+                      src={session.streamUrl} 
+                      controls 
+                      autoPlay 
+                      loop 
+                      muted 
+                      className="w-full h-full rounded-lg object-cover"
+                    >
+                      Votre navigateur ne supporte pas la lecture de vidéos.
+                    </video>
+                  ) : (
+                    <div>
+                        <h3 className="text-xl font-bold">Lecteur Vidéo</h3>
+                        <p className="text-muted-foreground">Le live commencera ici. (Intégration Mux, Agora, etc.)</p>
+                    </div>
+                  )
                 ) : (
-                  <div>
-                      <h3 className="text-xl font-bold">Lecteur Vidéo</h3>
-                      <p className="text-muted-foreground">Ici s'intégrerait un lecteur vidéo (Mux, Agora, etc.)</p>
+                  <div className="p-8 bg-card text-card-foreground rounded-lg flex flex-col items-center gap-4">
+                    <Ticket className="h-12 w-12 text-primary" />
+                    <h3 className="text-xl font-bold">Accès Payant</h3>
+                    <p className="text-sm text-muted-foreground">Achetez un ticket pour accéder à ce live exclusif.</p>
+                    <Button onClick={handlePurchaseTicket} disabled={isPurchasing} size="lg">
+                      {isPurchasing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Ticket className="mr-2 h-4 w-4"/>}
+                      Acheter le ticket ({session.ticketPrice} €)
+                    </Button>
                   </div>
                 )}
             </div>

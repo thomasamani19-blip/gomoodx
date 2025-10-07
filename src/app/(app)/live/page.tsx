@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
@@ -8,13 +9,21 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Badge } from "@/components/ui/badge";
-import { collection, orderBy, query } from "firebase/firestore";
+import { collection, orderBy, query, where } from "firebase/firestore";
 import Link from "next/link";
 import { useMemo } from "react";
+import { Ticket, Video } from "lucide-react";
 
 export default function LivePage() {
   const firestore = useFirestore();
-  const sessionsQuery = useMemo(() => firestore ? query(collection(firestore, 'lives'), orderBy('status', 'desc')) : null, [firestore]);
+  // Query for public lives (AI generated or scheduled paid lives)
+  const sessionsQuery = useMemo(() => firestore ? query(
+    collection(firestore, 'lives'), 
+    where('isPublic', '==', true),
+    orderBy('status', 'desc'), // Show 'live' sessions first
+    orderBy('startTime', 'desc')
+    ) : null, [firestore]);
+    
   const { data: sessions, loading } = useCollection<LiveSession>(sessionsQuery);
 
   return (
@@ -57,14 +66,27 @@ export default function LivePage() {
                         EN DIRECT
                       </Badge>
                     )}
+                     {session.status === 'scheduled' && (
+                      <Badge variant="secondary" className="absolute top-3 right-3">
+                        BIENTÔT
+                      </Badge>
+                    )}
+                     <div className="absolute top-3 left-3">
+                        {session.liveType === 'ai' ? 
+                            <Badge variant="outline"><Video className="h-3 w-3 mr-1"/> Live IA</Badge> : 
+                            <Badge><Ticket className="h-3 w-3 mr-1"/> Ticket Payant</Badge>
+                        }
+                     </div>
                   </div>
                 <CardContent className="p-4">
                   <h3 className="font-headline text-lg font-semibold truncate">{session.title}</h3>
                   <p className="text-sm text-muted-foreground mt-1">par {session.creatorName || 'un créateur'}</p>
                   <div className="flex items-center justify-between mt-4">
-                      <p className="text-sm font-bold text-primary">{session.price_per_minute ? `${session.price_per_minute} €/min` : 'Gratuit'}</p>
+                      <p className="text-sm font-bold text-primary">
+                          {session.ticketPrice ? `${session.ticketPrice} €` : 'Gratuit'}
+                      </p>
                     <Button variant="secondary" size="sm" asChild>
-                        <Link href={`/live/${session.id}`}>Rejoindre</Link>
+                        <Link href={`/live/${session.id}`}>{session.status === 'live' ? 'Rejoindre' : 'Voir les détails'}</Link>
                     </Button>
                   </div>
                 </CardContent>

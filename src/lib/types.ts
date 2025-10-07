@@ -143,7 +143,7 @@ export interface Wallet {
 }
 
 // Transaction (subcollection of Wallet)
-export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'call_fee' | 'platform_fee' | 'commission' | 'points_conversion' | 'subscription_fee' | 'contact_pass' | 'article_purchase';
+export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'call_fee' | 'platform_fee' | 'commission' | 'points_conversion' | 'subscription_fee' | 'contact_pass' | 'article_purchase' | 'live_ticket';
 
 export type TransactionStatus = 'pending' | 'success' | 'failed';
 
@@ -208,7 +208,7 @@ export interface Reservation {
 }
 
 // Purchase
-export type PurchaseContentType = 'product' | 'article';
+export type PurchaseContentType = 'product' | 'article' | 'live_ticket';
 export type PurchaseStatus = 'completed' | 'refunded';
 
 export interface Purchase {
@@ -260,24 +260,29 @@ export interface Call {
 }
 
 // Live Session
-export type LiveStatus = 'live' | 'ended';
+export type LiveStatus = 'live' | 'ended' | 'scheduled';
+export type LiveType = 'ai' | 'public_paid' | 'private_paid';
+
 
 export interface LiveSession {
     id: string;
     hostId: string;
     title: string;
     description: string;
-    streamUrl: string;
+    streamUrl?: string;
     isPublic: boolean;
     startTime: Timestamp;
     endTime?: Timestamp;
     viewersCount: number;
     likes: number;
     status: LiveStatus;
+    liveType: LiveType;
     imageUrl: string;
     imageHint?: string;
     creatorName?: string;
-    price_per_minute?: number;
+    pricePerMinute?: number; // For private paid lives
+    ticketPrice?: number; // For public paid lives
+    purchasedBy?: string[]; // Array of user IDs who bought a ticket
 }
 
 // Reward

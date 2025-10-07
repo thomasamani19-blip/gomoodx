@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -40,6 +41,7 @@ import {
   Star,
   Newspaper,
   Crown,
+  Video,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -64,6 +66,7 @@ const escorteNav = [
   { title: "Fil d'actualité", href: '/feed', icon: Newspaper },
   { title: 'Statistiques', href: '/statistiques', icon: BarChart3 },
   { title: 'Abonnement Fan', href: '/gestion/abonnement', icon: Star },
+  { title: 'Gérer les Lives', href: '/gestion/lives', icon: Video },
   { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
   { title: 'Mes Réservations', href: '/reservations', icon: CalendarCheck },
   { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
@@ -74,6 +77,7 @@ const partenaireNav = [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
     { title: "Fil d'actualité", href: '/feed', icon: Newspaper },
     { title: 'Profil Partenaire', href: '/gestion/etablissement', icon: Building },
+    { title: 'Gérer les Lives', href: '/gestion/lives', icon: Video },
     { title: 'Mes Réservations', href: '/reservations', icon: CalendarCheck },
     { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
     { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
