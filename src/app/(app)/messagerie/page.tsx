@@ -156,16 +156,18 @@ function MessagerieContent() {
     const activeMessagesQuery = useMemo(() => {
         if (!user || !selectedContact || !firestore) return null;
         
-        const q = query(
-            collection(firestore, 'messages'),
+        return query(
+            collection(firestore, "messages"),
             or(
                 where('senderId', '==', user.id),
                 where('receiverId', '==', user.id)
             ),
-            orderBy('createdAt', 'asc')
+            or(
+                where('senderId', '==', selectedContact.id),
+                where('receiverId', '==', selectedContact.id)
+            ),
+            orderBy("createdAt", "asc")
         );
-
-        return q;
 
     }, [user, selectedContact, firestore]);
     
@@ -173,22 +175,12 @@ function MessagerieContent() {
         activeMessagesQuery
     );
 
-     // 3. Filter messages on the client side to show only the conversation with the selected contact
-     const filteredActiveMessages = useMemo(() => {
-        if (!activeMessages || !user || !selectedContact) return [];
-        return activeMessages.filter(msg =>
-            (msg.senderId === user.id && msg.receiverId === selectedContact.id) ||
-            (msg.senderId === selectedContact.id && msg.receiverId === user.id)
-        );
-    }, [activeMessages, user, selectedContact]);
-
-
     // Scroll to the bottom of the messages when a new message is added and mark as read
     useEffect(() => {
         messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
-        if (firestore && user && filteredActiveMessages.length > 0) {
-            const unreadMessages = filteredActiveMessages.filter(
+        if (firestore && user && activeMessages && activeMessages.length > 0) {
+            const unreadMessages = activeMessages.filter(
                 (msg) => msg.receiverId === user.id && !msg.isRead
             );
             if (unreadMessages.length > 0) {
@@ -198,7 +190,7 @@ function MessagerieContent() {
                 });
             }
         }
-    }, [filteredActiveMessages, firestore, user]);
+    }, [activeMessages, firestore, user]);
 
 
     const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -347,7 +339,7 @@ function MessagerieContent() {
                     <ScrollArea className="flex-1 p-6 bg-muted/20">
                         <div className="space-y-6">
                             {messagesLoading && <div className="text-center text-muted-foreground">Chargement des messages...</div>}
-                            {!messagesLoading && filteredActiveMessages?.map(msg => (
+                            {!messagesLoading && activeMessages?.map(msg => (
                                 <div key={msg.id} className={cn("flex items-end gap-2", msg.senderId === user?.id ? 'justify-end' : '')}>
                                     {msg.senderId !== user?.id && (
                                         <Avatar className="h-8 w-8">
