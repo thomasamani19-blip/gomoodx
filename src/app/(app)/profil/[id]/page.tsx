@@ -143,6 +143,51 @@ const CreatorProducts = ({ creatorId, name }: { creatorId: string, name: string 
     )
 }
 
+function SuggestedProfiles({ currentUserId }: { currentUserId: string }) {
+    const firestore = useFirestore();
+    const suggestionsQuery = useMemo(() => {
+        if (!firestore) return null;
+        return query(
+            collection(firestore, 'users'),
+            where('role', '==', 'escorte'),
+            where('__name__', '!=', currentUserId),
+            limit(4)
+        );
+    }, [firestore, currentUserId]);
+    
+    const { data: profiles, loading } = useCollection<User>(suggestionsQuery);
+
+    if (loading || !profiles || profiles.length === 0) {
+        return null;
+    }
+
+    return (
+        <Card>
+            <CardHeader><CardTitle>Profils similaires</CardTitle></CardHeader>
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {profiles.map((profile) => (
+                     <Link key={profile.id} href={`/profil/${profile.id}`}>
+                        <Card className="overflow-hidden group">
+                            <div className="relative aspect-[3/4]">
+                                <Image
+                                    src={profile.profileImage || `https://picsum.photos/seed/${profile.id}/400/600`}
+                                    alt={profile.displayName}
+                                    fill
+                                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                                <span className="absolute bottom-4 left-4 font-headline text-2xl text-white drop-shadow-md">
+                                    {profile.displayName}
+                                </span>
+                            </div>
+                        </Card>
+                    </Link>
+                ))}
+            </CardContent>
+        </Card>
+    );
+}
+
 
 const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: boolean }) => {
     const { user: currentUser } = useAuth();
@@ -344,9 +389,9 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         let totalPrice = tier.price * subscriptionDuration;
         let discount = 0;
         
-        if (durationMonths === 3) discount = tier.discounts?.quarterly || 0;
-        else if (durationMonths === 6) discount = tier.discounts?.semiAnnual || 0;
-        else if (durationMonths === 12) discount = tier.discounts?.annual || 0;
+        if (subscriptionDuration === 3) discount = tier.discounts?.quarterly || 0;
+        else if (subscriptionDuration === 6) discount = tier.discounts?.semiAnnual || 0;
+        else if (subscriptionDuration === 12) discount = tier.discounts?.annual || 0;
         
         if (discount > 0) {
             totalPrice = totalPrice * (1 - discount / 100);
@@ -461,6 +506,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                             )}
                         </CardContent>
                     </Card>
+                    <SuggestedProfiles currentUserId={user.id} />
                </div>
             </div>
         </div>
