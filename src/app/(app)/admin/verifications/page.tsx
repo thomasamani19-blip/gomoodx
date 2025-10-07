@@ -1,4 +1,3 @@
-
 'use client';
 
 import PageHeader from '@/components/shared/page-header';
@@ -148,7 +147,7 @@ export default function AdminVerificationsPage() {
                                     </TableCell>
                                      <TableCell>
                                         <Badge variant="secondary" className="capitalize">{user.verificationType === 'complete' ? 'Complète' : 'Selfie'}</Badge>
-                                    </TableCell>
+                                     </TableCell>
                                     <TableCell>
                                         {user.createdAt ? format(user.createdAt.toDate(), 'd MMM yyyy', { locale: fr }) : 'N/A'}
                                     </TableCell>

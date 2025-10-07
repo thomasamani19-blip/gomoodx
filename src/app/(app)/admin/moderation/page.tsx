@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -151,13 +150,13 @@ export default function AdminContentModerationPage() {
                     <TabsTrigger value="produits">Produits</TabsTrigger>
                     <TabsTrigger value="annonces">Annonces</TabsTrigger>
                 </TabsList>
-                <TabsContent value="posts">
+                <TabsContent value="posts" className="mt-6">
                    <ModerationQueue collectionPath="posts" typeLabel="publications" />
                 </TabsContent>
-                <TabsContent value="produits">
+                <TabsContent value="produits" className="mt-6">
                     <ModerationQueue collectionPath="products" typeLabel="produits" />
                 </TabsContent>
-                <TabsContent value="annonces">
+                <TabsContent value="annonces" className="mt-6">
                     <ModerationQueue collectionPath="services" typeLabel="annonces" />
                 </TabsContent>
             </Tabs>
