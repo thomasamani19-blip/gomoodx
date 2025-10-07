@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 
 // StarRating component copied from annonces/page.tsx
