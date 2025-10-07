@@ -43,7 +43,7 @@ export default function AdminModerationPage() {
           ) 
         : null, [firestore]);
         
-    const { data: users, loading: usersLoading } = useCollection<User>(verificationQuery);
+    const { data: users, loading: usersLoading, setData: setUsers } = useCollection<User>(verificationQuery);
 
     const handleUpdateVerification = async (userId: string, status: 'verified' | 'rejected') => {
         if (!firestore) return;
@@ -61,6 +61,8 @@ export default function AdminModerationPage() {
                 title: 'Statut mis à jour',
                 description: `Le créateur a été ${status === 'verified' ? 'approuvé' : 'rejeté'}.`,
             });
+            // Optimistically update UI to remove user from the list
+            setUsers(prev => prev?.filter(u => u.id !== userId) || null);
         } catch (error) {
             console.error("Error updating verification status:", error);
             toast({
