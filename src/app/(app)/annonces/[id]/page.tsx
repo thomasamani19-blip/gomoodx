@@ -494,7 +494,7 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                 )}
             </div>
         </div>
-        <SuggestedAnnonces category={annonce.category} currentAnnonceId={annonce.id} />
+        {annonce.category && <SuggestedAnnonces category={annonce.category} currentAnnonceId={annonce.id} />}
     </div>
     <AlertDialog open={showContactPassDialog} onOpenChange={setShowContactPassDialog}>
         <AlertDialogContent>

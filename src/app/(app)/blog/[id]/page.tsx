@@ -53,6 +53,7 @@ function SuggestedArticles({ currentArticleId }: { currentArticleId: string }) {
             collection(firestore, 'blog'),
             where('__name__', '!=', currentArticleId),
             orderBy('__name__'), // To use '!=' we must order by name
+            orderBy('date', 'desc'),
             limit(3)
         );
     }, [firestore, currentArticleId]);
