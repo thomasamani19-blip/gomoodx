@@ -22,12 +22,13 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import type { UserSubscription } from '@/lib/types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 
 
 interface Feature {
     text: string;
+    gratuit: boolean | string;
     essential: boolean | string;
     advanced: boolean | string;
     premium: boolean | string;
@@ -38,6 +39,7 @@ interface Feature {
 const features: Feature[] = [
     {
         text: 'Commission sur les ventes',
+        gratuit: '20%',
         essential: '18%',
         advanced: '15%',
         premium: '10%',
@@ -46,6 +48,7 @@ const features: Feature[] = [
     },
     {
         text: 'Activer les abonnements Fan',
+        gratuit: false,
         essential: true,
         advanced: true,
         premium: true,
@@ -54,14 +57,16 @@ const features: Feature[] = [
     },
     {
         text: 'Sponsorisations Offertes / mois',
+        gratuit: '0',
         essential: '0',
         advanced: '2',
         premium: '5',
         elite: '10',
-        tooltip: 'Mettez en avant vos annonces ou produits gratuitement chaque mois.'
+        tooltip: 'Mettez en avant vos annonces ou produits gratuitement chaque mois. Sponsorisation payante possible à tout moment.'
     },
     {
         text: 'Badge "Vérifié" sur le profil',
+        gratuit: false,
         essential: false,
         advanced: true,
         premium: true,
@@ -69,7 +74,8 @@ const features: Feature[] = [
         tooltip: 'Un badge qui inspire confiance et augmente votre crédibilité.'
     },
     {
-        text: 'Accès au Générateur de Bio',
+        text: 'Générateur de Bio IA',
+        gratuit: false,
         essential: true,
         advanced: true,
         premium: true,
@@ -77,7 +83,8 @@ const features: Feature[] = [
         tooltip: 'Outil IA pour créer une biographie de profil captivante.'
     },
     {
-        text: 'Accès au Générateur d\'Articles',
+        text: 'Générateur d\'Article IA',
+        gratuit: false,
         essential: false,
         advanced: true,
         premium: true,
@@ -85,7 +92,8 @@ const features: Feature[] = [
         tooltip: 'Outil IA pour rédiger des articles de blog complets.'
     },
     {
-        text: 'Accès au Studio IA Créatif',
+        text: 'Studio IA Créatif',
+        gratuit: false,
         essential: false,
         advanced: false,
         premium: true,
@@ -94,6 +102,7 @@ const features: Feature[] = [
     },
     {
         text: 'Statistiques avancées',
+        gratuit: false,
         essential: false,
         advanced: false,
         premium: true,
@@ -102,8 +111,9 @@ const features: Feature[] = [
     },
     {
         text: 'Support Prioritaire',
-        essential: false,
-        advanced: false,
+        gratuit: 'Standard',
+        essential: 'Standard',
+        advanced: 'Standard',
         premium: 'Email',
         elite: 'Dédié 24/7',
         tooltip: 'Obtenez de l\'aide plus rapidement avec un support adapté à votre formule.'
@@ -111,6 +121,7 @@ const features: Feature[] = [
 ];
 
 const plansData = [
+    { id: 'gratuit', name: 'Gratuit', price: 0, description: 'Pour démarrer' },
     { id: 'essential', name: 'Essentiel', price: 9.99, description: 'Pour bien démarrer.' },
     { id: 'advanced', name: 'Avancé', price: 24.99, description: 'Optimisez votre visibilité.', isPopular: true },
     { id: 'premium', name: 'Premium', price: 49.99, description: 'Passez à la vitesse supérieure.' },
@@ -221,6 +232,7 @@ export default function AbonnementPage() {
                                             {feature.tooltip && <TooltipContent><p className="max-w-xs">{feature.tooltip}</p></TooltipContent>}
                                         </Tooltip>
                                     </td>
+                                    <td className="whitespace-nowrap px-3 py-4 text-sm text-center"><FeatureCheck value={feature.gratuit} /></td>
                                     <td className="whitespace-nowrap px-3 py-4 text-sm text-center"><FeatureCheck value={feature.essential} /></td>
                                     <td className="whitespace-nowrap px-3 py-4 text-sm text-center"><FeatureCheck value={feature.advanced} /></td>
                                     <td className="whitespace-nowrap px-3 py-4 text-sm text-center"><FeatureCheck value={feature.premium} /></td>
@@ -233,24 +245,34 @@ export default function AbonnementPage() {
                                 <th scope="row" className="sr-only">Prix</th>
                                 {plansData.map(plan => (
                                     <td key={plan.id} className="px-3 pt-6 text-center">
-                                        <p><span className="text-3xl font-bold">{plan.price}€</span><span className="text-muted-foreground">/mois</span></p>
+                                        {plan.price > 0 ? (
+                                            <p><span className="text-3xl font-bold">{plan.price}€</span><span className="text-muted-foreground">/mois</span></p>
+                                        ) : (
+                                             <p className="text-3xl font-bold">0 €</p>
+                                        )}
                                     </td>
                                 ))}
                             </tr>
                             <tr className="">
                                 <th scope="row" className="sr-only">Actions</th>
                                 {plansData.map(plan => {
-                                     const isCurrent = user?.subscription?.type === plan.id;
+                                    const isCurrent = user?.subscription?.type === plan.id || (!user?.subscription && plan.id === 'gratuit');
                                     return (
                                         <td key={plan.id} className="px-3 py-4 text-center">
-                                            <Button 
-                                                className="w-full"
-                                                variant={plan.isPopular ? 'default' : 'secondary'}
-                                                onClick={() => handleOpenSubscriptionDialog(plan)}
-                                                disabled={isCurrent}
-                                            >
-                                                {isCurrent ? 'Plan Actuel' : 'Choisir ce Plan'}
-                                            </Button>
+                                            {plan.id === 'gratuit' ? (
+                                                <Button className="w-full" variant="outline" disabled={isCurrent}>
+                                                     {isCurrent ? 'Plan Actuel' : ''}
+                                                </Button>
+                                            ) : (
+                                                <Button 
+                                                    className="w-full"
+                                                    variant={plan.isPopular ? 'default' : 'secondary'}
+                                                    onClick={() => handleOpenSubscriptionDialog(plan)}
+                                                    disabled={isCurrent}
+                                                >
+                                                    {isCurrent ? 'Plan Actuel' : 'Choisir ce Plan'}
+                                                </Button>
+                                            )}
                                         </td>
                                     )
                                 })}
@@ -303,3 +325,5 @@ export default function AbonnementPage() {
         </TooltipProvider>
     );
 }
+
+    
