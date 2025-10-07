@@ -153,7 +153,7 @@ export interface User {
 export interface Wallet {
   id: string; // Same as user UID
   balance: number;
-  currency: 'EUR' | 'XOF'; // Allow multiple currencies
+  currency: 'XOF' | 'EUR' | 'USD';
   totalEarned: number;
   totalSpent: number;
   status: 'active';

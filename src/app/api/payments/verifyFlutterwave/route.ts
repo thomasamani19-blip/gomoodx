@@ -56,11 +56,11 @@ export async function POST(request: Request) {
         paymentData.tx_ref === tx_ref) {
       
       const userId = paymentData.meta?.userId;
-      const paidAmount = paymentData.amount;
+      const amountEUR = paymentData.meta?.amountEUR;
       const currency = paymentData.currency;
       
-      if (!userId) {
-        throw new Error("L'ID de l'utilisateur est manquant dans les métadonnées de la transaction.");
+      if (!userId || amountEUR === undefined) {
+        throw new Error("Les métadonnées de la transaction sont incomplètes (userId ou amountEUR).");
       }
 
       console.log('Paiement Flutterwave vérifié avec succès:', paymentData);
@@ -87,10 +87,10 @@ export async function POST(request: Request) {
         const userData = userDoc.data() as User;
         const settingsData = settingsDoc.data() as Settings;
 
-        // Check for a matching pack to add a bonus
-        const pack = creditPacks.find(p => p.price === paidAmount);
-        let creditedAmount = paidAmount + (pack ? pack.bonus : 0);
-        let transactionDescription = `Rechargement ${pack ? `Pack ${pack.name}` : ''} (${paidAmount}€ ${pack && pack.bonus > 0 ? `+ ${pack.bonus}€ bonus` : ''})`;
+        // Check for a matching pack to add a bonus based on EUR amount
+        const pack = creditPacks.find(p => p.price === amountEUR);
+        let creditedAmount = amountEUR + (pack ? pack.bonus : 0);
+        let transactionDescription = `Rechargement ${pack ? `Pack ${pack.name}` : ''} (${amountEUR}€ ${pack && pack.bonus > 0 ? `+ ${pack.bonus}€ bonus` : ''})`;
         
         // Check for first deposit bonus
         const isFirstDeposit = !userData.hasMadeFirstDeposit;
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
         if (!walletDoc.exists) {
             t.set(walletRef, {
                 balance: creditedAmount,
-                currency: currency,
+                currency: 'EUR', // Wallets are standardized to EUR balance
                 createdAt: FieldValue.serverTimestamp(),
                 updatedAt: FieldValue.serverTimestamp(),
             });
