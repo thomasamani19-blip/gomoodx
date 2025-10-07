@@ -107,43 +107,9 @@ export async function POST(request: Request) {
             };
             t.set(reservationRef, newReservation);
 
-            // Débiter le membre du montant total
-            t.update(memberWalletRef, {
-                balance: FieldValue.increment(-totalAmount),
-                totalSpent: FieldValue.increment(totalAmount)
-            });
-
-            // Transaction de débit pour le membre
-            const debitTxRef = memberWalletRef.collection('transactions').doc();
-            t.set(debitTxRef, {
-                amount: totalAmount, type: 'purchase', createdAt: Timestamp.now(),
-                description: `Réservation: ${annonce.title}`, status: 'success', reference: reservationId
-            } as Omit<Transaction, 'id'>);
-
-            // Payer l'établissement
-            const establishmentCommission = establishmentShare * commissionRate;
-            const establishmentNet = establishmentShare - establishmentCommission;
-            t.update(establishmentWalletRef, { balance: FieldValue.increment(establishmentNet), totalEarned: FieldValue.increment(establishmentNet) });
-            const establishmentCreditTxRef = establishmentWalletRef.collection('transactions').doc();
-            t.set(establishmentCreditTxRef, { amount: establishmentNet, type: 'credit', createdAt: Timestamp.now(), description: `Revenu réservation ${reservationId.substring(0,6)}`, reference: reservationId } as Omit<Transaction, 'id'>);
-
-            // Payer chaque escorte
-            for (const escort of (escorts || [])) {
-                const escortShare = (escort.rate || 0) * durationHours;
-                const escortCommission = escortShare * commissionRate;
-                const escortNet = escortShare - escortCommission;
-                
-                const escortWalletRef = db.collection('wallets').doc(escort.id);
-                 if ((await t.get(escortWalletRef)).exists) {
-                    t.update(escortWalletRef, { balance: FieldValue.increment(escortNet), totalEarned: FieldValue.increment(escortNet) });
-                    const escortCreditTxRef = escortWalletRef.collection('transactions').doc();
-                    t.set(escortCreditTxRef, { amount: escortNet, type: 'credit', createdAt: Timestamp.now(), description: `Prestation pour réservation ${reservationId.substring(0,6)}`, reference: reservationId } as Omit<Transaction, 'id'>);
-                 }
-            }
-            
-            // Payer la plateforme
-            const totalCommission = (establishmentShare + escortsShareTotal) * commissionRate;
-            t.update(platformWalletRef, { balance: FieldValue.increment(totalCommission), totalEarned: FieldValue.increment(totalCommission) });
+            // Pour l'instant, on ne gère pas le paiement final ici, car il dépend des confirmations.
+            // On pourrait créer une transaction en attente ou simplement la gérer plus tard.
+            // Pour ce prototype, nous nous concentrons sur la création de la réservation avec les bons statuts.
 
             return { reservationId: reservationId, message: "Demande de réservation envoyée avec succès." };
         });

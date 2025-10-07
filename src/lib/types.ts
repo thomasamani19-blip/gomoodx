@@ -235,14 +235,14 @@ export interface Reservation {
     notes?: string;
     roomType?: string;
     // Confirmation tracking
-    establishmentConfirmed?: boolean;
+    establishmentConfirmed: boolean;
     establishmentConfirmedAt?: Timestamp;
-    escortConfirmations?: {
+    escortConfirmations: {
       [escortId: string]: EscortConfirmation;
     };
     // On-site presence confirmation
-    memberPresenceConfirmed?: boolean;
-    establishmentPresenceConfirmed?: boolean; // Final confirmation by establishment
+    memberPresenceConfirmed: boolean;
+    establishmentPresenceConfirmed: boolean; // Final confirmation by establishment
 }
 
 // Purchase

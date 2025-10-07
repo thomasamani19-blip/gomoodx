@@ -170,7 +170,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                              <div className="flex items-start gap-3">
                                 <CreditCard className="h-5 w-5 text-muted-foreground mt-1" />
                                 <div>
-                                    <h4 className="font-medium">Montant payé</h4>
+                                    <h4 className="font-medium">Montant</h4>
                                     <p className="text-sm text-muted-foreground">{reservation.amount.toFixed(2)} €</p>
                                 </div>
                             </div>
@@ -210,7 +210,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                             )}
                                              <Badge variant={confirmationStatusVariantMap[confirmation?.status || 'pending']}>
                                                 {confirmationStatusTextMap[confirmation?.status || 'pending']}
-                                            </Badge>
+                                             </Badge>
                                          </div>
                                     </div>
                                 )
@@ -256,7 +256,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                 <Avatar className="h-12 w-12"><AvatarImage src={member.profileImage} /><AvatarFallback>{member.displayName.charAt(0)}</AvatarFallback></Avatar>
                                 <div><p className="font-bold">{member.displayName}</p><p className="text-xs text-muted-foreground">Client</p></div>
                             </Link>
-                            <Link href={`/profil/${establishment.id}`} className="flex items-center gap-4 p-2 rounded-md hover:bg-accent">
+                            <Link href={`/partenaire/${establishment.id}`} className="flex items-center gap-4 p-2 rounded-md hover:bg-accent">
                                 <Avatar className="h-12 w-12"><AvatarImage src={establishment.profileImage} /><AvatarFallback>{establishment.displayName.charAt(0)}</AvatarFallback></Avatar>
                                 <div><p className="font-bold">{establishment.displayName}</p><p className="text-xs text-muted-foreground">Établissement</p></div>
                             </Link>
