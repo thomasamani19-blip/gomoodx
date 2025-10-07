@@ -1,15 +1,17 @@
+
 // /src/app/api/posts/create/route.ts
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
+import { initializeApp, getApps, applicationDefault, cert } from 'firebase-admin/app';
 import { getFirestore, serverTimestamp } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import type { Post } from '@/lib/types';
 import { getAuth } from 'firebase-admin/auth';
+import { firebaseConfig } from '@/firebase/config';
 
 if (!getApps().length) {
     initializeApp({
         credential: applicationDefault(),
-        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+        storageBucket: firebaseConfig.storageBucket,
     });
 }
 
@@ -52,10 +54,9 @@ export async function POST(request: Request) {
                     contentType: imageFile.type,
                 },
             });
-            imageUrl = await file.getSignedUrl({
-                action: 'read',
-                expires: '03-09-2491' // Far future date
-            }).then(urls => urls[0]);
+            // Make the file public to get a persistent URL
+            await file.makePublic();
+            imageUrl = file.publicUrl();
         }
 
         const newPost: Omit<Post, 'id'> = {

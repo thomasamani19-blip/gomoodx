@@ -2,14 +2,19 @@
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, Loader2, Send } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useCollection, useFirestore } from "@/firebase";
+import { collection, query, orderBy } from "firebase/firestore";
+import type { Post } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import PostCard from "@/components/features/feed/post-card";
 
 function CreatePost() {
     const { user } = useAuth();
@@ -70,7 +75,7 @@ function CreatePost() {
     };
 
 
-    if (!user || (user.role !== 'escorte' && user.role !== 'partenaire')) {
+    if (!user || (user.role !== 'escorte' && user.role !== 'partenaire' && user.role !== 'founder' && user.role !== 'administrateur')) {
         return null;
     }
 
@@ -116,6 +121,37 @@ function CreatePost() {
     );
 }
 
+function PostFeed() {
+    const firestore = useFirestore();
+    const postsQuery = useMemo(() => firestore ? query(collection(firestore, 'posts'), orderBy('createdAt', 'desc')) : null, [firestore]);
+    const { data: posts, loading } = useCollection<Post>(postsQuery);
+
+    if (loading) {
+        return (
+            <div className="space-y-6">
+                <Card><CardHeader><Skeleton className="h-10 w-full" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
+                <Card><CardHeader><Skeleton className="h-10 w-full" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
+            </div>
+        )
+    }
+    
+    if (!posts || posts.length === 0) {
+        return (
+            <Card>
+                <CardContent className="pt-6">
+                    <p className="text-muted-foreground text-center">Le fil d'actualité est vide pour le moment. Soyez le premier à publier !</p>
+                </CardContent>
+            </Card>
+        )
+    }
+
+    return (
+        <div className="space-y-6 max-w-2xl mx-auto">
+            {posts.map(post => <PostCard key={post.id} post={post} />)}
+        </div>
+    )
+}
+
 
 export default function FeedPage() {
 
@@ -126,13 +162,11 @@ export default function FeedPage() {
                 description="Découvrez les dernières publications de la communauté GoMoodX."
             />
             
-            <CreatePost />
+            <div className="max-w-2xl mx-auto">
+                <CreatePost />
+            </div>
 
-            <Card>
-                <CardContent className="pt-6">
-                    <p className="text-muted-foreground">Le contenu du fil d'actualité apparaîtra bientôt ici.</p>
-                </CardContent>
-            </Card>
+            <PostFeed />
         </div>
     )
 }
