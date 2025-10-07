@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Phone, ShieldQuestion, Calendar, Tag, CreditCard, User as UserIcon, Users } from 'lucide-react';
+import { MessageSquare, Phone, ShieldQuestion, Calendar, Tag, CreditCard, User as UserIcon, Users, Timer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
@@ -130,6 +130,13 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                     <p className="text-sm text-muted-foreground">
                                         {format(reservation.reservationDate.toDate(), 'EEEE d MMMM yyyy \'à\' HH:mm', { locale: fr })}
                                     </p>
+                                </div>
+                            </div>
+                             <div className="flex items-start gap-3">
+                                <Timer className="h-5 w-5 text-muted-foreground mt-1" />
+                                <div>
+                                    <h4 className="font-medium">Durée</h4>
+                                    <p className="text-sm text-muted-foreground">{reservation.durationHours ? `${reservation.durationHours} heure(s)` : 'Non spécifiée'}</p>
                                 </div>
                             </div>
                              <div className="flex items-start gap-3">

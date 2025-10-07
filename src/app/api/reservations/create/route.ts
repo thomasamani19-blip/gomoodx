@@ -17,7 +17,7 @@ const PLATFORM_WALLET_ID = 'platform_wallet';
 
 export async function POST(request: Request) {
     try {
-        const { memberId, annonceId, reservationDate, escorts } = await request.json();
+        const { memberId, annonceId, reservationDate, escorts, durationHours } = await request.json();
 
         if (!memberId || !annonceId || !reservationDate) {
             return NextResponse.json({ status: 'error', message: 'Informations manquantes pour la réservation.' }, { status: 400 });
@@ -46,8 +46,11 @@ export async function POST(request: Request) {
             
             const settingsDoc = await t.get(settingsRef);
             const commissionRate = (settingsDoc.data() as Settings)?.platformCommissionRate || 0;
+            
+            const numberOfPeople = 1 + (escorts?.length || 0);
+            const totalAmount = annonce.price * numberOfPeople;
 
-            if (memberWallet.balance < annonce.price) {
+            if (memberWallet.balance < totalAmount) {
                 throw new Error("Solde insuffisant pour effectuer cette réservation.");
             }
 
@@ -59,27 +62,28 @@ export async function POST(request: Request) {
                 creatorId: annonce.createdBy,
                 annonceId: annonceId,
                 annonceTitle: annonce.title,
-                amount: annonce.price,
+                amount: totalAmount,
                 status: 'pending', // Reservations now need confirmation
                 createdAt: Timestamp.now(),
                 reservationDate: Timestamp.fromDate(reservationDateTime),
+                durationHours: durationHours || null,
                 escorts: escorts || [],
             };
             t.set(reservationRef, newReservation);
 
             t.update(memberWalletRef, {
-                balance: FieldValue.increment(-annonce.price),
-                totalSpent: FieldValue.increment(annonce.price)
+                balance: FieldValue.increment(-totalAmount),
+                totalSpent: FieldValue.increment(totalAmount)
             });
 
             const debitTxRef = memberWalletRef.collection('transactions').doc();
             t.set(debitTxRef, {
-                amount: annonce.price, type: 'purchase', createdAt: Timestamp.now(),
+                amount: totalAmount, type: 'purchase', createdAt: Timestamp.now(),
                 description: `Réservation: ${annonce.title}`, status: 'success', reference: reservationId
             } as Omit<Transaction, 'id'>);
 
-            const commissionAmount = annonce.price * commissionRate;
-            const creatorAmount = annonce.price - commissionAmount;
+            const commissionAmount = totalAmount * commissionRate;
+            const creatorAmount = totalAmount - commissionAmount;
 
             t.update(creatorWalletRef, {
                 balance: FieldValue.increment(creatorAmount),

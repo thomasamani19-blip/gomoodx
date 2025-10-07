@@ -12,11 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, Loader2, Users, Calendar as CalendarIcon, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Users, Calendar as CalendarIcon, Check, Clock, Timer } from 'lucide-react';
 import { fr } from 'date-fns/locale';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -32,6 +31,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
     const [step, setStep] = useState(1);
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [selectedTime, setSelectedTime] = useState('19:00');
+    const [durationHours, setDurationHours] = useState(2);
     const [selectedEscorts, setSelectedEscorts] = useState<User[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,6 +85,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                     memberId: user.id,
                     annonceId: annonce.id,
                     reservationDate: reservationDateTime.toISOString(),
+                    durationHours: durationHours,
                     escorts: selectedEscorts.map(e => ({ id: e.id, name: e.displayName, profileImage: e.profileImage })),
                 }),
             });
@@ -116,13 +117,19 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                 <div className={cn("md:col-span-2 space-y-6", step !== 1 && 'hidden md:block')}>
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><CalendarIcon className="h-5 w-5"/> Étape 1: Choisissez la date et l'heure</CardTitle>
+                            <CardTitle className="flex items-center gap-2"><CalendarIcon className="h-5 w-5"/> Étape 1: Choisissez la date et la durée</CardTitle>
                         </CardHeader>
-                        <CardContent className="flex flex-col md:flex-row gap-4">
+                        <CardContent className="flex flex-col md:flex-row gap-8">
                             <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} locale={fr} disabled={{ before: new Date() }} />
-                             <div className="space-y-2">
-                                <Label htmlFor="time">Heure du rendez-vous</Label>
-                                <Input id="time" type="time" value={selectedTime} onChange={e => setSelectedTime(e.target.value)} />
+                             <div className="space-y-6 flex-1">
+                                <div className="space-y-2">
+                                    <Label htmlFor="time" className="flex items-center gap-2"><Clock className="h-4 w-4"/> Heure d'arrivée</Label>
+                                    <Input id="time" type="time" value={selectedTime} onChange={e => setSelectedTime(e.target.value)} />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="duration" className="flex items-center gap-2"><Timer className="h-4 w-4"/> Durée du séjour (en heures)</Label>
+                                    <Input id="duration" type="number" value={durationHours} onChange={e => setDurationHours(Number(e.target.value))} min="1" />
+                                </div>
                              </div>
                         </CardContent>
                          <CardFooter className="md:hidden">
@@ -142,15 +149,16 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                 {filteredEscorts.map(escort => (
                                     <div key={escort.id} className="relative">
-                                        <Checkbox
+                                        <RadioGroupItem
+                                            value={escort.id}
                                             id={`escort-${escort.id}`}
-                                            className="absolute top-2 right-2 z-10 h-5 w-5 bg-background"
+                                            className="peer sr-only"
                                             checked={selectedEscorts.some(e => e.id === escort.id)}
-                                            onCheckedChange={() => handleToggleEscort(escort)}
+                                            onClick={() => handleToggleEscort(escort)}
                                         />
                                         <Label htmlFor={`escort-${escort.id}`} className={cn(
                                             "block rounded-lg overflow-hidden border-2 transition-all cursor-pointer",
-                                            selectedEscorts.some(e => e.id === escort.id) ? "border-primary" : "border-transparent"
+                                            "peer-aria-checked:border-primary"
                                         )}>
                                             <div className="relative aspect-square">
                                                 <Image src={escort.profileImage || `https://picsum.photos/seed/${escort.id}/200`} alt={escort.displayName} fill className="object-cover" />
@@ -176,7 +184,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                         <CardContent className="space-y-4">
                             <div>
                                 <h4 className="font-semibold">Date et Heure</h4>
-                                <p className="text-muted-foreground">{selectedDate ? `${format(selectedDate, 'PPP', {locale: fr})} à ${selectedTime}` : 'Non défini'}</p>
+                                <p className="text-muted-foreground">{selectedDate ? `Le ${format(selectedDate, 'PPP', {locale: fr})} à ${selectedTime} pour ${durationHours}h` : 'Non défini'}</p>
                             </div>
                             <div>
                                 <h4 className="font-semibold">Personnes</h4>
