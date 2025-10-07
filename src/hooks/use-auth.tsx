@@ -15,6 +15,7 @@ import {
 import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch, limit } from 'firebase/firestore';
 import type { User } from '@/lib/types';
 import { uploadFile } from '@/lib/storage';
+import { useRouter } from 'next/navigation';
 
 
 // 🧠 Fonction utilitaire — Vérification âge minimum
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const auth = useFirebaseAuthHook();
   const firestore = useFirestore();
   const storage = useStorage();
+  const router = useRouter();
   
   const login = async (email: string, pass: string) => {
     await signInWithEmailAndPassword(auth, email, pass);
@@ -257,7 +259,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   const logout = () => {
-    signOut(auth);
+    signOut(auth).then(() => {
+        router.push('/');
+    });
   };
 
   const value = useMemo(() => ({ 
