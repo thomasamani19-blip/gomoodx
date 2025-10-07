@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -231,7 +230,7 @@ export default function GestionProduitsPage() {
                                   </DropdownMenuItem>
                               )}
                             <Tooltip>
-                                <TooltipTrigger asChild disabled={!isSponsoredAndActive}>
+                                <TooltipTrigger asChild>
                                     <DropdownMenuItem asChild disabled={isSponsoredAndActive}>
                                       <Link href={`/gestion/produits/modifier/${produit.id}`}>
                                           <Pencil className="mr-2 h-4 w-4" />

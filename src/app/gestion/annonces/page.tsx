@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -226,7 +225,7 @@ export default function GestionAnnoncesPage() {
                               </DropdownMenuItem>
                             )}
                             <Tooltip>
-                              <TooltipTrigger asChild disabled={!isSponsoredAndActive}>
+                              <TooltipTrigger asChild>
                                   <DropdownMenuItem asChild disabled={isSponsoredAndActive}>
                                     <Link href={`/gestion/annonces/modifier/${annonce.id}`}>
                                         <Pencil className="mr-2 h-4 w-4" />
