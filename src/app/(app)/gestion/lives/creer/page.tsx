@@ -82,7 +82,7 @@ export default function CreerLivePage() {
                 imageHint: 'live session',
                 startTime: Timestamp.fromDate(data.startTime),
                 status: 'scheduled',
-                liveType: 'creator', // 'creator' for real lives, 'ai' for generated ones
+                liveType: 'creator',
                 isPublic: true,
                 ticketPrice: data.isPaid ? data.ticketPrice : 0,
                 viewersCount: 0,

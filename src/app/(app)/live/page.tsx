@@ -72,13 +72,14 @@ export default function LivePage() {
                       </Badge>
                     )}
                      <div className="absolute top-3 left-3">
-                        {session.liveType === 'ai' ? 
-                            <Badge variant="outline" className='bg-background/80'><Bot className="h-3 w-3 mr-1"/> Live IA</Badge> : 
-                            <Badge className={!session.ticketPrice || session.ticketPrice <= 0 ? 'bg-green-600' : 'bg-primary'}>
-                                {!session.ticketPrice || session.ticketPrice <= 0 ? 'Gratuit' : <Ticket className="h-3 w-3 mr-1"/>}
-                                {!session.ticketPrice || session.ticketPrice <= 0 ? '' : 'Payant'}
+                        {session.liveType === 'ai' ? (
+                            <Badge variant="outline" className='bg-background/80'><Bot className="h-3 w-3 mr-1"/> Live IA</Badge> 
+                        ) : (
+                            <Badge className={!session.ticketPrice || session.ticketPrice <= 0 ? 'bg-green-600 hover:bg-green-700' : 'bg-primary'}>
+                                {!session.ticketPrice || session.ticketPrice <= 0 ? '' : <Ticket className="h-3 w-3 mr-1"/>}
+                                {!session.ticketPrice || session.ticketPrice <= 0 ? 'Gratuit' : 'Payant'}
                             </Badge>
-                        }
+                        )}
                      </div>
                   </div>
                 <CardContent className="p-4">

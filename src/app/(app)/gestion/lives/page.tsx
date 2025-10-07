@@ -97,8 +97,9 @@ export default function GestionLivesPage() {
                     <TableCell>
                       <Badge variant="outline" className="gap-1">
                         {live.liveType === 'ai' && <Bot className="h-3 w-3" />}
-                        {live.liveType === 'public_paid' && <Ticket className="h-3 w-3" />}
-                        {live.liveType === 'ai' ? 'Live IA' : 'Live Payant'}
+                        {live.liveType === 'creator' && (!live.ticketPrice || live.ticketPrice <= 0) && <Video className="h-3 w-3" />}
+                        {live.liveType === 'creator' && live.ticketPrice && live.ticketPrice > 0 && <Ticket className="h-3 w-3" />}
+                        {live.liveType === 'ai' ? 'Live IA' : (live.ticketPrice && live.ticketPrice > 0 ? 'Payant' : 'Gratuit')}
                       </Badge>
                     </TableCell>
                     <TableCell>{format(live.startTime.toDate(), "d MMM yyyy 'à' HH:mm", { locale: fr })}</TableCell>

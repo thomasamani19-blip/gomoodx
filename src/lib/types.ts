@@ -1,5 +1,4 @@
 
-
 import type { Timestamp } from 'firebase/firestore';
 
 // Main User Roles
@@ -280,8 +279,7 @@ export interface LiveSession {
     imageUrl: string;
     imageHint?: string;
     creatorName?: string;
-    ticketPrice?: number; // For public paid lives
-    purchasedBy?: string[]; // Array of user IDs who bought a ticket
+    ticketPrice?: number;
 }
 
 // Reward
