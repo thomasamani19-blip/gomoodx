@@ -48,6 +48,10 @@ export default function ModifierArticlePage({ params }: { params: { id: string }
 
     const { register, handleSubmit, control, formState: { errors }, watch, setValue, reset } = useForm<ArticleFormValues>({
         resolver: zodResolver(articleSchema),
+        defaultValues: {
+            isPremium: false,
+            price: 0,
+        }
     });
     
     const isPremium = watch('isPremium');
@@ -84,7 +88,7 @@ export default function ModifierArticlePage({ params }: { params: { id: string }
                 title: data.title,
                 content: data.content,
                 imageUrl: imageUrl,
-                date: serverTimestamp(),
+                date: serverTimestamp(), // Keep this to show it's recently updated
                 isPremium: data.isPremium,
                 price: data.isPremium ? data.price : 0,
             });
@@ -145,7 +149,7 @@ export default function ModifierArticlePage({ params }: { params: { id: string }
                                     <div className="space-y-0.5">
                                         <Label htmlFor="premium-switch" className="text-base flex items-center">
                                             <Star className="mr-2 h-4 w-4 text-primary" />
-                                            Article Premium (Payant)
+                                            Article Payant
                                         </Label>
                                         <p className="text-sm text-muted-foreground">
                                             Rendre cet article payant à l'achat pour tous les utilisateurs.

@@ -217,8 +217,6 @@ function VideoGeneratorTab() {
     const [mediaDataUrls, setMediaDataUrls] = useState<string[]>([]);
     const [mediaTypes, setMediaTypes] = useState<('image'|'video')[]>([]);
     const [duration, setDuration] = useState(5);
-    const [isPaid, setIsPaid] = useState(false);
-    const [price, setPrice] = useState(1);
     
     const { toast } = useToast();
     const [isSavingLive, setIsSavingLive] = useState(false);
@@ -297,17 +295,17 @@ function VideoGeneratorTab() {
         try {
             const liveSessionData = {
                 title: `Live de ${user.displayName}`,
-                description: 'Session live générée par IA.',
+                description: 'Session live promotionnelle générée par IA.',
                 hostId: user.id,
                 creatorName: user.displayName,
                 isPublic: true,
                 startTime: serverTimestamp(),
                 status: 'live',
-                streamUrl: result.videoUrl, // Use the generated video data URL
+                streamUrl: result.videoUrl,
                 imageUrl: user.profileImage || `https://picsum.photos/seed/${user.id}/600/400`,
                 viewersCount: 0,
                 likes: 0,
-                price_per_minute: isPaid ? price : 0,
+                price_per_minute: 0, // Always free
             };
             const docRef = await addDoc(collection(firestore, 'lives'), liveSessionData);
             toast({ title: "Live lancé !", description: "Votre session de live simulé est maintenant visible." });
@@ -409,24 +407,10 @@ function VideoGeneratorTab() {
                                         Votre navigateur ne supporte pas la lecture de vidéos.
                                     </video>
                                 </div>
-                                <Card className="w-full">
-                                    <CardContent className="pt-4 space-y-4">
-                                         <div className="flex items-center space-x-2">
-                                            <Switch id="paid-switch" checked={isPaid} onCheckedChange={setIsPaid} />
-                                            <Label htmlFor="paid-switch">Lancer en accès payant</Label>
-                                        </div>
-                                        {isPaid && (
-                                             <div className="space-y-2">
-                                                <Label htmlFor="price">Prix par minute (€)</Label>
-                                                <Input id="price" type="number" value={price} onChange={e => setPrice(Math.max(0, Number(e.target.value)))} min="0" step="0.5" />
-                                             </div>
-                                        )}
-                                        <Button onClick={handleLaunchLive} disabled={isSavingLive} className="w-full">
-                                            {isSavingLive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Clapperboard className="mr-2 h-4 w-4" />}
-                                            Lancer en Live (Simulé)
-                                        </Button>
-                                    </CardContent>
-                                </Card>
+                                <Button onClick={handleLaunchLive} disabled={isSavingLive} className="w-full">
+                                    {isSavingLive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Clapperboard className="mr-2 h-4 w-4" />}
+                                    Lancer en Live (Gratuit & Public)
+                                </Button>
                             </div>
                         )}
                         {!isLoading && !result && (
