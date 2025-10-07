@@ -214,3 +214,5 @@ export default function PartnerProfilePage({ params }: { params: { id: string } 
     </div>
   );
 }
+
+    

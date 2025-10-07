@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useCollection, useDoc, useFirestore } from '@/firebase';
@@ -580,7 +579,7 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   }
 
   // Handle partners redirecting to their specific profile page
-  if (user.role === 'partenaire' && user.partnerType !== 'producer') {
+  if (user.role === 'partenaire' && user.partnerType === 'establishment') {
       router.replace(`/partenaire/${user.id}`);
       return (
          <div className="space-y-8">
@@ -603,3 +602,4 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   return <CreatorProfile user={user} isOwnProfile={isOwnProfile} />;
 }
 
+    

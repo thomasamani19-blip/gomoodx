@@ -50,7 +50,7 @@ export function ProducerCarousel() {
         {partners && partners.map((partner, index) => (
           <CarouselItem key={partner.id || index} className="md:basis-1/2 lg:basis-1/4">
             <div className="p-1">
-              <Link href={`/partenaire/${partner.id}`}>
+              <Link href={`/profil/${partner.id}`}>
                 <Card className="overflow-hidden transition-shadow duration-300 hover:shadow-xl group">
                   <CardContent className="flex aspect-square items-center justify-center p-0 relative">
                     <Image
@@ -86,3 +86,5 @@ const CarouselSkeletonItem = () => (
         </Card>
     </div>
 )
+
+    
