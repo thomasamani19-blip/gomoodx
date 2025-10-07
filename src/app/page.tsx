@@ -12,7 +12,7 @@ import { ProductCarousel } from '@/components/features/products/product-carousel
 import { EstablishmentCarousel } from '@/components/features/partners/establishment-carousel';
 import { ProducerCarousel } from '@/components/features/partners/producer-carousel';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, Search, Wand2 } from 'lucide-react';
+import { ArrowRight, Search, Wand2, Star, Building, Camera } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useCollection, useFirestore } from '@/firebase';
 import type { BlogArticle } from '@/lib/types';
@@ -21,10 +21,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 
 const TestimonialCard = ({ quote, author, role }: { quote: string, author: string, role: string }) => (
     <Card className="bg-card/50 border-primary/20 flex flex-col justify-between">
@@ -86,28 +83,16 @@ function LatestBlogPosts() {
 export default function Home() {
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-main');
   const router = useRouter();
-  const [filters, setFilters] = useState<Record<string, boolean>>({});
-
-  const handleFilterChange = (filterId: string, checked: boolean | string) => {
-      setFilters(prev => ({ ...prev, [filterId]: !!checked }));
-  };
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const query = formData.get('query');
+    const queryValue = formData.get('query');
     const searchParams = new URLSearchParams();
 
-    if (query) {
-      searchParams.set('q', query.toString());
+    if (queryValue) {
+      searchParams.set('q', queryValue.toString());
     }
-
-    for (const [key, value] of Object.entries(filters)) {
-        if (value) {
-            searchParams.set(key, 'true');
-        }
-    }
-
     router.push(`/recherche?${searchParams.toString()}`);
   };
 
@@ -121,76 +106,35 @@ export default function Home() {
               src={heroImage.imageUrl}
               alt={heroImage.description}
               fill
-              className="object-cover opacity-30"
+              className="object-cover object-top opacity-20"
               data-ai-hint={heroImage.imageHint}
               priority
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
-            <h1 className="font-headline text-5xl md:text-7xl font-bold drop-shadow-[0_2px_2px_rgba(255,190,0,0.5)]">
-              Trouvez l'Expérience Parfaite
+            <h1 className="font-headline text-5xl md:text-7xl font-bold drop-shadow-[0_2px_2px_rgba(234,179,8,0.5)]">
+              L'Exclusivité à votre Portée
             </h1>
             <p className="mt-4 max-w-2xl text-lg md:text-xl text-muted-foreground drop-shadow-md">
-              La destination privilégiée pour des rencontres et des contenus exclusifs.
+              La destination privilégiée pour des rencontres et des contenus uniques.
             </p>
             
-            <Card className="mt-8 w-full max-w-3xl bg-black/50 backdrop-blur-sm border-primary/20">
-                <CardContent className="p-4 md:p-6">
-                    <form onSubmit={handleSearch}>
-                        <div className="flex w-full items-center space-x-2">
-                            <Input name="query" type="text" placeholder="Rechercher par mot-clé, créateur, ou service..." className="h-12 text-base" />
-                            <Button type="submit" size="icon" className="h-12 w-12 flex-shrink-0" aria-label="Recherche">
-                                <Search className="h-6 w-6" />
-                            </Button>
-                        </div>
-                    
-                        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-2">
-                            <div className="flex items-center space-x-2">
-                                <Checkbox id="cat-rencontre" onCheckedChange={(c) => handleFilterChange('categorie_rencontre', c)} />
-                                <Label htmlFor="cat-rencontre" className="text-sm font-light text-gray-300">Rencontre</Label>
-                            </div>
-                             <div className="flex items-center space-x-2">
-                                <Checkbox id="cat-massage" onCheckedChange={(c) => handleFilterChange('categorie_massage', c)} />
-                                <Label htmlFor="cat-massage" className="text-sm font-light text-gray-300">Massage</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Checkbox id="cat-media" onCheckedChange={(c) => handleFilterChange('categorie_media', c)} />
-                                <Label htmlFor="cat-media" className="text-sm font-light text-gray-300">Média</Label>
-                            </div>
-                             <div className="flex items-center space-x-2">
-                                <Checkbox id="cat-produit" onCheckedChange={(c) => handleFilterChange('categorie_produit', c)} />
-                                <Label htmlFor="cat-produit" className="text-sm font-light text-gray-300">Produit</Label>
-                            </div>
-                             <div className="flex items-center space-x-2">
-                                <Checkbox id="cat-live" onCheckedChange={(c) => handleFilterChange('categorie_live', c)} />
-                                <Label htmlFor="cat-live" className="text-sm font-light text-gray-300">Live</Label>
-                            </div>
-                             <div className="flex items-center space-x-2">
-                                <Checkbox id="zone-paris" onCheckedChange={(c) => handleFilterChange('zone_paris', c)} />
-                                <Label htmlFor="zone-paris" className="text-sm font-light text-gray-300">Paris</Label>
-                            </div>
-                             <div className="flex items-center space-x-2">
-                                <Checkbox id="genre-femme" onCheckedChange={(c) => handleFilterChange('genre_femme', c)} />
-                                <Label htmlFor="genre-femme" className="text-sm font-light text-gray-300">Femme</Label>
-                            </div>
-                             <div className="flex items-center space-x-2">
-                                <Checkbox id="prix-luxe" onCheckedChange={(c) => handleFilterChange('prix_luxe', c)} />
-                                <Label htmlFor="prix-luxe" className="text-sm font-light text-gray-300">Luxe</Label>
-                            </div>
-                             <div className="flex items-center space-x-2">
-                                <Checkbox id="type-etablissement" onCheckedChange={(c) => handleFilterChange('type_etablissement', c)} />
-                                <Label htmlFor="type-etablissement" className="text-sm font-light text-gray-300">Établissement</Label>
-                            </div>
-                             <div className="flex items-center space-x-2">
-                                <Checkbox id="type-producteur" onCheckedChange={(c) => handleFilterChange('type_producteur', c)} />
-                                <Label htmlFor="type-producteur" className="text-sm font-light text-gray-300">Producteur</Label>
-                            </div>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
-
+            <form onSubmit={handleSearch} className="mt-8 w-full max-w-xl">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input name="query" type="text" placeholder="Rechercher un créateur, un service, un lieu..." className="h-14 pl-12 pr-32 text-lg rounded-full shadow-lg bg-card/80 backdrop-blur-sm border-primary/30 focus:ring-primary" />
+                <Button type="submit" size="lg" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full h-11">
+                  Rechercher
+                </Button>
+              </div>
+            </form>
+            <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm">
+                <Link href="/recherche?q=escorte" className="px-4 py-2 bg-card/50 rounded-full border border-transparent hover:border-primary/50 transition-colors">Escortes</Link>
+                <Link href="/recherche?q=massage" className="px-4 py-2 bg-card/50 rounded-full border border-transparent hover:border-primary/50 transition-colors">Massages</Link>
+                <Link href="/recherche?q=paris" className="px-4 py-2 bg-card/50 rounded-full border border-transparent hover:border-primary/50 transition-colors">Paris</Link>
+                <Link href="/recherche?q=photographe" className="px-4 py-2 bg-card/50 rounded-full border border-transparent hover:border-primary/50 transition-colors">Photographes</Link>
+            </div>
           </div>
         </section>
 
@@ -282,5 +226,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

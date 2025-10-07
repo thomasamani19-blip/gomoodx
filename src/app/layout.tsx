@@ -6,6 +6,7 @@ import { Playfair_Display, PT_Sans } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ThemeProvider } from 'next-themes';
+import AgeGate from '@/components/features/auth/age-gate';
 
 const fontPlayfair = Playfair_Display({
   subsets: ['latin'],
@@ -38,7 +39,7 @@ export default function RootLayout({
       )}>
         <ThemeProvider
             attribute="class"
-            defaultTheme="system"
+            defaultTheme="dark"
             enableSystem
             disableTransitionOnChange
         >
@@ -46,6 +47,7 @@ export default function RootLayout({
                 <AuthProvider>
                     {children}
                     <Toaster />
+                    <AgeGate />
                 </AuthProvider>
             </FirebaseClientProvider>
         </ThemeProvider>
