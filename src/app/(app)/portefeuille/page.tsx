@@ -187,7 +187,7 @@ export default function PortefeuillePage() {
                 <Button asChild>
                     <Link href="/portefeuille/recharger">
                         <PlusCircle className="mr-2 h-4 w-4"/>
-                        Recharger le compte
+                        Acheter des Crédits
                     </Link>
                 </Button>
             </CardFooter>

@@ -32,7 +32,7 @@ const uses = [
     { name: 'Cadeaux Virtuels', icon: Gift },
 ];
 
-export default function RechargerPage() {
+export default function AcheterCreditsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -82,7 +82,7 @@ export default function RechargerPage() {
 
         const result = await apiResponse.json();
         if (apiResponse.ok && result.status === 'success') {
-            toast({ title: 'Rechargement réussi !', description: `Votre portefeuille a été crédité de ${result.creditedAmount.toFixed(2)} €.` });
+            toast({ title: 'Achat réussi !', description: `Votre portefeuille a été crédité de ${result.creditedAmount.toFixed(2)} €.` });
             router.push('/portefeuille');
         } else {
             throw new Error(result.message || 'La vérification a échoué.');
@@ -134,8 +134,8 @@ export default function RechargerPage() {
          <div className="lg:col-span-2">
              <Card className="w-full">
                 <CardHeader>
-                    <CardTitle>Choisir un montant</CardTitle>
-                    <CardDescription>Sélectionnez un pack pour obtenir des crédits bonus, ou entrez un montant personnalisé.</CardDescription>
+                    <CardTitle>Choisir un Pack de Crédits</CardTitle>
+                    <CardDescription>Sélectionnez un pack pour obtenir des crédits bonus, ou entrez un montant personnalisé. Les crédits sont ajoutés à votre portefeuille universel.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <RadioGroup 
