@@ -1,4 +1,5 @@
 
+
 {
   "entities": {
     "User": {
@@ -72,6 +73,25 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "type", "companyName", "companyEmail", "status", "createdAt"]
+    },
+     "Post": {
+      "title": "Post",
+      "description": "Représente une publication dans le fil d'actualité.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorImage": { "type": "string", "format": "uri" },
+        "content": { "type": "string" },
+        "type": { "type": "string", "enum": ["text", "image", "video", "audio", "poll"] },
+        "mediaUrl": { "type": "string", "format": "uri" },
+        "pollOptions": { "type": "array", "items": { "type": "object", "properties": { "text": { "type": "string" }, "votes": { "type": "number" } } } },
+        "likes": { "type": "array", "items": { "type": "string" } },
+        "commentsCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "authorId", "content", "type", "createdAt"]
     }
   },
   "auth": {
@@ -85,6 +105,15 @@
         "path": "/users/{userId}",
         "schema": { "$ref": "#/entities/User" },
         "description": "Stores all user profiles regardless of role."
+      },
+      {
+        "path": "/posts/{postId}",
+        "schema": { "$ref": "#/entities/Post" },
+        "description": "Stores all feed posts from creators and partners."
+      },
+      {
+        "path": "/posts/{postId}/comments/{commentId}",
+        "description": "Subcollection for comments on a post."
       },
       {
         "path": "/wallets/{userId}",

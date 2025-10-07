@@ -45,6 +45,24 @@ export interface UserSubscription {
 }
 // --------------------
 
+// --- Post ---
+export type PostType = 'text' | 'image' | 'video' | 'audio' | 'poll';
+
+export interface Post {
+    id: string;
+    authorId: string;
+    authorName: string;
+    authorImage: string;
+    content: string;
+    type: PostType;
+    mediaUrl?: string; // For image, video, audio
+    pollOptions?: { text: string; votes: number }[];
+    likes: string[]; // Array of userIds
+    commentsCount: number;
+    createdAt: Timestamp;
+}
+// ------------
+
 
 // Base User structure
 export interface User {
@@ -169,7 +187,6 @@ export interface Reservation {
 }
 
 // Purchase
-export type PurchaseStatus = 'pending' | 'completed' | 'shipped' | 'cancelled';
 export type PurchaseContentType = 'product' | 'article';
 
 export interface Purchase {
