@@ -15,11 +15,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useCollection } from '@/firebase/firestore/use-collection';
 
 const VIRTUAL_GIFTS = [
-    { name: 'Rose', icon: '🌹', price: 10 },
-    { name: 'Baiser', icon: '😘', price: 50 },
-    { name: 'Diamant', icon: '💎', price: 100 },
-    { name: 'Feu', icon: '🔥', price: 250 },
-    { name: 'Couronne', icon: '👑', price: 1000 },
+    { name: 'Rose', icon: '🌹', price: 1 },
+    { name: 'Baiser', icon: '😘', price: 5 },
+    { name: 'Diamant', icon: '💎', price: 10 },
+    { name: 'Feu', icon: '🔥', price: 25 },
+    { name: 'Couronne', icon: '👑', price: 100 },
 ];
 
 const FAKE_COMMENTS = [
@@ -50,10 +50,8 @@ function LiveChat({ sessionId, isAiLive }: { sessionId: string, isAiLive: boolea
     const { user } = useAuth();
     const [messages, setMessages] = useState<{ author: string, message: string, isBot?: boolean, type: 'comment' | 'gift', giftIcon?: string }[]>([]);
 
-    // Fake AI engagement simulation
+    // Fake AI engagement simulation for all live types
     useEffect(() => {
-        if (!isAiLive) return;
-
         const addFakeEvent = () => {
             const isGift = Math.random() > 0.8; // 20% chance of being a gift
             if (isGift) {
@@ -71,7 +69,7 @@ function LiveChat({ sessionId, isAiLive }: { sessionId: string, isAiLive: boolea
 
         const interval = setInterval(addFakeEvent, 7000); // New event every 7 seconds
         return () => clearInterval(interval);
-    }, [isAiLive]);
+    }, []);
 
 
     return (
@@ -101,6 +99,7 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [isSendingGift, setIsSendingGift] = useState<string | null>(null);
 
   const sessionRef = useMemo(() => firestore ? doc(firestore, 'lives', params.id) : null, [firestore, params.id]);
   const { data: session, loading: sessionLoading } = useDoc<LiveSession>(sessionRef);
@@ -151,6 +150,34 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
       setIsPurchasing(false);
     }
   };
+
+  const handleSendGift = async (gift: {name: string, price: number}) => {
+    if (!user || !session) return;
+    setIsSendingGift(gift.name);
+    try {
+        const response = await fetch('/api/gifts/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                senderId: user.id,
+                receiverId: session.hostId,
+                gift,
+                sessionId: session.id,
+            }),
+        });
+        const result = await response.json();
+        if(response.ok) {
+            toast({ title: 'Cadeau envoyé !', description: `Merci pour votre soutien à ${session.creatorName}.` });
+        } else {
+            throw new Error(result.message || 'Une erreur est survenue.');
+        }
+    } catch (error: any) {
+        toast({ title: "Erreur d'envoi du cadeau", description: error.message, variant: 'destructive' });
+    } finally {
+        setIsSendingGift(null);
+    }
+  }
+
 
   if (loading) {
     return (
@@ -236,12 +263,16 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
                 </CardHeader>
                 <CardContent className="flex flex-wrap gap-4">
                     {VIRTUAL_GIFTS.map(gift => (
-                        <Button key={gift.name} variant="outline" className="flex-1 min-w-[80px]">
-                            <span className="text-2xl mr-2">{gift.icon}</span>
-                            <div>
-                                <p className="font-semibold">{gift.name}</p>
-                                <p className="text-xs text-muted-foreground">{gift.price} crédits</p>
-                            </div>
+                        <Button key={gift.name} variant="outline" className="flex-1 min-w-[80px]" onClick={() => handleSendGift(gift)} disabled={!user || isSendingGift !== null}>
+                            {isSendingGift === gift.name ? <Loader2 className="h-4 w-4 animate-spin"/> :
+                            <>
+                                <span className="text-2xl mr-2">{gift.icon}</span>
+                                <div>
+                                    <p className="font-semibold">{gift.name}</p>
+                                    <p className="text-xs text-muted-foreground">{gift.price} €</p>
+                                </div>
+                            </>
+                            }
                         </Button>
                     ))}
                 </CardContent>
