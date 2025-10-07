@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore, useStorage, useDoc } from '@/firebase';
 import type { Product, Wallet } from '@/lib/types';
-import { collection, query, where, orderBy, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { useMemo, useState } from 'react';
 import PageHeader from '@/components/shared/page-header';
