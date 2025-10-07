@@ -219,5 +219,3 @@ export default function ModifierAnnoncePage({ params }: { params: { id: string }
         </div>
     );
 }
-
-    
