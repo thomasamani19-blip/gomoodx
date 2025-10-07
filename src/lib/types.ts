@@ -1,4 +1,5 @@
 
+
 import type { Timestamp } from 'firebase/firestore';
 
 // Main User Roles
@@ -14,7 +15,7 @@ export type VerificationStatus = 'pending' | 'verified' | 'rejected';
 export type VerificationType = 'selfie' | 'complete';
 
 // --- Subscription ---
-export type SubscriptionStatus = 'active' | 'cancelled' | 'expired';
+export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled';
 
 export interface SubscriptionTier {
   id: string;
@@ -32,15 +33,10 @@ export interface SubscriptionSettings {
 }
 
 export interface UserSubscription {
-    id: string; // Unique ID for the subscription
-    creatorId: string;
-    subscriberId: string;
-    tierId: string;
-    status: SubscriptionStatus;
+    type: "premium_member" | "premium_creator";
+    status: "active" | "inactive" | "cancelled";
     startDate: Timestamp;
     endDate: Timestamp;
-    pricePaid: number;
-    durationMonths: number;
 }
 // --------------------
 
@@ -78,6 +74,7 @@ export interface User {
   verificationStatus?: VerificationStatus;
   verificationType?: VerificationType;
   subscriptionSettings?: SubscriptionSettings; // For creators
+  subscription?: UserSubscription; // For platform-level subscriptions
   // Rates for creators
   rates?: {
     videoCallPerMinute?: number;
