@@ -3,7 +3,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User as UserIcon, BookText, PenSquare, Sparkles, ShoppingBag, Newspaper, Bot, Film } from "lucide-react";
+import { User as UserIcon, BookText, PenSquare, Sparkles, ShoppingBag, Newspaper, Bot, Film, Star } from "lucide-react";
 import Link from 'next/link';
 import type { User, CreatorStats, MonthlyRevenue } from "@/lib/types";
 import PageHeader from "../shared/page-header";
@@ -92,7 +92,8 @@ const aiTools = [
 const contentManagementTools = [
     { title: "Gérer mes annonces", description: "Modifiez vos services, prix et disponibilités.", href: "/gestion/annonces", icon: Newspaper },
     { title: "Gérer mes produits", description: "Ajoutez ou mettez à jour les articles de votre boutique.", href: "/gestion/produits", icon: ShoppingBag },
-    { title: "Gérer mes articles de blog", description: "Rédigez et publiez de nouveaux articles de blog.", href: "/gestion/articles", icon: BookText },
+    { title: "Gérer mes articles", description: "Rédigez et publiez de nouveaux articles de blog.", href: "/gestion/articles", icon: BookText },
+    { title: "Gérer mes abonnements", description: "Définissez vos niveaux d'abonnement pour les fans.", href: "/gestion/abonnement", icon: Star },
 ];
 
 export default function EscorteDashboard({ user }: { user: User }) {

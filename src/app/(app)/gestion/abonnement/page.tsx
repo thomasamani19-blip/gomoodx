@@ -121,8 +121,8 @@ export default function GestionAbonnementPage() {
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div>
-                                <CardTitle>Programme d'Abonnement</CardTitle>
-                                <CardDescription>Activez cette option pour permettre aux utilisateurs de s'abonner à votre profil.</CardDescription>
+                                <CardTitle>Programme d'Abonnement Fan</CardTitle>
+                                <CardDescription>Activez cette option pour permettre aux utilisateurs de s'abonner à votre profil et accéder à du contenu exclusif.</CardDescription>
                             </div>
                              <Controller
                                 name="subscriptionEnabled"
@@ -140,7 +140,7 @@ export default function GestionAbonnementPage() {
                     {subscriptionEnabled && (
                         <CardContent className="border-t pt-6">
                             <CardTitle>Niveaux d'abonnement</CardTitle>
-                            <CardDescription className="mb-4">Créez jusqu'à 3 niveaux d'abonnement.</CardDescription>
+                            <CardDescription className="mb-4">Créez jusqu'à 3 niveaux d'abonnement. Le deuxième niveau sera mis en avant comme "Populaire".</CardDescription>
                             
                             <Accordion type="multiple" defaultValue={fields.map(f => f.id)} className="w-full">
                                 {fields.map((field, index) => (
@@ -157,19 +157,22 @@ export default function GestionAbonnementPage() {
                                                     <div className="space-y-2">
                                                         <Label>Nom du niveau</Label>
                                                         <Input {...form.register(`tiers.${index}.name`)} placeholder="Ex: Bronze, Argent, Or" />
+                                                        {form.formState.errors.tiers?.[index]?.name && <p className="text-sm text-destructive">{form.formState.errors.tiers[index]?.name?.message}</p>}
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label>Prix par mois (€)</Label>
                                                         <Input type="number" {...form.register(`tiers.${index}.price`)} placeholder="Ex: 9.99" />
+                                                        {form.formState.errors.tiers?.[index]?.price && <p className="text-sm text-destructive">{form.formState.errors.tiers[index]?.price?.message}</p>}
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label>Avantages (description)</Label>
-                                                    <Textarea {...form.register(`tiers.${index}.description`)} placeholder="Ex: Accès au contenu exclusif, messages prioritaires..." />
+                                                    <Label>Avantages (un par ligne)</Label>
+                                                    <Textarea {...form.register(`tiers.${index}.description`)} placeholder="Ex: Accès au contenu exclusif&#10;Messages prioritaires..." />
+                                                    {form.formState.errors.tiers?.[index]?.description && <p className="text-sm text-destructive">{form.formState.errors.tiers[index]?.description?.message}</p>}
                                                 </div>
                                                 
                                                 <div className="space-y-4 rounded-md border p-4">
-                                                    <Label className="text-base font-medium">Réductions (Optionnel)</Label>
+                                                    <Label className="text-base font-medium">Réductions pour engagements longs (Optionnel)</Label>
                                                     <div className="grid grid-cols-3 gap-4">
                                                          <div className="relative">
                                                             <Label htmlFor={`d3-${index}`} className="text-xs">3 mois (%)</Label>

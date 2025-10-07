@@ -82,20 +82,17 @@ export async function POST(request: Request) {
             t.update(platformWalletRef, { balance: FieldValue.increment(commissionAmount), totalEarned: FieldValue.increment(commissionAmount) });
 
             // 3. Mettre à jour le statut d'abonnement du membre (envers ce créateur)
-            // Note: This model should be improved to support multiple subscriptions
             const startDate = new Date();
             const endDate = add(startDate, { months: durationMonths });
 
-            // This structure is simplified. For multiple subscriptions, this should be a subcollection on the user.
+            const subscriptionPath = `creatorSubscriptions.${creatorId}`;
             t.update(memberRef, {
-                'creatorSubscriptions': {
-                    [creatorId]: {
-                        tierId: tierId,
-                        tierName: selectedTier.name,
-                        status: 'active',
-                        startDate: Timestamp.fromDate(startDate),
-                        endDate: Timestamp.fromDate(endDate),
-                    }
+                [subscriptionPath]: {
+                    tierId: tierId,
+                    tierName: selectedTier.name,
+                    status: 'active',
+                    startDate: Timestamp.fromDate(startDate),
+                    endDate: Timestamp.fromDate(endDate),
                 }
             });
 
