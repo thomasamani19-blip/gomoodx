@@ -12,7 +12,7 @@ import { ProductCarousel } from '@/components/features/products/product-carousel
 import { EstablishmentCarousel } from '@/components/features/partners/establishment-carousel';
 import { ProducerCarousel } from '@/components/features/partners/producer-carousel';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, Search, Wand2, Star, Building, Camera } from 'lucide-react';
+import { ArrowRight, Search } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useCollection, useFirestore } from '@/firebase';
 import type { BlogArticle } from '@/lib/types';
