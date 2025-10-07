@@ -71,7 +71,7 @@ export default function CreerProduitPage() {
             await addDoc(collection(firestore, 'products'), {
                 title: data.title,
                 description: data.description,
-                price: data.price,
+                price: data.productType === 'physique' ? 0 : data.price,
                 productType: data.productType as ProductType,
                 imageUrl: imageUrl,
                 createdBy: user.id,
@@ -187,7 +187,7 @@ export default function CreerProduitPage() {
                                 <p className="text-xs text-muted-foreground">
                                     {productType === 'digital' 
                                         ? "Pour un produit digital, laissez à 0 pour qu'il soit gratuit." 
-                                        : "Le prix des produits physiques sera discuté par messagerie."
+                                        : "Le prix des produits physiques sera discuté par messagerie (prix indicatif de 0€)."
                                     }
                                 </p>
                             </div>
