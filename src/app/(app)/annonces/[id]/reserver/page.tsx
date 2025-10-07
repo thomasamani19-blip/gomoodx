@@ -58,9 +58,13 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
 
     useEffect(() => {
         if (pricing && durationHours > 0 && annonce) {
-            const roomPrice = pricing.roomTypes[selectedRoomType]?.price || 0;
-            const roomCost = durationHours * roomPrice;
+            const baseRoomPrice = pricing.basePricePerHour || 0;
+            const roomSupplement = pricing.roomTypes[selectedRoomType]?.price || 0;
+            const roomPricePerHour = baseRoomPrice + roomSupplement;
+            
+            const roomCost = durationHours * roomPricePerHour;
             const escortsCost = selectedEscorts.length * (annonce.price || 0);
+            
             const calculatedPrice = roomCost + escortsCost;
             setTotalPrice(calculatedPrice);
         }
@@ -133,7 +137,10 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
     if (!user) { router.push('/connexion'); return null; }
     if (!annonce) return <PageHeader title="Annonce introuvable"/>
 
-    const roomCost = (pricing?.roomTypes[selectedRoomType]?.price || 0) * durationHours;
+    const baseRoomPrice = pricing?.basePricePerHour || 0;
+    const roomSupplement = pricing?.roomTypes[selectedRoomType]?.price || 0;
+    const roomPricePerHour = baseRoomPrice + roomSupplement;
+    const roomCost = durationHours * roomPricePerHour;
     const escortsCost = selectedEscorts.length * (annonce.price || 0);
 
     return (
@@ -163,7 +170,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                                             {Object.entries(pricing.roomTypes).filter(([, room]) => room.enabled).map(([key, room]) => (
                                                 <div key={key} className="flex items-center space-x-2">
                                                     <RadioGroupItem value={key} id={key} />
-                                                    <Label htmlFor={key} className="capitalize">{key} ({room.price}€/h)</Label>
+                                                    <Label htmlFor={key} className="capitalize">{key} ({key === 'standard' ? `${pricing.basePricePerHour}€/h` : `+${room.price}€/h`})</Label>
                                                 </div>
                                             ))}
                                         </RadioGroup>
@@ -229,7 +236,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                              <div className="space-y-2">
                                 <h4 className="font-semibold">Détail du prix</h4>
                                  <div className="flex justify-between text-sm text-muted-foreground">
-                                    <span>Chambre {selectedRoomType} ({pricing?.roomTypes[selectedRoomType]?.price}€ x {durationHours}h)</span>
+                                    <span>Chambre {selectedRoomType} ({roomPricePerHour}€ x {durationHours}h)</span>
                                     <span>{roomCost.toFixed(2)} €</span>
                                 </div>
                                 {selectedEscorts.length > 0 && (

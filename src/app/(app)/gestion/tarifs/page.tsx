@@ -22,11 +22,11 @@ import type { EstablishmentPricing } from '@/lib/types';
 
 
 const formSchema = z.object({
-  basePricePerHour: z.coerce.number().min(0, "Le prix doit être positif."),
+  basePricePerHour: z.coerce.number().min(0, "Le prix de base doit être positif."),
   roomTypes: z.object({
     standard: z.object({
-      price: z.coerce.number().min(0),
-      enabled: z.boolean(),
+      price: z.literal(0).default(0), // Le prix de la chambre standard est toujours 0 (c'est le prix de base)
+      enabled: z.literal(true).default(true),
     }),
     comfort: z.object({
       price: z.coerce.number().min(0),
@@ -55,16 +55,22 @@ export default function GestionTarifsPage() {
         defaultValues: {
             basePricePerHour: 50,
             roomTypes: {
-                standard: { price: 100, enabled: true },
-                comfort: { price: 150, enabled: true },
-                luxe: { price: 250, enabled: false },
+                standard: { price: 0, enabled: true },
+                comfort: { price: 50, enabled: true },
+                luxe: { price: 150, enabled: false },
             }
         },
     });
 
     useEffect(() => {
         if (user && user.establishmentSettings?.pricing) {
-            form.reset(user.establishmentSettings.pricing);
+            form.reset({
+                ...user.establishmentSettings.pricing,
+                roomTypes: {
+                    ...user.establishmentSettings.pricing.roomTypes,
+                    standard: { price: 0, enabled: true } // S'assurer que le standard est fixe
+                }
+            });
         }
     }, [user, form]);
     
@@ -110,20 +116,22 @@ export default function GestionTarifsPage() {
                     
                     <CardContent className="space-y-8">
                         <div className="space-y-2">
-                            <Label htmlFor="basePricePerHour">Prix de base par heure</Label>
+                            <Label htmlFor="basePricePerHour">Prix de la chambre Standard (par heure)</Label>
                             <div className="relative">
                                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input id="basePricePerHour" type="number" className="pl-8" {...form.register('basePricePerHour')} placeholder="50" />
                             </div>
                             {form.formState.errors.basePricePerHour && <p className="text-sm text-destructive">{form.formState.errors.basePricePerHour.message}</p>}
-                            <p className="text-xs text-muted-foreground">Ce prix sera utilisé pour calculer le coût en fonction de la durée du séjour.</p>
+                            <p className="text-xs text-muted-foreground">Ce prix est le tarif de base pour une chambre standard.</p>
                         </div>
                         
                         <div className="space-y-4">
-                             <CardTitle>Types de Chambres</CardTitle>
-                             <CardDescription>Définissez les prix pour chaque type de chambre que vous proposez. Désactivez les types non disponibles.</CardDescription>
+                             <CardTitle>Suppléments pour chambres supérieures</CardTitle>
+                             <CardDescription>Définissez le coût supplémentaire par heure pour les types de chambres supérieurs. Ce montant s'ajoute au prix de base.</CardDescription>
                             
                              {Object.entries(form.getValues().roomTypes).map(([key, value]) => {
+                                if (key === 'standard') return null; // Ne pas afficher le type 'standard' ici
+
                                 const roomKey = key as keyof PricingFormValues['roomTypes'];
                                 return (
                                     <div key={key} className="flex items-center justify-between rounded-lg border p-4">
@@ -135,20 +143,24 @@ export default function GestionTarifsPage() {
                                                     id={`price-${key}`}
                                                     type="number"
                                                     className="pl-8 w-48"
-                                                    placeholder="100"
+                                                    placeholder="50"
                                                     {...form.register(`roomTypes.${roomKey}.price`)}
                                                     disabled={!form.watch(`roomTypes.${roomKey}.enabled`)}
                                                 />
                                             </div>
+                                             <p className="text-xs text-muted-foreground">Supplément par heure</p>
                                         </div>
                                          <Controller
                                             name={`roomTypes.${roomKey}.enabled`}
                                             control={form.control}
                                             render={({ field }) => (
-                                                <Switch
-                                                    checked={field.value}
-                                                    onCheckedChange={field.onChange}
-                                                />
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <Switch
+                                                        checked={field.value}
+                                                        onCheckedChange={field.onChange}
+                                                    />
+                                                    <Label className="text-xs">Activer</Label>
+                                                </div>
                                             )}
                                         />
                                     </div>
