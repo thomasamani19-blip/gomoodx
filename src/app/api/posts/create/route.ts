@@ -87,3 +87,5 @@ export async function POST(request: Request) {
         return NextResponse.json({ status: 'error', message: error.message || "Une erreur interne est survenue." }, { status: 500 });
     }
 }
+
+    

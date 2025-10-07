@@ -174,6 +174,7 @@ export type TransactionStatus = 'pending' | 'success' | 'failed';
 
 export interface Transaction {
   id: string;
+  path: string;
   userId?: string;
   amount: number;
   type: TransactionType;
@@ -472,3 +473,5 @@ export interface PartnerRequest {
 
 // API Payloads
 export type ContentType = 'service' | 'product';
+
+    
