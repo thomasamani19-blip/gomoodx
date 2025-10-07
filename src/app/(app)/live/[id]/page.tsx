@@ -2,17 +2,99 @@
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
-import type { LiveSession, Purchase } from '@/lib/types';
+import type { LiveSession, Purchase, User } from '@/lib/types';
 import { collection, doc, query, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/shared/page-header';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Ticket, Video, CheckCircle } from 'lucide-react';
+import { Loader2, Ticket, Video, CheckCircle, Gift, Bot, Heart, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection } from '@/firebase/firestore/use-collection';
+
+const VIRTUAL_GIFTS = [
+    { name: 'Rose', icon: '🌹', price: 10 },
+    { name: 'Baiser', icon: '😘', price: 50 },
+    { name: 'Diamant', icon: '💎', price: 100 },
+    { name: 'Feu', icon: '🔥', price: 250 },
+    { name: 'Couronne', icon: '👑', price: 1000 },
+];
+
+const FAKE_COMMENTS = [
+    "Super ce live !", "J'adore ce que tu fais ❤️", "Incroyable !", "Merci pour ce moment ✨",
+    "Qui est de Paris ici ?", "Quelqu'un sait quelle est la musique ?", "C'est génial !", "On t'adore 😍"
+];
+
+const ChatMessage = ({ author, message, isBot = false }: { author: string, message: string, isBot?: boolean }) => (
+    <div className="text-sm p-2 rounded-lg flex items-start gap-2">
+        {isBot && <Bot className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />}
+        <p>
+            <span className="font-bold mr-2">{author}:</span>
+            <span>{message}</span>
+        </p>
+    </div>
+);
+
+const GiftNotification = ({ author, giftName, giftIcon, isBot = false }: { author: string, giftName: string, giftIcon: string, isBot?: boolean }) => (
+     <div className="text-sm p-2 rounded-lg bg-yellow-400/10 border border-yellow-400/20 flex items-center gap-2">
+        {isBot && <Bot className="h-4 w-4 text-primary flex-shrink-0" />}
+        <p className="font-bold">
+            <span className="text-primary">{author}</span> a envoyé un cadeau: {giftIcon} {giftName}
+        </p>
+    </div>
+);
+
+function LiveChat({ sessionId, isAiLive }: { sessionId: string, isAiLive: boolean }) {
+    const { user } = useAuth();
+    const [messages, setMessages] = useState<{ author: string, message: string, isBot?: boolean, type: 'comment' | 'gift', giftIcon?: string }[]>([]);
+
+    // Fake AI engagement simulation
+    useEffect(() => {
+        if (!isAiLive) return;
+
+        const addFakeEvent = () => {
+            const isGift = Math.random() > 0.8; // 20% chance of being a gift
+            if (isGift) {
+                const randomGift = VIRTUAL_GIFTS[Math.floor(Math.random() * VIRTUAL_GIFTS.length)];
+                setMessages(prev => [...prev, {
+                    author: 'Animateur IA', message: randomGift.name, isBot: true, type: 'gift', giftIcon: randomGift.icon
+                }]);
+            } else {
+                const randomComment = FAKE_COMMENTS[Math.floor(Math.random() * FAKE_COMMENTS.length)];
+                setMessages(prev => [...prev, {
+                    author: 'Animateur IA', message: randomComment, isBot: true, type: 'comment'
+                }]);
+            }
+        };
+
+        const interval = setInterval(addFakeEvent, 7000); // New event every 7 seconds
+        return () => clearInterval(interval);
+    }, [isAiLive]);
+
+
+    return (
+        <div className="h-full bg-card rounded-lg p-4 flex flex-col border">
+            <h3 className="font-bold mb-4 text-lg">Chat en direct</h3>
+            <div className="flex-1 bg-muted rounded-md p-2 flex flex-col-reverse gap-2 overflow-y-auto">
+                {messages.slice().reverse().map((msg, index) => (
+                    msg.type === 'comment'
+                        ? <ChatMessage key={index} author={msg.author} message={msg.message} isBot={msg.isBot} />
+                        : <GiftNotification key={index} author={msg.author} giftName={msg.message} giftIcon={msg.giftIcon!} isBot={msg.isBot} />
+                ))}
+                {messages.length === 0 && <p className="text-center text-xs text-muted-foreground m-auto">Le chat est vide pour le moment.</p>}
+            </div>
+             <div className="mt-4 flex gap-2">
+                <input className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background" placeholder="Envoyer un message..." />
+                <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium h-10 px-4 py-2 bg-primary text-primary-foreground">
+                    <Send className="h-4 w-4" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
 
 export default function LiveSessionPage({ params }: { params: { id: string } }) {
   const firestore = useFirestore();
@@ -111,8 +193,8 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
       <div className="mb-8 -mt-6">{headerDescription}</div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-            <div className="aspect-video bg-black rounded-lg flex items-center justify-center text-white text-center">
+        <div className="lg:col-span-2 space-y-4">
+            <div className="aspect-video bg-black rounded-lg flex items-center justify-center text-white text-center relative">
                 {canWatch ? (
                   session.streamUrl && session.streamUrl.startsWith('data:video') ? (
                     <video 
@@ -142,19 +224,32 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
                     </Button>
                   </div>
                 )}
+                <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/50 p-2 rounded-lg text-sm">
+                    <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></div>
+                    {session.viewersCount} spectateurs
+                </div>
             </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Gift className="h-5 w-5 text-primary" /> Envoyer un cadeau</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-4">
+                    {VIRTUAL_GIFTS.map(gift => (
+                        <Button key={gift.name} variant="outline" className="flex-1 min-w-[80px]">
+                            <span className="text-2xl mr-2">{gift.icon}</span>
+                            <div>
+                                <p className="font-semibold">{gift.name}</p>
+                                <p className="text-xs text-muted-foreground">{gift.price} crédits</p>
+                            </div>
+                        </Button>
+                    ))}
+                </CardContent>
+            </Card>
+
         </div>
-        <div className="lg:col-span-1">
-            <div className="h-full bg-card rounded-lg p-4 flex flex-col border">
-                <h3 className="font-bold mb-4 text-lg">Chat en direct</h3>
-                <div className="flex-1 bg-muted rounded-md p-2 flex items-center justify-center text-sm text-muted-foreground">
-                    <p>Le chat apparaîtra ici.</p>
-                </div>
-                 <div className="mt-4 flex gap-2">
-                    <input className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background" placeholder="Envoyer un message..." />
-                    <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium h-10 px-4 py-2 bg-primary text-primary-foreground">Envoyer</button>
-                </div>
-            </div>
+        <div className="lg:col-span-1 h-[75vh]">
+            <LiveChat sessionId={params.id} isAiLive={session.liveType === 'ai'} />
         </div>
       </div>
     </div>
