@@ -344,9 +344,9 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         let totalPrice = tier.price * subscriptionDuration;
         let discount = 0;
         
-        if (subscriptionDuration === 3) discount = tier.discounts?.quarterly || 0;
-        else if (subscriptionDuration === 6) discount = tier.discounts?.semiAnnual || 0;
-        else if (subscriptionDuration === 12) discount = tier.discounts?.annual || 0;
+        if (durationMonths === 3) discount = tier.discounts?.quarterly || 0;
+        else if (durationMonths === 6) discount = tier.discounts?.semiAnnual || 0;
+        else if (durationMonths === 12) discount = tier.discounts?.annual || 0;
         
         if (discount > 0) {
             totalPrice = totalPrice * (1 - discount / 100);

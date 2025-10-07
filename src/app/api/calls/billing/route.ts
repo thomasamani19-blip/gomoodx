@@ -31,7 +31,7 @@ export async function POST(request: Request) {
             
             const callData = callDoc.data() as Call;
 
-            if (!callData.pricePerMinute || callData.pricePerMinute <= 0) {
+            if (callData.isFreeCall || !callData.pricePerMinute || callData.pricePerMinute <= 0) {
                  t.update(callRef, { billedDuration: duration });
                 return { message: "Aucune facturation requise pour cet appel.", totalCost: 0 };
             }
