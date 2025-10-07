@@ -24,9 +24,10 @@ export default function FavorisPage() {
   // Query to fetch the full profiles of favorite creators.
   const favoriteCreatorsQuery = useMemo(() => {
     // The 'in' query requires a non-empty array and Firestore instance.
-    if (!favoriteIds || !firestore) return null;
+    // Also, ensure user is authenticated before attempting to query.
+    if (!user || !favoriteIds || !firestore) return null;
     return query(collection(firestore, 'users'), where('__name__', 'in', favoriteIds));
-  }, [favoriteIds, firestore]);
+  }, [user, favoriteIds, firestore]);
 
   
   const { data: favoriteCreators, loading: creatorsLoading } = useCollection<User>(
