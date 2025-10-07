@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useDoc, useCollection, useFirestore } from '@/firebase';
-import type { Annonce, User } from '@/lib/types';
+import type { Annonce, User, EstablishmentPricing } from '@/lib/types';
 import { doc, collection, query, where, orderBy } from 'firebase/firestore';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,13 +15,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, Loader2, Users, Calendar as CalendarIcon, Check, Clock, Timer } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Users, Calendar as CalendarIcon, Check, Clock, Timer, BedDouble } from 'lucide-react';
 import { fr } from 'date-fns/locale';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+
+type RoomType = keyof EstablishmentPricing['roomTypes'];
 
 export default function ReserverAnnoncePage({ params }: { params: { id: string } }) {
     const { user, loading: authLoading } = useAuth();
@@ -36,14 +39,30 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
     const [selectedEscorts, setSelectedEscorts] = useState<User[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    const [selectedRoomType, setSelectedRoomType] = useState<RoomType>('standard');
+    const [totalPrice, setTotalPrice] = useState(0);
 
     const annonceRef = useMemo(() => firestore ? doc(firestore, 'services', params.id) : null, [firestore, params.id]);
     const { data: annonce, loading: annonceLoading } = useDoc<Annonce>(annonceRef);
 
+    const establishmentRef = useMemo(() => (annonce && firestore) ? doc(firestore, 'users', annonce.createdBy) : null, [annonce, firestore]);
+    const { data: establishment, loading: establishmentLoading } = useDoc<User>(establishmentRef);
+
     const escortsQuery = useMemo(() => firestore ? query(collection(firestore, 'users'), where('role', '==', 'escorte'), orderBy('displayName')) : null, [firestore]);
     const { data: allEscorts, loading: escortsLoading } = useCollection<User>(escortsQuery);
     
-    const loading = authLoading || annonceLoading || escortsLoading;
+    const loading = authLoading || annonceLoading || escortsLoading || establishmentLoading;
+    const pricing = establishment?.establishmentSettings?.pricing;
+
+    useEffect(() => {
+        if (pricing && durationHours > 0) {
+            const roomPrice = pricing.roomTypes[selectedRoomType]?.price || 0;
+            const calculatedPrice = durationHours * roomPrice;
+            setTotalPrice(calculatedPrice);
+        }
+    }, [pricing, durationHours, selectedRoomType]);
+
 
     const filteredEscorts = useMemo(() => {
         if (!allEscorts) return [];
@@ -68,8 +87,8 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
     };
 
     const handleSubmit = async () => {
-        if (!user || !annonce || !selectedDate) {
-            toast({ title: "Erreur", description: "Données manquantes.", variant: "destructive" });
+        if (!user || !annonce || !selectedDate || !pricing) {
+            toast({ title: "Erreur", description: "Données de tarification ou de réservation manquantes.", variant: "destructive" });
             return;
         }
 
@@ -88,6 +107,8 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                     reservationDate: reservationDateTime.toISOString(),
                     durationHours: durationHours,
                     escorts: selectedEscorts.map(e => ({ id: e.id, name: e.displayName, profileImage: e.profileImage })),
+                    amount: totalPrice, // Send the calculated total price
+                    roomType: selectedRoomType,
                 }),
             });
 
@@ -109,8 +130,6 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
     if (!user) { router.push('/connexion'); return null; }
     if (!annonce) return <PageHeader title="Annonce introuvable"/>
 
-    const totalPrice = annonce.price * (selectedEscorts.length + 1);
-
     return (
         <div>
             <PageHeader title={annonce.title} description={`Réservation à l'établissement`} />
@@ -118,7 +137,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                 <div className={cn("md:col-span-2 space-y-6", step !== 1 && 'hidden md:block')}>
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><CalendarIcon className="h-5 w-5"/> Étape 1: Choisissez la date et la durée</CardTitle>
+                            <CardTitle className="flex items-center gap-2"><CalendarIcon className="h-5 w-5"/> Étape 1: Date, Durée & Chambre</CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col md:flex-row gap-8">
                             <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} locale={fr} disabled={{ before: new Date() }} />
@@ -131,6 +150,19 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                                     <Label htmlFor="duration" className="flex items-center gap-2"><Timer className="h-4 w-4"/> Durée du séjour (en heures)</Label>
                                     <Input id="duration" type="number" value={durationHours} onChange={e => setDurationHours(Number(e.target.value))} min="1" />
                                 </div>
+                                 <div className="space-y-2">
+                                    <Label className="flex items-center gap-2"><BedDouble className="h-4 w-4"/> Type de chambre</Label>
+                                    {pricing ? (
+                                        <RadioGroup value={selectedRoomType} onValueChange={(v) => setSelectedRoomType(v as RoomType)}>
+                                            {Object.entries(pricing.roomTypes).filter(([, room]) => room.enabled).map(([key, room]) => (
+                                                <div key={key} className="flex items-center space-x-2">
+                                                    <RadioGroupItem value={key} id={key} />
+                                                    <Label htmlFor={key} className="capitalize">{key} ({room.price}€/h)</Label>
+                                                </div>
+                                            ))}
+                                        </RadioGroup>
+                                    ) : <p className="text-sm text-muted-foreground">Tarifs non configurés par l'établissement.</p>}
+                                 </div>
                              </div>
                         </CardContent>
                          <CardFooter className="md:hidden">
@@ -142,7 +174,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                      <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/> Étape 2: Choisissez vos accompagnateurs (Optionnel)</CardTitle>
-                            <CardDescription>Sélectionnez jusqu'à 6 escortes pour vous accompagner. Le prix sera ajusté en conséquence.</CardDescription>
+                            <CardDescription>Invitez des escortes pour vous accompagner.</CardDescription>
                             <Input placeholder="Rechercher une escorte..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                         </CardHeader>
                         <CardContent>
@@ -188,17 +220,17 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                                 <p className="text-muted-foreground">{selectedDate ? `Le ${format(selectedDate, 'PPP', {locale: fr})} à ${selectedTime} pour ${durationHours}h` : 'Non défini'}</p>
                             </div>
                             <div>
-                                <h4 className="font-semibold">Personnes</h4>
-                                <p className="text-muted-foreground">{selectedEscorts.length + 1} ({user?.displayName}, {selectedEscorts.map(e => e.displayName).join(', ')})</p>
+                                <h4 className="font-semibold">Accompagnateurs</h4>
+                                <p className="text-muted-foreground">{selectedEscorts.length > 0 ? selectedEscorts.map(e => e.displayName).join(', ') : 'Aucun'}</p>
                             </div>
                              <div className="border-t pt-4">
                                 <h4 className="font-semibold">Coût total</h4>
                                 <p className="text-2xl font-bold text-primary">{totalPrice.toFixed(2)} €</p>
-                                <p className="text-xs text-muted-foreground">{annonce.price}€ x {selectedEscorts.length + 1} personne(s)</p>
+                                <p className="text-xs text-muted-foreground capitalize">{selectedRoomType}: {pricing?.roomTypes[selectedRoomType]?.price}€ x {durationHours}h</p>
                             </div>
                         </CardContent>
                         <CardFooter className="flex-col gap-2">
-                             <Button size="lg" className="w-full" onClick={handleSubmit} disabled={isSubmitting}>
+                             <Button size="lg" className="w-full" onClick={handleSubmit} disabled={isSubmitting || !pricing}>
                                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
                                 Confirmer et Payer
                             </Button>

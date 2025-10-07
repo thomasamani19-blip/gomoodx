@@ -220,6 +220,7 @@ export interface Reservation {
     durationHours?: number | null; // Duration of the stay in hours
     escorts?: { id: string; name: string, profileImage?: string }[];
     notes?: string;
+    roomType?: string;
 }
 
 // Purchase

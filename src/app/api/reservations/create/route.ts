@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
-import type { Annonce, Wallet, Reservation, Transaction, Settings } from '@/lib/types';
+import type { Annonce, Wallet, Reservation, Transaction, Settings, User } from '@/lib/types';
 
 // Assurer l'initialisation de Firebase Admin
 if (!getApps().length) {
@@ -17,13 +17,14 @@ const PLATFORM_WALLET_ID = 'platform_wallet';
 
 export async function POST(request: Request) {
     try {
-        const { memberId, annonceId, reservationDate, escorts, durationHours } = await request.json();
+        const { memberId, annonceId, reservationDate, escorts, durationHours, amount, roomType } = await request.json();
 
-        if (!memberId || !annonceId || !reservationDate) {
+        if (!memberId || !annonceId || !reservationDate || !amount === undefined) {
             return NextResponse.json({ status: 'error', message: 'Informations manquantes pour la réservation.' }, { status: 400 });
         }
         
         const reservationDateTime = new Date(reservationDate);
+        const totalAmount = Number(amount);
 
         const annonceRef = db.collection('services').doc(annonceId);
         const memberWalletRef = db.collection('wallets').doc(memberId);
@@ -45,11 +46,8 @@ export async function POST(request: Request) {
             const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
             
             const settingsDoc = await t.get(settingsRef);
-            const commissionRate = (settingsDoc.data() as Settings)?.platformCommissionRate || 0;
+            const commissionRate = (settingsDoc.data() as Settings)?.platformCommissionRate || 0.20; // Default to 20%
             
-            const numberOfPeople = 1 + (escorts?.length || 0);
-            const totalAmount = annonce.price * numberOfPeople;
-
             if (memberWallet.balance < totalAmount) {
                 throw new Error("Solde insuffisant pour effectuer cette réservation.");
             }
@@ -63,11 +61,12 @@ export async function POST(request: Request) {
                 annonceId: annonceId,
                 annonceTitle: annonce.title,
                 amount: totalAmount,
-                status: 'pending', // Reservations now need confirmation
+                status: 'pending',
                 createdAt: Timestamp.now(),
                 reservationDate: Timestamp.fromDate(reservationDateTime),
                 durationHours: durationHours || null,
                 escorts: escorts || [],
+                roomType: roomType,
             };
             t.set(reservationRef, newReservation);
 
