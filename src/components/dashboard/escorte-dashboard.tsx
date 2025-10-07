@@ -92,7 +92,7 @@ const aiTools = [
 const contentManagementTools = [
     { title: "Gérer mes annonces", description: "Modifiez vos services, prix et disponibilités.", href: "/gestion/annonces", icon: Newspaper },
     { title: "Gérer mes produits", description: "Ajoutez ou mettez à jour les articles de votre boutique.", href: "/gestion/produits", icon: ShoppingBag },
-    { title: "Gérer mes articles", description: "Rédigez et publiez de nouveaux articles de blog.", href: "/gestion/articles", icon: BookText },
+    { title: "Gérer mes articles de blog", description: "Rédigez et publiez de nouveaux articles de blog.", href: "/gestion/articles", icon: BookText },
 ];
 
 export default function EscorteDashboard({ user }: { user: User }) {
