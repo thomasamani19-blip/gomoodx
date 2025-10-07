@@ -13,7 +13,7 @@ if (!getApps().length) {
 const db = getFirestore();
 
 export async function POST(request: Request) {
-    // This functionality is deprecated as per the new subscription model.
+    // This functionality is deprecated in favor of /api/subscriptions/create-platform-subscription
     // The code is left here for reference but will not be executed.
     return NextResponse.json({ status: 'error', message: "La fonctionnalité d'abonnement membre a été désactivée." }, { status: 410 });
 }

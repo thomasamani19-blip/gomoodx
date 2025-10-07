@@ -37,8 +37,10 @@ export interface SubscriptionSettings {
   }
 }
 
+export type PlatformSubscriptionType = 'essential' | 'advanced' | 'premium' | 'elite';
+
 export interface UserSubscription {
-    type: "premium_member" | "premium_creator";
+    type: PlatformSubscriptionType;
     status: "active" | "inactive" | "cancelled";
     startDate: Timestamp;
     endDate: Timestamp;

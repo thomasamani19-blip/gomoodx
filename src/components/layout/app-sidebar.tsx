@@ -39,6 +39,7 @@ import {
   CalendarCheck,
   Star,
   Newspaper,
+  Crown,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -66,6 +67,7 @@ const escorteNav = [
   { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
   { title: 'Mes Réservations', href: '/reservations', icon: CalendarCheck },
   { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
+  { title: 'Passer Premium', href: '/abonnement', icon: Crown },
 ];
 
 const partenaireNav = [
@@ -75,6 +77,7 @@ const partenaireNav = [
     { title: 'Mes Réservations', href: '/reservations', icon: CalendarCheck },
     { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
     { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
+    { title: 'Passer Premium', href: '/abonnement', icon: Crown },
 ];
 
 const toolsNav = [
