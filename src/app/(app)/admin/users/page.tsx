@@ -61,7 +61,7 @@ export default function AdminUsersPage() {
         return query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
     }, [isAllowed, firestore]);
     
-    const { data: users, loading: usersLoading } = useCollection<User>(usersQuery);
+    const { data: users, loading: usersLoading, setData: setUsers } = useCollection<User>(usersQuery);
 
     const loading = authLoading || isCheckingPermissions || (isAllowed && usersLoading);
     
@@ -71,6 +71,14 @@ export default function AdminUsersPage() {
         try {
             const userRef = doc(firestore, 'users', userId);
             await updateDoc(userRef, { status: newStatus });
+            
+            // Optimistically update the UI
+            setUsers(prevUsers => 
+                prevUsers?.map(user => 
+                    user.id === userId ? { ...user, status: newStatus } : user
+                ) || null
+            );
+
             toast({ title: "Statut mis à jour", description: `L'utilisateur a été ${newStatus === 'suspended' ? 'suspendu' : 'activé'}.` });
         } catch (error) {
             toast({ title: "Erreur", description: "Impossible de mettre à jour le statut de l'utilisateur.", variant: 'destructive' });
