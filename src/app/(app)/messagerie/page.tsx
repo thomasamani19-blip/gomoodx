@@ -158,22 +158,25 @@ function MessagerieContent() {
         
         return query(
             collection(firestore, "messages"),
-            or(
-                where('senderId', '==', user.id),
-                where('receiverId', '==', user.id)
-            ),
-            or(
-                where('senderId', '==', selectedContact.id),
-                where('receiverId', '==', selectedContact.id)
-            ),
+            where('senderId', 'in', [user.id, selectedContact.id]),
+            where('receiverId', 'in', [user.id, selectedContact.id]),
             orderBy("createdAt", "asc")
         );
 
     }, [user, selectedContact, firestore]);
     
-    const { data: activeMessages, loading: messagesLoading, setData: setActiveMessages } = useCollection<Message>(
+    const { data: allMessages, loading: messagesLoading } = useCollection<Message>(
         activeMessagesQuery
     );
+
+    const activeMessages = useMemo(() => {
+        if (!allMessages || !user || !selectedContact) return [];
+        return allMessages.filter(msg => 
+            (msg.senderId === user.id && msg.receiverId === selectedContact.id) ||
+            (msg.senderId === selectedContact.id && msg.receiverId === user.id)
+        );
+    }, [allMessages, user, selectedContact]);
+
 
     // Scroll to the bottom of the messages when a new message is added and mark as read
     useEffect(() => {
@@ -411,3 +414,5 @@ export default function MessageriePage() {
         </Suspense>
     )
 }
+
+    
