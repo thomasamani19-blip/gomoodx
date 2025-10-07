@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -66,8 +65,10 @@ export default function GestionAnnoncesPage() {
 
     setIsDeleting(true);
     try {
+      // Delete Firestore document
       await deleteDoc(doc(firestore, 'services', annonceToDelete.id));
 
+      // Delete image from Storage if it exists and is not a placeholder
       if (annonceToDelete.imageUrl && !annonceToDelete.imageUrl.includes('picsum.photos')) {
         try {
             const imageRef = ref(storage, annonceToDelete.imageUrl);
