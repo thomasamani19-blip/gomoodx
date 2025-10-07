@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore, useStorage, useDoc } from '@/firebase';
 import type { Annonce, Wallet } from '@/lib/types';
-import { collection, query, where, orderBy, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { useMemo, useState } from 'react';
 import PageHeader from '@/components/shared/page-header';
@@ -12,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Trash2, Loader2, Pencil, Star } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Loader2, Pencil, Star, Info } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
