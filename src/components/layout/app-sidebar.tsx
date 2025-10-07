@@ -162,7 +162,7 @@ export function AppSidebar() {
       case 'founder':
         return renderNavItems(adminNav);
       case 'administrateur':
-        return renderNavItems(adminNav.filter(i => i.href !== '/admin/portefeuille'));
+        return renderNavItems(adminNav);
       case 'moderator':
         return renderNavItems(adminNav.filter(i => ['/dashboard', '/admin/moderation', '/feed'].includes(i.href)));
       default:
