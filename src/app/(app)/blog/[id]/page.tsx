@@ -1,23 +1,42 @@
 
 'use client';
 
-import { useDoc, useFirestore } from '@/firebase';
-import type { BlogArticle, User } from '@/lib/types';
-import { doc } from 'firebase/firestore';
+import { useCollection, useDoc, useFirestore } from '@/firebase';
+import type { BlogArticle, Purchase, User } from '@/lib/types';
+import { collection, doc, query, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, Lock } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Simple Markdown-to-HTML converter
-const Markdown = ({ content }: { content: string }) => {
-    // Replace ## headers, **bold**, *italic*, and newlines with <p> tags
-    const html = content
+const Markdown = ({ content, truncate = false }: { content: string, truncate?: boolean }) => {
+    let processedContent = content;
+    if (truncate) {
+        // Take first paragraph or first 300 characters
+        const firstParagraph = content.split('\n\n')[0];
+        processedContent = firstParagraph.length > 300 ? firstParagraph.substring(0, 300) + '...' : firstParagraph;
+    }
+
+    const html = processedContent
       .replace(/^## (.*$)/gim, '<h2 class="font-headline text-2xl mt-8 mb-4">$1</h2>')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
@@ -28,14 +47,63 @@ const Markdown = ({ content }: { content: string }) => {
 
 
 export default function ArticlePage({ params }: { params: { id: string } }) {
+  const { user: currentUser, loading: authLoading } = useAuth();
   const firestore = useFirestore();
+  const { toast } = useToast();
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
+  
   const articleRef = useMemo(() => firestore ? doc(firestore, 'blog', params.id) : null, [firestore, params.id]);
   const { data: article, loading: articleLoading } = useDoc<BlogArticle>(articleRef);
   
   const authorRef = useMemo(() => (firestore && article?.authorId) ? doc(firestore, 'users', article.authorId) : null, [article, firestore]);
   const { data: author, loading: authorLoading } = useDoc<User>(authorRef);
 
-  const loading = articleLoading || authorLoading;
+  const purchaseQuery = useMemo(() => {
+    if (!firestore || !currentUser || !article || !article.isPremium) return null;
+    return query(
+        collection(firestore, 'purchases'),
+        where('memberId', '==', currentUser.id),
+        where('contentId', '==', article.id),
+        where('contentType', '==', 'article')
+    );
+  }, [firestore, currentUser, article]);
+
+  const { data: purchases, loading: purchasesLoading } = useCollection<Purchase>(purchaseQuery);
+
+  const hasPurchased = useMemo(() => purchases && purchases.length > 0, [purchases]);
+
+  const loading = articleLoading || authorLoading || authLoading || (article?.isPremium ? purchasesLoading : false);
+  
+  const isPremiumAndNotPurchased = article?.isPremium && !hasPurchased && currentUser?.id !== article?.authorId;
+
+  const handlePurchase = async () => {
+    if (!currentUser || !article) {
+        toast({ title: 'Vous devez être connecté pour acheter.', variant: 'destructive'});
+        return;
+    }
+    setIsPurchasing(true);
+    try {
+        const response = await fetch('/api/articles/purchase', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ memberId: currentUser.id, articleId: article.id }),
+        });
+        const result = await response.json();
+
+        if (response.ok && (result.status === 'success' || result.status === 'already_purchased')) {
+            toast({ title: 'Achat réussi !', description: 'Vous avez maintenant accès à l\'article complet.' });
+        } else {
+            throw new Error(result.message || 'Une erreur est survenue.');
+        }
+
+    } catch (error: any) {
+        toast({ title: 'Erreur d\'achat', description: error.message, variant: 'destructive' });
+    } finally {
+        setIsPurchasing(false);
+        setShowPurchaseDialog(false);
+    }
+  }
   
   if (loading) {
     return (
@@ -72,6 +140,7 @@ export default function ArticlePage({ params }: { params: { id: string } }) {
   }
 
   return (
+    <>
     <article className="max-w-4xl mx-auto">
       <header className="mb-8">
         <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden mb-8">
@@ -111,11 +180,38 @@ export default function ArticlePage({ params }: { params: { id: string } }) {
       </header>
 
       <Card>
-        <CardContent className="pt-6">
-            <Markdown content={article.content} />
+        <CardContent className="pt-6 relative">
+            <Markdown content={article.content} truncate={isPremiumAndNotPurchased} />
+            {isPremiumAndNotPurchased && (
+                <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-card to-transparent flex flex-col items-center justify-end p-8">
+                    <Button onClick={() => setShowPurchaseDialog(true)} size="lg">
+                        <Lock className="mr-2 h-4 w-4"/>
+                        Acheter pour lire la suite ({article.price?.toFixed(2)}€)
+                    </Button>
+                </div>
+            )}
         </CardContent>
       </Card>
       
     </article>
+    <AlertDialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Accéder au contenu premium</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Pour lire l'intégralité de cet article, veuillez procéder à l'achat pour un montant de <span className="font-bold">{article.price?.toFixed(2)}€</span>. Ce montant sera débité de votre portefeuille GoMoodX.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel disabled={isPurchasing}>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handlePurchase} disabled={isPurchasing}>
+                    {isPurchasing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Confirmer l'achat
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
+
