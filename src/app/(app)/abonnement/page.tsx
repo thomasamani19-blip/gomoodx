@@ -200,7 +200,7 @@ export default function AbonnementPage() {
                 ))}
             </div>
 
-            <AlertDialog open={subscriptionDialog.open} onOpenChange={(open) => setSubscriptionDialog({ open, plan: null })}>
+            <AlertDialog open={subscriptionDialog.open} onOpenChange={(open) => setSubscriptionDialog({ ...subscriptionDialog, open })}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Souscrire à "{subscriptionDialog.plan?.name}"</AlertDialogTitle>
