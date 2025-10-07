@@ -52,7 +52,7 @@ export default function AdminWithdrawalsPage() {
     
     useEffect(() => {
         if (!authLoading) {
-            if (currentUser?.role === 'founder') {
+            if (currentUser && ['founder', 'administrateur'].includes(currentUser.role)) {
                 setIsAllowed(true);
             } else {
                 setIsAllowed(false);
