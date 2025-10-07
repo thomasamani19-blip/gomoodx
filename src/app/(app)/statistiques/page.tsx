@@ -33,6 +33,10 @@ const chartConfig = {
     label: 'Abonnés',
     color: 'hsl(var(--secondary))',
   },
+   views: {
+    label: 'Vues',
+    color: 'hsl(var(--primary))',
+  }
 };
 
 const newSubscribersData = [
@@ -123,7 +127,7 @@ const StatsPage = () => {
         <StatCard
             title="Vues de Profil (7j)"
             value={stats?.profileViews?.value ? stats.profileViews.value.toLocaleString('fr-FR') : '0'}
-            change={stats?.profileViews?.change ? `${stats.profileViews.change > 0 ? '+' : ''}${stats.profileViews.change.toFixed(1)}%` : '-'}
+            change={stats?.profileViews?.change ? `${stats?.profileViews?.change > 0 ? '+' : ''}${stats.profileViews.change.toFixed(1)}%` : '-'}
             icon={FileSearch}
             loading={loading}
         />
