@@ -419,9 +419,9 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         let totalPrice = tier.price * subscriptionDuration;
         let discount = 0;
         
-        if (durationMonths === 3) discount = tier.discounts?.quarterly || 0;
-        else if (durationMonths === 6) discount = tier.discounts?.semiAnnual || 0;
-        else if (durationMonths === 12) discount = tier.discounts?.annual || 0;
+        if (subscriptionDuration === 3 && tier.discounts?.quarterly) discount = tier.discounts.quarterly;
+        else if (subscriptionDuration === 6 && tier.discounts?.semiAnnual) discount = tier.discounts.semiAnnual;
+        else if (subscriptionDuration === 12 && tier.discounts?.annual) discount = tier.discounts.annual;
         
         if (discount > 0) {
             totalPrice = totalPrice * (1 - discount / 100);
@@ -554,17 +554,30 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                 <div className="space-y-4">
                     <RadioGroup defaultValue="1" onValueChange={(value) => setSubscriptionDuration(Number(value))}>
                         <div className="grid grid-cols-2 gap-2">
-                             {[1, 3, 6, 12].map(d => (
-                                <div key={d}>
-                                    <RadioGroupItem value={d.toString()} id={`d-${d}`} className="peer sr-only" />
+                             {[
+                                { duration: 1, label: "1 Mois" },
+                                { duration: 3, label: "3 Mois" },
+                                { duration: 6, label: "6 Mois" },
+                                { duration: 12, label: "1 An" }
+                             ].map(d => {
+                                const tier = subscriptionDialog.tier;
+                                let discount = 0;
+                                if (d.duration === 3) discount = tier?.discounts?.quarterly || 0;
+                                else if (d.duration === 6) discount = tier?.discounts?.semiAnnual || 0;
+                                else if (d.duration === 12) discount = tier?.discounts?.annual || 0;
+                                
+                                return (
+                                <div key={d.duration}>
+                                    <RadioGroupItem value={d.duration.toString()} id={`d-${d.duration}`} className="peer sr-only" />
                                     <Label
-                                        htmlFor={`d-${d}`}
+                                        htmlFor={`d-${d.duration}`}
                                         className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
                                     >
-                                        <span className="font-bold">{d} Mois</span>
+                                        <span className="font-bold">{d.label}</span>
+                                        {discount > 0 && <Badge variant="secondary" className="mt-1">{discount}% OFF</Badge>}
                                     </Label>
                                 </div>
-                            ))}
+                             )})}
                         </div>
                     </RadioGroup>
                     <div className="text-center font-bold text-2xl">
@@ -699,3 +712,4 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   return <CreatorProfile user={user} isOwnProfile={isOwnProfile} />;
 }
 
+    
