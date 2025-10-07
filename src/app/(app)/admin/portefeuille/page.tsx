@@ -21,8 +21,8 @@ export default function AdminWalletPage() {
   const router = useRouter();
   const [isAllowed, setIsAllowed] = useState(false);
   
-  const walletRef = useMemo(() => firestore ? doc(firestore, 'wallets', 'platform_wallet') : null, [firestore]);
-  const transactionsCollection = useMemo(() => firestore ? collection(firestore, 'wallets', 'platform_wallet', 'transactions') : null, [firestore]);
+  const walletRef = useMemo(() => isAllowed && firestore ? doc(firestore, 'wallets', 'platform_wallet') : null, [isAllowed, firestore]);
+  const transactionsCollection = useMemo(() => isAllowed && firestore ? collection(firestore, 'wallets', 'platform_wallet', 'transactions') : null, [isAllowed, firestore]);
   const transactionsQuery = useMemo(() => transactionsCollection ? query(transactionsCollection, orderBy('createdAt', 'desc')) : null, [transactionsCollection]);
 
   const { data: wallet, loading: walletLoading } = useDoc<Wallet>(walletRef);
@@ -33,14 +33,15 @@ export default function AdminWalletPage() {
       if (user?.role === 'founder') {
         setIsAllowed(true);
       } else {
+        setIsAllowed(false);
         router.push('/dashboard');
       }
     }
   }, [user, authLoading, router]);
 
-  const loading = authLoading || walletLoading || transactionsLoading || !isAllowed;
+  const loading = authLoading || !isAllowed || walletLoading || transactionsLoading;
 
-  if (!isAllowed) {
+  if (!isAllowed && !authLoading) {
     return (
        <div>
         <PageHeader title="Accès non autorisé" />

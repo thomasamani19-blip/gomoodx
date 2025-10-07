@@ -43,6 +43,7 @@ export default function AdminPartnerRequestsPage() {
             if (currentUser && ['founder', 'administrateur'].includes(currentUser.role)) {
                 setIsAllowed(true);
             } else {
+                 setIsAllowed(false);
                  router.push('/dashboard');
             }
         }

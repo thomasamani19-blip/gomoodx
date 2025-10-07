@@ -49,6 +49,7 @@ export default function AdminUsersPage() {
             if (currentUser && ['founder', 'administrateur'].includes(currentUser.role)) {
                 setIsAllowed(true);
             } else {
+                 setIsAllowed(false);
                  router.push('/dashboard');
             }
         }
@@ -61,7 +62,7 @@ export default function AdminUsersPage() {
     
     const { data: users, loading: usersLoading, setData: setUsers } = useCollection<User>(usersQuery);
 
-    const loading = authLoading || !isAllowed || (isAllowed && usersLoading);
+    const loading = authLoading || !isAllowed || usersLoading;
     
     const handleUpdateStatus = async (userId: string, newStatus: UserStatus) => {
         if (!firestore) return;

@@ -45,6 +45,7 @@ export default function AdminModerationPage() {
             if (currentUser && ['founder', 'administrateur', 'moderator'].includes(currentUser.role)) {
                 setIsAllowed(true);
             } else {
+                 setIsAllowed(false);
                  router.push('/dashboard');
             }
         }
