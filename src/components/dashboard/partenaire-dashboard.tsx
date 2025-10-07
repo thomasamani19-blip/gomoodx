@@ -6,10 +6,11 @@ import type { User } from "@/lib/types";
 import PageHeader from "../shared/page-header";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { Building, ShoppingBag, Newspaper } from "lucide-react";
+import { Building, ShoppingBag, Newspaper, DollarSign } from "lucide-react";
 
 export default function PartenaireDashboard({ user }: { user: User }) {
   const isProducer = user.partnerType === 'producer';
+  const isEstablishment = user.partnerType === 'establishment';
 
   const managementTools = [
     { 
@@ -20,18 +21,25 @@ export default function PartenaireDashboard({ user }: { user: User }) {
         show: true,
     },
     {
+        title: "Gérer mes Tarifs",
+        description: "Définissez les prix de vos chambres et services.",
+        href: "/gestion/tarifs",
+        icon: DollarSign,
+        show: isEstablishment,
+    },
+    {
         title: "Gérer mes Annonces/Services",
         description: "Créez et gérez les services que votre établissement propose.",
         href: "/gestion/annonces",
         icon: Newspaper,
-        show: !isProducer, // Show for establishments
+        show: isEstablishment,
     },
     {
         title: "Gérer mes Produits",
         description: "Ajoutez ou mettez à jour les articles de votre boutique (pour les producteurs).",
         href: "/gestion/produits",
         icon: ShoppingBag,
-        show: isProducer, // Show for producers
+        show: isProducer,
     }
 ];
 

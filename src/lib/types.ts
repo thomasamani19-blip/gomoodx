@@ -73,6 +73,16 @@ export interface Comment {
 }
 // ------------
 
+// Establishment pricing settings
+export interface EstablishmentPricing {
+  basePricePerHour: number;
+  roomTypes: {
+    standard: { price: number; enabled: boolean };
+    comfort: { price: number; enabled: boolean };
+    luxe: { price: number; enabled: boolean };
+  };
+}
+
 
 // Base User structure
 export interface User {
@@ -108,6 +118,9 @@ export interface User {
   verificationType?: VerificationType;
   subscriptionSettings?: SubscriptionSettings; // For creators
   subscription?: UserSubscription; // For platform-level subscriptions
+  establishmentSettings?: { // For establishment partners
+    pricing: EstablishmentPricing;
+  };
   // Rates for creators
   rates?: {
     videoCallPerMinute?: number;
