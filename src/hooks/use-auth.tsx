@@ -12,7 +12,7 @@ import {
     signOut,
     updateProfile
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch, limit } from 'firebase/firestore';
 import type { User } from '@/lib/types';
 import { uploadFile } from '@/lib/storage';
 
@@ -28,6 +28,9 @@ function isAdult(dateOfBirth: string | Date) {
   }
   return age >= 18;
 }
+
+const REFERRER_REWARD_POINTS = 1000;
+const REFERRED_REWARD_POINTS = 500;
 
 
 interface AuthContextType {
@@ -63,9 +66,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     throw new Error('Rôle non valide sélectionné');
   }
+  
+  const handleReferral = async (batch: any, referralCode: string, newUserRef: any) => {
+    const usersRef = collection(firestore, 'users');
+    const q = query(usersRef, where('referralCode', '==', referralCode), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+        const referrerDoc = querySnapshot.docs[0];
+        const referrerRef = doc(firestore, 'users', referrerDoc.id);
+
+        // Update referrer's data
+        batch.update(referrerRef, {
+            referralsCount: (referrerDoc.data().referralsCount || 0) + 1,
+            rewardPoints: (referrerDoc.data().rewardPoints || 0) + REFERRER_REWARD_POINTS
+        });
+
+        // Update new user's data
+        batch.update(newUserRef, {
+            referredBy: referrerDoc.id,
+            rewardPoints: REFERRED_REWARD_POINTS
+        });
+        
+        console.log(`Referral successful! Referrer: ${referrerDoc.id}`);
+    } else {
+        console.warn(`Referral code "${referralCode}" not found.`);
+    }
+  }
+
 
   const registerClient = async (form: any) => {
-    const { email, password, displayName, dateOfBirth, country, phone, gender } = form;
+    const { email, password, displayName, dateOfBirth, country, phone, gender, referralCode } = form;
   
     if (!isAdult(dateOfBirth)) {
       throw new Error("Vous devez avoir au moins 18 ans pour vous inscrire.");
@@ -74,9 +105,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Création compte Firebase Auth
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(user, { displayName });
+    
+    const batch = writeBatch(firestore);
+    const userDocRef = doc(firestore, "users", user.uid);
   
     // Création du document Firestore
-    await setDoc(doc(firestore, "users", user.uid), {
+    const userData = {
       displayName,
       email,
       role: "client",
@@ -85,14 +119,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       phone,
       gender,
       status: "active",
-      isVerified: false, // Default for client
+      isVerified: false,
       rewardPoints: 0,
       referralCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
       referralsCount: 0,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       onlineStatus: "offline",
-    });
+    };
+
+    batch.set(userDocRef, userData);
+
+    if (referralCode) {
+        await handleReferral(batch, referralCode, userDocRef);
+    }
+
+    await batch.commit();
   
     return user;
   }
@@ -108,6 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       city,
       phone,
       gender,
+      referralCode,
       verificationType = "selfie" // "selfie" ou "complete"
     } = form;
   
@@ -117,9 +160,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(user, { displayName });
+    
+    const batch = writeBatch(firestore);
+    const userDocRef = doc(firestore, 'users', user.uid);
   
     // 🔥 Enregistrement Firestore
-    await setDoc(doc(firestore, "users", user.uid), {
+    const userData = {
       fullName,
       displayName,
       email,
@@ -139,7 +185,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       onlineStatus: "offline",
-    });
+    };
+
+    batch.set(userDocRef, userData);
+
+    if (referralCode) {
+      await handleReferral(batch, referralCode, userDocRef);
+    }
+    
+    await batch.commit();
   
     // 🧾 Upload fichiers de vérification (si disponibles)
     if (storage && verificationFiles) {
