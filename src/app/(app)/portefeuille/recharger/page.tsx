@@ -58,8 +58,8 @@ export default function RechargerPage() {
       name: user?.displayName || 'Client GoMoodX',
     },
     customizations: {
-      title: 'GoMoodX - Rechargement',
-      description: `Rechargement de ${finalAmount} €`,
+      title: 'GoMoodX - Achat de Crédits',
+      description: `Ajout de ${finalAmount} € à votre portefeuille`,
       logo: 'https://placehold.co/100x100/EAB308/000000?text=GMX',
     },
     meta: {
@@ -127,15 +127,15 @@ export default function RechargerPage() {
   return (
     <div>
       <PageHeader
-        title="Recharger votre Portefeuille"
-        description="Ajoutez des fonds à votre compte pour les achats et services."
+        title="Acheter des Crédits"
+        description="Ajoutez des fonds à votre portefeuille pour profiter de toutes les expériences GoMoodX."
       />
       <div className="grid lg:grid-cols-3 gap-8">
          <div className="lg:col-span-2">
              <Card className="w-full">
                 <CardHeader>
                     <CardTitle>Choisir un montant</CardTitle>
-                    <CardDescription>Sélectionnez un pack pour des bonus ou entrez un montant personnalisé.</CardDescription>
+                    <CardDescription>Sélectionnez un pack pour obtenir des crédits bonus, ou entrez un montant personnalisé.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <RadioGroup 
