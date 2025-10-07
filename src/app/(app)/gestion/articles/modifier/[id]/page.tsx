@@ -28,6 +28,7 @@ const articleSchema = z.object({
   content: z.string().min(50, "L'article doit contenir au moins 50 caractères."),
   image: z.any().optional(),
   isPremium: z.boolean().default(false),
+  price: z.coerce.number().min(0).optional(),
 });
 
 type ArticleFormValues = z.infer<typeof articleSchema>;
@@ -45,9 +46,11 @@ export default function ModifierArticlePage({ params }: { params: { id: string }
     const [isLoading, setIsLoading] = useState(false);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-    const { register, handleSubmit, control, formState: { errors }, setValue, reset } = useForm<ArticleFormValues>({
+    const { register, handleSubmit, control, formState: { errors }, watch, setValue, reset } = useForm<ArticleFormValues>({
         resolver: zodResolver(articleSchema),
     });
+    
+    const isPremium = watch('isPremium');
 
     useEffect(() => {
         if (article) {
@@ -55,6 +58,7 @@ export default function ModifierArticlePage({ params }: { params: { id: string }
                 title: article.title,
                 content: article.content,
                 isPremium: article.isPremium || false,
+                price: article.price || 0,
             });
             setImagePreview(article.imageUrl);
         }
@@ -82,6 +86,7 @@ export default function ModifierArticlePage({ params }: { params: { id: string }
                 imageUrl: imageUrl,
                 date: serverTimestamp(),
                 isPremium: data.isPremium,
+                price: data.isPremium ? data.price : 0,
             });
 
             toast({ title: "Article modifié !", description: "Votre article a été mis à jour." });
@@ -132,30 +137,36 @@ export default function ModifierArticlePage({ params }: { params: { id: string }
             <form onSubmit={handleSubmit(onSubmit)}>
                 <Card>
                     <CardContent className="pt-6 grid gap-6">
-                        <div className="space-y-2">
-                             <Controller
-                                name="isPremium"
-                                control={control}
-                                render={({ field }) => (
-                                    <div className="flex items-center justify-between rounded-lg border p-4">
-                                        <div className="space-y-0.5">
-                                            <Label htmlFor="premium-switch" className="text-base flex items-center">
-                                                <Star className="mr-2 h-4 w-4 text-primary" />
-                                                Article Premium
-                                            </Label>
-                                            <p className="text-sm text-muted-foreground">
-                                               Cochez pour rendre cet article visible uniquement par les membres Premium.
-                                            </p>
-                                        </div>
-                                        <Switch
-                                            id="premium-switch"
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                        />
+                        <Controller
+                            name="isPremium"
+                            control={control}
+                            render={({ field }) => (
+                                <div className="flex items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                        <Label htmlFor="premium-switch" className="text-base flex items-center">
+                                            <Star className="mr-2 h-4 w-4 text-primary" />
+                                            Article Premium (Payant)
+                                        </Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            Rendre cet article payant à l'achat pour tous les utilisateurs.
+                                        </p>
                                     </div>
-                                )}
-                            />
-                        </div>
+                                    <Switch
+                                        id="premium-switch"
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                </div>
+                            )}
+                        />
+                        {isPremium && (
+                            <div className="space-y-2">
+                                <Label htmlFor="price">Prix de l'article (€)</Label>
+                                <Input id="price" type="number" step="0.5" {...register('price')} />
+                                {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
+                            </div>
+                        )}
+
                         <div className="space-y-2">
                             <Label>Image de l'article</Label>
                             <div>

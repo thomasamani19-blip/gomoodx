@@ -23,6 +23,7 @@ export default function GenererArticlePage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
+  const [price, setPrice] = useState(5);
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const firestore = useFirestore();
@@ -79,6 +80,7 @@ export default function GenererArticlePage() {
             imageUrl: `https://picsum.photos/seed/${Date.now()}/800/600`,
             imageHint: 'abstract background',
             isPremium: isPremium,
+            price: isPremium ? price : 0,
         });
         toast({ title: "Article Enregistré !", description: "Votre article a été ajouté à votre blog."});
         router.push('/gestion/articles');
@@ -145,8 +147,8 @@ export default function GenererArticlePage() {
         <Card className="min-h-[400px]">
           <CardHeader>
             {result && (
-                <div className="flex justify-between items-center">
-                    <div className="flex gap-2">
+                <div className="flex justify-between items-start gap-4">
+                    <div className='flex gap-2'>
                         <Button onClick={handleSaveArticle} disabled={isSaving || authLoading}>
                             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                             Enregistrer
@@ -156,12 +158,26 @@ export default function GenererArticlePage() {
                             Copier
                         </Button>
                     </div>
-                     <div className="flex items-center space-x-2">
-                        <Switch id="premium-article" checked={isPremium} onCheckedChange={setIsPremium} />
-                        <Label htmlFor="premium-article" className="flex items-center gap-1">
-                            <Star className="h-4 w-4 text-primary" />
-                            Premium
-                        </Label>
+                     <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                            <Switch id="premium-article" checked={isPremium} onCheckedChange={setIsPremium} />
+                            <Label htmlFor="premium-article" className="flex items-center gap-1">
+                                <Star className="h-4 w-4 text-primary" />
+                                Premium (Payant)
+                            </Label>
+                        </div>
+                         {isPremium && (
+                            <div className="flex items-center gap-2">
+                                <Input 
+                                    type="number" 
+                                    value={price}
+                                    onChange={(e) => setPrice(Number(e.target.value))}
+                                    className="w-24 h-8"
+                                    min="1"
+                                />
+                                <Label>€</Label>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
