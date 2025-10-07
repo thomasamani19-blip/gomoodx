@@ -73,7 +73,7 @@ export default function CreerAnnoncePage() {
                 views: 0,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
-                isPremium: false, // Annonces are not premium as per new logic
+                isSponsored: false,
             });
 
             toast({ title: "Annonce créée !", description: "Votre nouvelle annonce est maintenant en ligne." });
@@ -171,7 +171,7 @@ export default function CreerAnnoncePage() {
                     <CardFooter>
                         <Button type="submit" disabled={isLoading || authLoading}>
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                            {isLoading ? 'Création en cours...' : 'Publier l\'annonce'}
+                            {isLoading ? 'Création en cours...' : 'Publier l\\'annonce'}
                         </Button>
                     </CardFooter>
                 </Card>
@@ -179,5 +179,3 @@ export default function CreerAnnoncePage() {
         </div>
     );
 }
-
-    
