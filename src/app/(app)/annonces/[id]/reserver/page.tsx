@@ -61,6 +61,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
             const basePrice = pricing.basePricePerHour || 0;
             const roomSupplement = pricing.roomTypes[selectedRoomType]?.supplement || 0;
             
+            // Nouveau calcul
             const roomCost = durationHours * basePrice;
             const escortsCost = selectedEscorts.length * (annonce.price || 0);
             
@@ -168,7 +169,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                                             {Object.entries(pricing.roomTypes).filter(([, room]) => room.enabled).map(([key, room]) => (
                                                 <div key={key} className="flex items-center space-x-2">
                                                     <RadioGroupItem value={key} id={key} />
-                                                    <Label htmlFor={key} className="capitalize">{key} ({key === 'standard' ? `${pricing.basePricePerHour}€/h` : `+${room.supplement}€ total`})</Label>
+                                                    <Label htmlFor={key} className="capitalize">{key} ({key === 'standard' ? `Standard` : `+${room.supplement}€ total`})</Label>
                                                 </div>
                                             ))}
                                         </RadioGroup>

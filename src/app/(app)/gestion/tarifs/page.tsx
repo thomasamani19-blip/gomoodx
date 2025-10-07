@@ -67,6 +67,7 @@ export default function GestionTarifsPage() {
             form.reset({
                 ...user.establishmentSettings.pricing,
                 roomTypes: {
+                    ...form.getValues().roomTypes, // keep defaults for any missing rooms
                     ...user.establishmentSettings.pricing.roomTypes,
                     standard: { supplement: 0, enabled: true } // Ensure standard is fixed
                 }
@@ -125,8 +126,8 @@ export default function GestionTarifsPage() {
                         </div>
                         
                         <div className="space-y-4">
-                             <CardTitle>Suppléments pour chambres supérieures</CardTitle>
-                             <CardDescription>Définissez le coût supplémentaire fixe pour les chambres supérieures. Ce montant s'ajoute au coût total de la réservation.</CardDescription>
+                             <CardTitle>Suppléments fixes pour chambres supérieures</CardTitle>
+                             <CardDescription>Définissez le coût supplémentaire unique pour les chambres supérieures. Ce montant est ajouté une seule fois au coût total de la réservation, quelle que soit la durée.</CardDescription>
                             
                              {Object.entries(form.getValues().roomTypes).map(([key, value]) => {
                                 if (key === 'standard') return null; // Do not show 'standard' here
