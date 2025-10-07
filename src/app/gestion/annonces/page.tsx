@@ -68,11 +68,12 @@ export default function GestionAnnoncesPage() {
     try {
       await deleteDoc(doc(firestore, 'services', annonceToDelete.id));
 
-      if (annonceToDelete.imageUrl) {
+      if (annonceToDelete.imageUrl && !annonceToDelete.imageUrl.includes('picsum.photos')) {
         try {
             const imageRef = ref(storage, annonceToDelete.imageUrl);
             await deleteObject(imageRef);
         } catch (storageError: any) {
+            // It's okay if the object doesn't exist, we can ignore that error.
             if (storageError.code !== 'storage/object-not-found') {
                 console.warn("Could not delete image from storage:", storageError.message);
             }
