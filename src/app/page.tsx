@@ -54,7 +54,7 @@ function LatestBlogPosts() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {articles && articles.map((article) => (
           <Card key={article.id} className="overflow-hidden group flex flex-col">
-            <Link href="/blog">
+            <Link href={`/blog/${article.id}`}>
               <div className="relative aspect-video">
                 <Image
                   src={article.imageUrl || 'https://picsum.photos/seed/blogpost/600/400'}
@@ -69,9 +69,11 @@ function LatestBlogPosts() {
                <p className="text-sm text-muted-foreground mb-2">
                   {article.date ? format(article.date.toDate(), "d MMMM yyyy", { locale: fr }) : 'Date inconnue'}
               </p>
-              <h3 className="font-headline text-xl font-semibold mb-3 flex-1 line-clamp-2">{article.title}</h3>
+              <h3 className="font-headline text-xl font-semibold mb-3 flex-1 line-clamp-2">
+                <Link href={`/blog/${article.id}`} className="hover:text-primary transition-colors">{article.title}</Link>
+              </h3>
               <Button variant="link" asChild className="p-0 self-start">
-                  <Link href="/blog">Lire la suite <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                  <Link href={`/blog/${article.id}`}>Lire la suite <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
             </CardContent>
           </Card>
