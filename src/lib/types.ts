@@ -23,6 +23,11 @@ export interface SubscriptionTier {
   price: number; // monthly
   description: string;
   isActive: boolean;
+  discounts?: {
+    quarterly?: number; // 3 months
+    semiAnnual?: number; // 6 months
+    annual?: number; // 12 months
+  }
 }
 
 export interface SubscriptionSettings {

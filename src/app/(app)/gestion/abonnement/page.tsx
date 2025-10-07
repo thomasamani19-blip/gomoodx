@@ -15,7 +15,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Loader2, Save, Star, Trash2 } from 'lucide-react';
+import { Loader2, Save, Star, Trash2, Percent } from 'lucide-react';
 import PageHeader from '@/components/shared/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
@@ -29,6 +29,11 @@ const tierSchema = z.object({
   price: z.coerce.number().min(0, "Le prix doit être positif."),
   description: z.string().min(1, "La description est requise."),
   isActive: z.boolean(),
+  discounts: z.object({
+    quarterly: z.coerce.number().min(0).max(100).optional(),
+    semiAnnual: z.coerce.number().min(0).max(100).optional(),
+    annual: z.coerce.number().min(0).max(100).optional(),
+  }).optional(),
 });
 
 const formSchema = z.object({
@@ -147,7 +152,7 @@ export default function GestionAbonnementPage() {
                                             </div>
                                         </AccordionTrigger>
                                         <AccordionContent>
-                                            <div className="space-y-4 p-2">
+                                            <div className="space-y-6 p-2">
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="space-y-2">
                                                         <Label>Nom du niveau</Label>
@@ -162,14 +167,36 @@ export default function GestionAbonnementPage() {
                                                     <Label>Avantages (description)</Label>
                                                     <Textarea {...form.register(`tiers.${index}.description`)} placeholder="Ex: Accès au contenu exclusif, messages prioritaires..." />
                                                 </div>
-                                                <div className="flex justify-between items-center">
+                                                
+                                                <div className="space-y-4 rounded-md border p-4">
+                                                    <Label className="text-base font-medium">Réductions (Optionnel)</Label>
+                                                    <div className="grid grid-cols-3 gap-4">
+                                                         <div className="relative">
+                                                            <Label htmlFor={`d3-${index}`} className="text-xs">3 mois (%)</Label>
+                                                            <Input id={`d3-${index}`} type="number" placeholder="10" {...form.register(`tiers.${index}.discounts.quarterly`)} className="pl-7" />
+                                                            <Percent className="absolute left-2 top-1/2 -translate-y-px h-4 w-4 text-muted-foreground" />
+                                                         </div>
+                                                          <div className="relative">
+                                                            <Label htmlFor={`d6-${index}`} className="text-xs">6 mois (%)</Label>
+                                                            <Input id={`d6-${index}`} type="number" placeholder="15" {...form.register(`tiers.${index}.discounts.semiAnnual`)} className="pl-7" />
+                                                            <Percent className="absolute left-2 top-1/2 -translate-y-px h-4 w-4 text-muted-foreground" />
+                                                         </div>
+                                                          <div className="relative">
+                                                            <Label htmlFor={`d12-${index}`} className="text-xs">12 mois (%)</Label>
+                                                            <Input id={`d12-${index}`} type="number" placeholder="20" {...form.register(`tiers.${index}.discounts.annual`)} className="pl-7" />
+                                                            <Percent className="absolute left-2 top-1/2 -translate-y-px h-4 w-4 text-muted-foreground" />
+                                                         </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex justify-between items-center pt-4">
                                                     <Controller
                                                         name={`tiers.${index}.isActive`}
                                                         control={form.control}
                                                         render={({ field }) => (
                                                             <div className="flex items-center gap-2">
                                                                 <Switch checked={field.value} onCheckedChange={field.onChange} id={`active-${field.name}`}/>
-                                                                <Label htmlFor={`active-${field.name}`}>Actif</Label>
+                                                                <Label htmlFor={`active-${field.name}`}>Niveau Actif</Label>
                                                             </div>
                                                         )}
                                                     />
@@ -188,7 +215,7 @@ export default function GestionAbonnementPage() {
                                     type="button" 
                                     variant="outline" 
                                     className="mt-4" 
-                                    onClick={() => append({id: `tier${fields.length+1}`, name: `Niveau ${fields.length + 1}`, price: 0, description: '', isActive: true })}>
+                                    onClick={() => append({id: `tier${Date.now()}`, name: `Nouveau Niveau`, price: 0, description: '', isActive: true, discounts: { quarterly: 0, semiAnnual: 0, annual: 0 } })}>
                                     Ajouter un niveau
                                 </Button>
                             )}
