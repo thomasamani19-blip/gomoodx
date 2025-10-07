@@ -3,60 +3,103 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Accès public pour les collections non-sensibles
-    match /products/{productId} {
-      allow read: if true;
-    }
-    match /services/{serviceId} {
-      allow read: if true;
-    }
-    match /blog/{blogId} {
-      allow read: if true;
-    }
-    
-    // Les utilisateurs peuvent voir tous les profils, mais ne peuvent modifier que le leur
+
+    // Allow public read access to user profiles for browsing.
+    // Write access is restricted.
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth.uid == userId;
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Un utilisateur ne peut accéder qu'à son propre portefeuille
+    // Allow logged-in users to read and create posts.
+    // Only the author can update or delete their own post.
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+    }
+
+    // Comments can be read by anyone logged in.
+    // You can only create comments if you are logged in.
+    // You can only delete your own comments.
+    match /posts/{postId}/comments/{commentId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+    }
+
+    // Wallets are private.
     match /wallets/{userId} {
-      allow read, create, update: if request.auth.uid == userId;
-      
-      // Transactions (sous-collection)
-      match /transactions/{transactionId} {
-         allow read, create: if request.auth.uid == userId;
-      }
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        // Transactions are also private.
+        match /transactions/{transactionId} {
+            allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
     }
-    
-    // Les créateurs peuvent gérer leurs propres sessions live
+
+    // Partner requests can be created by anyone, but only read/updated by admins (not implemented in rules yet).
+    match /partnerRequests/{requestId} {
+        allow read, update: if request.auth != null; // Should be restricted to admins
+        allow create: if true;
+    }
+
+    // Public content like services, products, blog, and live sessions are readable by all.
+    match /services/{serviceId} {
+        allow read: if true;
+        allow create, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+    }
+     match /services/{serviceId}/reviews/{reviewId} {
+        allow read: if true;
+        allow create: if request.auth != null;
+        allow update, delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+    }
+
+    match /products/{productId} {
+        allow read: if true;
+        allow create, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+    }
+
+    match /blog/{articleId} {
+        allow read: if true;
+        allow create, update, delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+    }
+
     match /lives/{liveId} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth.uid == resource.data.hostId;
+        allow read: if true;
+        allow create, update, delete: if request.auth != null && resource.data.hostId == request.auth.uid;
     }
 
-    // Les messages ne sont lisibles que par l'expéditeur et le destinataire
+    // Settings are read-only for clients, writable for admins (not implemented).
+    match /settings/global {
+        allow read: if true;
+        allow write: if false; // Should be restricted to admins
+    }
+
+    // Messages are private between two users.
     match /messages/{messageId} {
-        allow read, create: if request.auth != null && (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
-    }
-
-    // Les appels ne peuvent être créés et lus que par les participants
-    match /calls/{callId} {
-        allow read, create, update: if request.auth != null && (request.auth.uid == resource.data.callerId || request.auth.uid == resource.data.receiverId);
-        
-        match /offerCandidates/{candidateId} {
-           allow create: if request.auth != null;
-        }
-         match /answerCandidates/{candidateId} {
-           allow create: if request.auth != null;
-        }
+        allow read, create: if request.auth != null && (request.resource.data.senderId == request.auth.uid || request.resource.data.receiverId == request.auth.uid);
     }
     
-    // Fallback : refuse tout par défaut
-    match /{document=**} {
-      allow read, write: if false;
+    // Calls are private between two users.
+    match /calls/{callId} {
+        allow read, write: if request.auth != null && (resource.data.callerId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+        match /offerCandidates/{candidateId} {
+            allow read, write: if request.auth != null;
+        }
+        match /answerCandidates/{candidateId} {
+            allow read, write: if request.auth != null;
+        }
+    }
+
+    // Purchases are only readable by the member who made them or the seller.
+    match /purchases/{purchaseId} {
+        allow read: if request.auth != null && (resource.data.memberId == request.auth.uid || resource.data.sellerId == request.auth.uid);
+        allow create: if request.auth != null && request.resource.data.memberId == request.auth.uid;
+    }
+
+    // Reservations
+    match /reservations/{reservationId} {
+        allow read, write: if request.auth != null && (resource.data.memberId == request.auth.uid || resource.data.creatorId == request.auth.uid || resource.data.escorts.exists(e, e.id == request.auth.uid));
     }
   }
 }
