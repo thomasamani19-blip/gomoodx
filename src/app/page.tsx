@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 const TestimonialCard = ({ quote, author, role }: { quote: string, author: string, role: string }) => (
     <Card className="bg-card/50 border-primary/20 flex flex-col justify-between">
@@ -83,26 +84,29 @@ function LatestBlogPosts() {
 export default function Home() {
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-main');
   const router = useRouter();
+  const [filters, setFilters] = useState<Record<string, boolean>>({});
+
+  const handleFilterChange = (filterId: string, checked: boolean | string) => {
+      setFilters(prev => ({ ...prev, [filterId]: !!checked }));
+  };
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const query = formData.get('query');
-    if (query) {
-      router.push(`/recherche?q=${query}`);
-    }
-  };
+    const searchParams = new URLSearchParams();
 
-  const handleAiSearch = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    const form = (e.target as HTMLElement).closest('form');
-    if (form) {
-        const formData = new FormData(form);
-        const query = formData.get('query');
-        if (query) {
-            router.push(`/recherche?q=${query}&ia=true`);
+    if (query) {
+      searchParams.set('q', query.toString());
+    }
+
+    for (const [key, value] of Object.entries(filters)) {
+        if (value) {
+            searchParams.set(key, 'true');
         }
     }
+
+    router.push(`/recherche?${searchParams.toString()}`);
   };
 
   return (
@@ -134,56 +138,54 @@ export default function Home() {
                     <form onSubmit={handleSearch}>
                         <div className="flex w-full items-center space-x-2">
                             <Input name="query" type="text" placeholder="Rechercher par mot-clé, créateur, ou service..." className="h-12 text-base" />
-                            <Button type="button" size="icon" className="h-12 w-12 flex-shrink-0" aria-label="Recherche IA" onClick={handleAiSearch}>
-                                <Wand2 className="h-6 w-6" />
-                            </Button>
                             <Button type="submit" size="icon" className="h-12 w-12 flex-shrink-0" aria-label="Recherche">
                                 <Search className="h-6 w-6" />
                             </Button>
                         </div>
+                    
+                        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-2">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="cat-rencontre" onCheckedChange={(c) => handleFilterChange('categorie_rencontre', c)} />
+                                <Label htmlFor="cat-rencontre" className="text-sm font-light text-gray-300">Rencontre</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <Checkbox id="cat-massage" onCheckedChange={(c) => handleFilterChange('categorie_massage', c)} />
+                                <Label htmlFor="cat-massage" className="text-sm font-light text-gray-300">Massage</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="cat-media" onCheckedChange={(c) => handleFilterChange('categorie_media', c)} />
+                                <Label htmlFor="cat-media" className="text-sm font-light text-gray-300">Média</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <Checkbox id="cat-produit" onCheckedChange={(c) => handleFilterChange('categorie_produit', c)} />
+                                <Label htmlFor="cat-produit" className="text-sm font-light text-gray-300">Produit</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <Checkbox id="cat-live" onCheckedChange={(c) => handleFilterChange('categorie_live', c)} />
+                                <Label htmlFor="cat-live" className="text-sm font-light text-gray-300">Live</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <Checkbox id="zone-paris" onCheckedChange={(c) => handleFilterChange('zone_paris', c)} />
+                                <Label htmlFor="zone-paris" className="text-sm font-light text-gray-300">Paris</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <Checkbox id="genre-femme" onCheckedChange={(c) => handleFilterChange('genre_femme', c)} />
+                                <Label htmlFor="genre-femme" className="text-sm font-light text-gray-300">Femme</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <Checkbox id="prix-luxe" onCheckedChange={(c) => handleFilterChange('prix_luxe', c)} />
+                                <Label htmlFor="prix-luxe" className="text-sm font-light text-gray-300">Luxe</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <Checkbox id="type-etablissement" onCheckedChange={(c) => handleFilterChange('type_etablissement', c)} />
+                                <Label htmlFor="type-etablissement" className="text-sm font-light text-gray-300">Établissement</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <Checkbox id="type-producteur" onCheckedChange={(c) => handleFilterChange('type_producteur', c)} />
+                                <Label htmlFor="type-producteur" className="text-sm font-light text-gray-300">Producteur</Label>
+                            </div>
+                        </div>
                     </form>
-                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-2">
-                        <div className="flex items-center space-x-2">
-                            <Checkbox id="cat-rencontre" />
-                            <Label htmlFor="cat-rencontre" className="text-sm font-light text-gray-300">Rencontre</Label>
-                        </div>
-                         <div className="flex items-center space-x-2">
-                            <Checkbox id="cat-massage" />
-                            <Label htmlFor="cat-massage" className="text-sm font-light text-gray-300">Massage</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <Checkbox id="cat-media" />
-                            <Label htmlFor="cat-media" className="text-sm font-light text-gray-300">Média</Label>
-                        </div>
-                         <div className="flex items-center space-x-2">
-                            <Checkbox id="cat-produit" />
-                            <Label htmlFor="cat-produit" className="text-sm font-light text-gray-300">Produit</Label>
-                        </div>
-                         <div className="flex items-center space-x-2">
-                            <Checkbox id="cat-live" />
-                            <Label htmlFor="cat-live" className="text-sm font-light text-gray-300">Live</Label>
-                        </div>
-                         <div className="flex items-center space-x-2">
-                            <Checkbox id="zone-paris" />
-                            <Label htmlFor="zone-paris" className="text-sm font-light text-gray-300">Paris</Label>
-                        </div>
-                         <div className="flex items-center space-x-2">
-                            <Checkbox id="genre-femme" />
-                            <Label htmlFor="genre-femme" className="text-sm font-light text-gray-300">Femme</Label>
-                        </div>
-                         <div className="flex items-center space-x-2">
-                            <Checkbox id="prix-luxe" />
-                            <Label htmlFor="prix-luxe" className="text-sm font-light text-gray-300">Luxe</Label>
-                        </div>
-                         <div className="flex items-center space-x-2">
-                            <Checkbox id="type-etablissement" />
-                            <Label htmlFor="type-etablissement" className="text-sm font-light text-gray-300">Établissement</Label>
-                        </div>
-                         <div className="flex items-center space-x-2">
-                            <Checkbox id="type-producteur" />
-                            <Label htmlFor="type-producteur" className="text-sm font-light text-gray-300">Producteur</Label>
-                        </div>
-                    </div>
                 </CardContent>
             </Card>
 
@@ -278,5 +280,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
