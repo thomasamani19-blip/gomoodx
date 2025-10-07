@@ -14,6 +14,10 @@ export type OnlineStatus = 'online' | 'offline';
 export type VerificationStatus = 'pending' | 'verified' | 'rejected';
 export type VerificationType = 'selfie' | 'complete';
 
+// Moderation Status for content
+export type ModerationStatus = 'approved' | 'pending_review' | 'rejected';
+
+
 // --- Subscription ---
 export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled';
 
@@ -62,6 +66,8 @@ export interface Post {
     likes: string[]; // Array of userIds
     commentsCount: number;
     createdAt: Timestamp;
+    moderationStatus: ModerationStatus;
+    moderationReason?: string;
 }
 
 export interface Comment {
@@ -198,6 +204,8 @@ export interface Annonce {
   views: number;
   isSponsored?: boolean;
   sponsorshipExpiresAt?: Timestamp;
+  moderationStatus: ModerationStatus;
+  moderationReason?: string;
 }
 
 // Review (subcollection of Annonce)
@@ -321,6 +329,8 @@ export interface LiveSession {
     imageHint?: string;
     creatorName?: string;
     ticketPrice?: number;
+    moderationStatus: ModerationStatus;
+    moderationReason?: string;
 }
 
 // Reward
@@ -406,6 +416,8 @@ export interface Product {
     productType: ProductType;
     isSponsored?: boolean;
     sponsorshipExpiresAt?: Timestamp;
+    moderationStatus: ModerationStatus;
+    moderationReason?: string;
 }
 
 export interface BlogArticle {
@@ -420,6 +432,8 @@ export interface BlogArticle {
     authorName?: string;
     isPremium?: boolean;
     price?: number;
+    moderationStatus: ModerationStatus;
+    moderationReason?: string;
 }
 
 

@@ -1,4 +1,5 @@
 
+
 // /src/app/api/posts/create/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault, cert } from 'firebase-admin/app';
@@ -7,6 +8,7 @@ import { getStorage } from 'firebase-admin/storage';
 import type { Post } from '@/lib/types';
 import { getAuth } from 'firebase-admin/auth';
 import { firebaseConfig } from '@/firebase/config';
+import { modererContenu } from '@/ai/flows/moderer-contenu';
 
 if (!getApps().length) {
     initializeApp({
@@ -34,13 +36,17 @@ export async function POST(request: Request) {
             return NextResponse.json({ status: 'error', message: "Le contenu de la publication est vide." }, { status: 400 });
         }
         
-        // You should verify the authorId against the authenticated user token
-        // For simplicity, we trust the client for now.
         const authorDoc = await db.collection('users').doc(authorId).get();
         if (!authorDoc.exists) {
             return NextResponse.json({ status: 'error', message: "Auteur inconnu." }, { status: 404 });
         }
         const authorData = authorDoc.data()!;
+
+        // AI Content Moderation
+        const moderationResult = await modererContenu({
+            texte: content,
+            typeContenu: 'Post',
+        });
 
         let imageUrl: string | undefined = undefined;
 
@@ -54,7 +60,6 @@ export async function POST(request: Request) {
                     contentType: imageFile.type,
                 },
             });
-            // Make the file public to get a persistent URL
             await file.makePublic();
             imageUrl = file.publicUrl();
         }
@@ -69,6 +74,8 @@ export async function POST(request: Request) {
             likes: [],
             commentsCount: 0,
             createdAt: serverTimestamp() as any,
+            moderationStatus: moderationResult.status,
+            moderationReason: moderationResult.raison,
         };
 
         const postRef = await db.collection('posts').add(newPost);

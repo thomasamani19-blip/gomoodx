@@ -13,4 +13,5 @@ import '@/ai/flows/generer-video-ia';
 import '@/ai/flows/generer-article-blog';
 import '@/ai/flows/generer-scenario-video';
 import '@/ai/flows/generer-resume-admin';
+import '@/ai/flows/moderer-contenu';
 
