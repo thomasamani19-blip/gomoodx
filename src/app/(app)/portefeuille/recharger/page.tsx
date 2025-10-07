@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CreditCard, Loader2, Sparkles, Star } from 'lucide-react';
+import { CreditCard, Loader2, Sparkles, Star, Gift, Ticket, Video } from 'lucide-react';
 import { FlutterWaveButton, closePaymentModal as closeFlutterwaveModal } from 'flutterwave-react-v3';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,13 @@ const creditPacks = [
   { name: 'Confort', price: 50, bonus: 5, icon: Star },
   { name: 'Premium', price: 100, bonus: 15, icon: Star, isPopular: true },
   { name: 'Élite', price: 250, bonus: 50, icon: Star },
+];
+
+const uses = [
+    { name: 'Abonnements Fan', icon: Star },
+    { name: 'Contenu Exclusif', icon: Video },
+    { name: 'Tickets de Live', icon: Ticket },
+    { name: 'Cadeaux Virtuels', icon: Gift },
 ];
 
 export default function RechargerPage() {
@@ -123,89 +130,109 @@ export default function RechargerPage() {
         title="Recharger votre Portefeuille"
         description="Ajoutez des fonds à votre compte pour les achats et services."
       />
-      <div className="flex justify-center">
-         <Card className="w-full max-w-2xl">
-            <CardHeader>
-                <CardTitle>Choisir un montant</CardTitle>
-                <CardDescription>Sélectionnez un pack ou entrez un montant personnalisé. Les bonus sont appliqués après l'achat.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <RadioGroup 
-                    defaultValue="100" 
-                    onValueChange={(value) => {
-                        if (value === 'custom') {
-                            setIsCustom(true);
-                        } else {
-                            setIsCustom(false);
-                            setSelectedPackPrice(Number(value));
-                        }
-                    }}
-                    className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
-                >
-                    {creditPacks.map((pack) => (
-                        <div key={pack.name} className="relative">
-                            <RadioGroupItem value={pack.price.toString()} id={pack.name} className="peer sr-only" />
-                            <Label
-                                htmlFor={pack.name}
-                                className={cn(
-                                    "flex h-full flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary",
-                                    pack.isPopular && "border-primary"
-                                )}
-                            >
-                                {pack.isPopular && <Badge className="absolute -top-2" variant="secondary">Populaire</Badge>}
-                                <pack.icon className="mb-3 h-6 w-6 text-primary" />
-                                <span className="font-bold text-lg">{pack.name}</span>
-                                <span className="font-semibold text-2xl">{pack.price}€</span>
-                                {pack.bonus > 0 ? (
-                                    <span className="text-xs text-green-500 font-bold">+ {pack.bonus}€ offerts</span>
-                                ) : (
-                                    <span className="text-xs text-transparent">_</span>
-                                )}
-                            </Label>
+      <div className="grid lg:grid-cols-3 gap-8">
+         <div className="lg:col-span-2">
+             <Card className="w-full">
+                <CardHeader>
+                    <CardTitle>Choisir un montant</CardTitle>
+                    <CardDescription>Sélectionnez un pack pour des bonus ou entrez un montant personnalisé.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <RadioGroup 
+                        defaultValue="100" 
+                        onValueChange={(value) => {
+                            if (value === 'custom') {
+                                setIsCustom(true);
+                            } else {
+                                setIsCustom(false);
+                                setSelectedPackPrice(Number(value));
+                            }
+                        }}
+                        className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
+                    >
+                        {creditPacks.map((pack) => (
+                            <div key={pack.name} className="relative">
+                                <RadioGroupItem value={pack.price.toString()} id={pack.name} className="peer sr-only" />
+                                <Label
+                                    htmlFor={pack.name}
+                                    className={cn(
+                                        "flex h-full flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary",
+                                        pack.isPopular && "border-primary"
+                                    )}
+                                >
+                                    {pack.isPopular && <Badge className="absolute -top-2" variant="secondary">Populaire</Badge>}
+                                    <pack.icon className="mb-3 h-6 w-6 text-primary" />
+                                    <span className="font-bold text-lg">{pack.name}</span>
+                                    <span className="font-semibold text-2xl">{pack.price}€</span>
+                                    {pack.bonus > 0 ? (
+                                        <span className="text-xs text-green-500 font-bold">+ {pack.bonus}€ offerts</span>
+                                    ) : (
+                                        <span className="text-xs text-transparent">_</span>
+                                    )}
+                                </Label>
+                            </div>
+                        ))}
+                    </RadioGroup>
+
+                    <RadioGroup 
+                        defaultValue={isCustom ? "custom" : selectedPackPrice.toString()}
+                        onValueChange={(value) => {
+                            if (value === 'custom') { setIsCustom(true); } else { setIsCustom(false); setSelectedPackPrice(Number(value)); }
+                        }}
+                    >
+                        <div className={cn("rounded-md border-2 p-4 mt-4", isCustom && "border-primary")}>
+                            <div className="flex items-center space-x-2 mb-2">
+                                <RadioGroupItem value="custom" id="custom" />
+                                <Label htmlFor="custom">Ou entrez un montant personnalisé (EUR)</Label>
+                            </div>
+                            <Input
+                                id="amount"
+                                type="number"
+                                value={customAmount}
+                                onChange={(e) => setCustomAmount(Number(e.target.value))}
+                                onFocus={() => setIsCustom(true)}
+                                min="10"
+                                placeholder="Ex: 75"
+                            />
+                        </div>
+                    </RadioGroup>
+
+                    <div className="mt-8">
+                        <p className="text-sm font-semibold mb-2">Méthode de paiement</p>
+                        <div className="grid grid-cols-2 gap-4">
+                            <Button variant={paymentMethod === 'flutterwave' ? 'secondary' : 'outline'} onClick={() => setPaymentMethod('flutterwave')}>
+                                Flutterwave (EUR)
+                            </Button>
+                            <Button variant={paymentMethod === 'kkiapay' ? 'secondary' : 'outline'} onClick={() => setPaymentMethod('kkiapay')} disabled>
+                                KkiaPay (XOF)
+                            </Button>
+                        </div>
+                    </div>
+
+                </CardContent>
+                <CardFooter>
+                    {renderPaymentButton()}
+                </CardFooter>
+            </Card>
+         </div>
+         <div className="lg:col-span-1">
+            <Card>
+                <CardHeader>
+                    <CardTitle>À quoi servent les crédits ?</CardTitle>
+                    <CardDescription>Votre portefeuille est la clé pour débloquer toutes les expériences GoMoodX.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {uses.map(use => (
+                        <div key={use.name} className="flex items-center gap-4">
+                            <div className="bg-primary/10 p-3 rounded-full">
+                                <use.icon className="h-5 w-5 text-primary" />
+                            </div>
+                            <p className="font-medium">{use.name}</p>
                         </div>
                     ))}
-                </RadioGroup>
-
-                 <RadioGroup 
-                    defaultValue={isCustom ? "custom" : selectedPackPrice.toString()}
-                    onValueChange={(value) => {
-                        if (value === 'custom') { setIsCustom(true); } else { setIsCustom(false); setSelectedPackPrice(Number(value)); }
-                    }}
-                 >
-                    <div className={cn("rounded-md border-2 p-4 mt-4", isCustom && "border-primary")}>
-                         <div className="flex items-center space-x-2 mb-2">
-                             <RadioGroupItem value="custom" id="custom" />
-                             <Label htmlFor="custom">Ou entrez un montant personnalisé (EUR)</Label>
-                        </div>
-                        <Input
-                            id="amount"
-                            type="number"
-                            value={customAmount}
-                            onChange={(e) => setCustomAmount(Number(e.target.value))}
-                            onFocus={() => setIsCustom(true)}
-                            min="10"
-                            placeholder="Ex: 75"
-                        />
-                    </div>
-                </RadioGroup>
-
-                <div className="mt-8">
-                     <p className="text-sm font-semibold mb-2">Méthode de paiement</p>
-                    <div className="grid grid-cols-2 gap-4">
-                        <Button variant={paymentMethod === 'flutterwave' ? 'secondary' : 'outline'} onClick={() => setPaymentMethod('flutterwave')}>
-                            Flutterwave (EUR)
-                        </Button>
-                        <Button variant={paymentMethod === 'kkiapay' ? 'secondary' : 'outline'} onClick={() => setPaymentMethod('kkiapay')} disabled>
-                            KkiaPay (XOF)
-                        </Button>
-                    </div>
-                </div>
-
-            </CardContent>
-            <CardFooter>
-                {renderPaymentButton()}
-            </CardFooter>
-        </Card>
+                </CardContent>
+            </Card>
+         </div>
       </div>
     </div>
   );
