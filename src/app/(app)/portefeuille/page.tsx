@@ -12,8 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowDownCircle, ArrowUpCircle, PlusCircle, Video, Phone, ArrowRight, ArrowLeft } from 'lucide-react';
-import { useMemo } from 'react';
+import { ArrowDownCircle, ArrowUpCircle, PlusCircle, Video, Phone, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { doc, collection, query, or, where, orderBy } from 'firebase/firestore';
 import { formatDuration } from '@/lib/utils';
@@ -130,6 +130,7 @@ function CallHistory() {
 export default function PortefeuillePage() {
   const { user, loading: authLoading } = useAuth();
   const firestore = useFirestore();
+  const [showBalance, setShowBalance] = useState(true);
   
   const walletRef = useMemo(() => user ? doc(firestore, 'wallets', user.id) : null, [user, firestore]);
   const transactionsCollection = useMemo(() => user ? collection(firestore, 'wallets', user.id, 'transactions') : null, [user, firestore]);
@@ -165,15 +166,21 @@ export default function PortefeuillePage() {
         <div className="lg:col-span-1">
            <Card>
             <CardHeader>
-              <CardTitle>Solde Actuel</CardTitle>
+              <div className="flex justify-between items-center">
+                 <CardTitle>Solde Actuel</CardTitle>
+                 <Button variant="ghost" size="icon" onClick={() => setShowBalance(!showBalance)}>
+                    {showBalance ? <EyeOff className="h-5 w-5"/> : <Eye className="h-5 w-5"/>}
+                    <span className="sr-only">Afficher/Cacher le solde</span>
+                 </Button>
+              </div>
             </CardHeader>
             <CardContent>
                 {loading && <Skeleton className="h-12 w-1/2" />}
                 {!loading && wallet && (
-                     <p className="text-5xl font-bold">{wallet.balance ? wallet.balance.toFixed(2) : '0.00'} €</p>
+                     <p className="text-5xl font-bold">{showBalance ? `${wallet.balance ? wallet.balance.toFixed(2) : '0.00'} €` : '****** €'}</p>
                 )}
                  {!loading && !wallet && (
-                     <p className="text-5xl font-bold">0.00 €</p>
+                     <p className="text-5xl font-bold">{showBalance ? '0.00 €' : '****** €'}</p>
                 )}
             </CardContent>
             <CardFooter>
@@ -238,4 +245,3 @@ export default function PortefeuillePage() {
     </div>
   );
 }
-

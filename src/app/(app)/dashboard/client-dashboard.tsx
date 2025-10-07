@@ -7,18 +7,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowRight, Heart, MessageSquare, Wallet } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Heart, MessageSquare, Wallet } from "lucide-react";
 import type { User, Transaction } from "@/lib/types";
 import Link from 'next/link';
 import { useCollection, useDoc, useFirestore } from "@/firebase";
 import { limit, where, query, collection, doc, orderBy } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export default function ClientDashboard({ user }: { user: User }) {
   const firestore = useFirestore();
+  const [showBalance, setShowBalance] = useState(true);
 
   // Query for favorite creators
   const favoriteIds = user?.favorites && user.favorites.length > 0 ? user.favorites : [];
@@ -72,11 +73,17 @@ export default function ClientDashboard({ user }: { user: User }) {
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Portefeuille</CardTitle>
-                    <Wallet className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowBalance(!showBalance)}>
+                          {showBalance ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
+                          <span className="sr-only">Afficher/Cacher le solde</span>
+                      </Button>
+                      <Wallet className="h-4 w-4 text-muted-foreground" />
+                    </div>
                 </CardHeader>
                 <CardContent>
                     {walletLoading ? <Skeleton className="h-8 w-1/2" /> : (
-                        <div className="text-2xl font-bold">{wallet?.balance?.toFixed(2) || '0.00'} €</div>
+                        <div className="text-2xl font-bold">{showBalance ? `${wallet?.balance?.toFixed(2) || '0.00'} €` : '****** €'}</div>
                     )}
                     <p className="text-xs text-muted-foreground">Disponible</p>
                 </CardContent>
@@ -178,5 +185,3 @@ export default function ClientDashboard({ user }: { user: User }) {
     </div>
   );
 }
-
-    
