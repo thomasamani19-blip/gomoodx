@@ -83,7 +83,7 @@ export function CreatorPricingForm({ user }: CreatorPricingFormProps) {
                     <CardContent className="space-y-8">
                         <div className="grid md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="escortPerHour">Tarif d'escorte par heure (€)</Label>
+                                <Label htmlFor="escortPerHour">Tarif de prestation par heure (€)</Label>
                                 <div className="relative">
                                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                     <Input id="escortPerHour" type="number" className="pl-8" {...form.register('escortPerHour')} placeholder="150" />

@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     try {
         const { memberId, annonceId, reservationDate, escorts, durationHours, amount, roomType } = await request.json();
 
-        if (!memberId || !annonceId || !reservationDate || !amount === undefined) {
+        if (!memberId || !annonceId || !reservationDate || amount === undefined) {
             return NextResponse.json({ status: 'error', message: 'Informations manquantes pour la réservation.' }, { status: 400 });
         }
         
@@ -34,6 +34,13 @@ export async function POST(request: Request) {
             const annonceDoc = await t.get(annonceRef);
             if (!annonceDoc.exists) throw new Error("L'annonce demandée n'existe pas.");
             const annonce = annonceDoc.data() as Annonce;
+            
+            const establishmentUserDoc = await t.get(db.collection('users').doc(annonce.createdBy));
+            if (!establishmentUserDoc.exists) throw new Error("L'établissement est introuvable.");
+            const establishmentUser = establishmentUserDoc.data() as User;
+            const establishmentPricing = establishmentUser.establishmentSettings?.pricing;
+            if (!establishmentPricing) throw new Error("La tarification de l'établissement est introuvable.");
+
 
             const memberWalletDoc = await t.get(memberWalletRef);
             if (!memberWalletDoc.exists) throw new Error("Portefeuille du membre introuvable.");
@@ -50,6 +57,22 @@ export async function POST(request: Request) {
             if (memberWallet.balance < totalAmount) {
                 throw new Error("Solde insuffisant pour effectuer cette réservation.");
             }
+            
+            // Recalculate price on server to prevent tampering
+            const roomPricePerHour = establishmentPricing.basePricePerHour || 0;
+            const roomSupplement = establishmentPricing.roomTypes[roomType as keyof typeof establishmentPricing.roomTypes]?.supplement || 0;
+            const establishmentShare = (durationHours * roomPricePerHour) + roomSupplement;
+            
+            let escortsShareTotal = 0;
+            if (escorts && escorts.length > 0) {
+                 escortsShareTotal = escorts.reduce((acc: number, escort: any) => acc + (escort.rate * durationHours), 0);
+            }
+            
+            const serverCalculatedAmount = establishmentShare + escortsShareTotal;
+            if (Math.abs(serverCalculatedAmount - totalAmount) > 0.01) { // Allow for floating point inaccuracies
+                throw new Error("Le montant de la réservation ne correspond pas au calcul du serveur.");
+            }
+
 
             const reservationId = db.collection('reservations').doc().id;
             const reservationRef = db.collection('reservations').doc(reservationId);
@@ -82,34 +105,25 @@ export async function POST(request: Request) {
                 description: `Réservation: ${annonce.title}`, status: 'success', reference: reservationId
             } as Omit<Transaction, 'id'>);
 
-            // Répartition des gains
-            const establishmentPricing = (await t.get(db.collection('users').doc(annonce.createdBy))).data()?.establishmentSettings?.pricing;
-            if (!establishmentPricing) throw new Error("La tarification de l'établissement est introuvable.");
-
-            const roomPricePerHour = establishmentPricing.basePricePerHour || 0;
-            const roomSupplement = establishmentPricing.roomTypes[roomType]?.supplement || 0;
-            const establishmentShare = (durationHours * roomPricePerHour) + roomSupplement;
-            
-            const escortsShareTotal = totalAmount - establishmentShare;
-
             // Payer l'établissement
             const establishmentCommission = establishmentShare * commissionRate;
             const establishmentNet = establishmentShare - establishmentCommission;
             t.update(establishmentWalletRef, { balance: FieldValue.increment(establishmentNet), totalEarned: FieldValue.increment(establishmentNet) });
             const establishmentCreditTxRef = establishmentWalletRef.collection('transactions').doc();
-            t.set(establishmentCreditTxRef, { amount: establishmentNet, type: 'credit', description: `Revenu réservation ${reservationId.substring(0,6)}`, reference: reservationId } as Omit<Transaction, 'id'>);
+            t.set(establishmentCreditTxRef, { amount: establishmentNet, type: 'credit', createdAt: Timestamp.now(), description: `Revenu réservation ${reservationId.substring(0,6)}`, reference: reservationId } as Omit<Transaction, 'id'>);
 
             // Payer chaque escorte
             for (const escort of (escorts || [])) {
-                const escortRate = escort.rate || 0;
-                const escortShare = escortRate * durationHours;
+                const escortShare = (escort.rate || 0) * durationHours;
                 const escortCommission = escortShare * commissionRate;
                 const escortNet = escortShare - escortCommission;
                 
                 const escortWalletRef = db.collection('wallets').doc(escort.id);
-                t.update(escortWalletRef, { balance: FieldValue.increment(escortNet), totalEarned: FieldValue.increment(escortNet) });
-                const escortCreditTxRef = escortWalletRef.collection('transactions').doc();
-                t.set(escortCreditTxRef, { amount: escortNet, type: 'credit', description: `Prestation pour réservation ${reservationId.substring(0,6)}`, reference: reservationId } as Omit<Transaction, 'id'>);
+                 if ((await t.get(escortWalletRef)).exists) {
+                    t.update(escortWalletRef, { balance: FieldValue.increment(escortNet), totalEarned: FieldValue.increment(escortNet) });
+                    const escortCreditTxRef = escortWalletRef.collection('transactions').doc();
+                    t.set(escortCreditTxRef, { amount: escortNet, type: 'credit', createdAt: Timestamp.now(), description: `Prestation pour réservation ${reservationId.substring(0,6)}`, reference: reservationId } as Omit<Transaction, 'id'>);
+                 }
             }
             
             // Payer la plateforme

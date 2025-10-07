@@ -210,6 +210,9 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                                         )}>
                                             <div className="relative aspect-square">
                                                 <Image src={escort.profileImage || `https://picsum.photos/seed/${escort.id}/200`} alt={escort.displayName} fill className="object-cover" />
+                                                 <div className="absolute bottom-0 left-0 right-0 p-1 bg-black/50 text-white text-xs text-center font-bold">
+                                                    {(escort.rates?.escortPerHour || 0).toFixed(0)}€/h
+                                                 </div>
                                             </div>
                                             <p className="p-2 text-center text-sm font-medium bg-muted truncate">{escort.displayName}</p>
                                         </Label>
