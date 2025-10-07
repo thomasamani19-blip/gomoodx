@@ -32,6 +32,8 @@ import {
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 
 // StarRating component copied from annonces/page.tsx
@@ -57,7 +59,7 @@ const StarRating = ({ rating, ratingCount, className }: { rating: number, rating
     );
 };
 
-const TierCard = ({ tier, isPopular = false }: { tier: SubscriptionTier, isPopular?: boolean }) => (
+const TierCard = ({ tier, isPopular = false, onSubscribe }: { tier: SubscriptionTier, isPopular?: boolean, onSubscribe: (tier: SubscriptionTier) => void }) => (
     <Card className={cn("flex flex-col", isPopular && "border-primary relative ring-2 ring-primary")}>
         {isPopular && <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">Populaire</Badge>}
         <CardHeader className="text-center">
@@ -70,7 +72,7 @@ const TierCard = ({ tier, isPopular = false }: { tier: SubscriptionTier, isPopul
             </ul>
         </CardContent>
         <CardFooter>
-            <Button className="w-full" size="lg" variant={isPopular ? "default" : "secondary"}>
+            <Button className="w-full" size="lg" variant={isPopular ? "default" : "secondary"} onClick={() => onSubscribe(tier)}>
                 <Star className="mr-2 h-4 w-4"/> S'abonner
             </Button>
         </CardFooter>
@@ -153,6 +155,11 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
     const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null, isFree?: boolean, price?: number }>({ show: false, type: null, isFree: false, price: 0 });
     const [showContactPassDialog, setShowContactPassDialog] = useState(false);
     const [isBuyingPass, setIsBuyingPass] = useState(false);
+    
+    const [subscriptionDialog, setSubscriptionDialog] = useState<{ open: boolean, tier: SubscriptionTier | null }>({ open: false, tier: null });
+    const [subscriptionDuration, setSubscriptionDuration] = useState(1);
+    const [isSubscribing, setIsSubscribing] = useState(false);
+
     
     const settingsRef = useMemo(() => firestore ? doc(firestore, 'settings', 'global') : null, [firestore]);
     const { data: globalSettings } = useDoc<Settings>(settingsRef);
@@ -278,7 +285,63 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
             setShowContactPassDialog(false);
         }
     };
+
+    const handleOpenSubscriptionDialog = (tier: SubscriptionTier) => {
+        if (!currentUser) {
+            toast({ title: 'Connexion requise', description: 'Vous devez vous connecter pour vous abonner.', variant: 'destructive'});
+            router.push('/connexion');
+            return;
+        }
+        setSubscriptionDialog({ open: true, tier });
+    };
+
+    const handleSubscription = async () => {
+        if (!currentUser || !subscriptionDialog.tier) return;
+        setIsSubscribing(true);
+
+        try {
+            const response = await fetch('/api/subscriptions/create-creator-subscription', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    memberId: currentUser.id, 
+                    creatorId: user.id, 
+                    tierId: subscriptionDialog.tier.id,
+                    durationMonths: subscriptionDuration,
+                }),
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                toast({ title: 'Abonnement réussi !', description: `Vous êtes maintenant abonné(e) à ${user.displayName}.` });
+            } else {
+                throw new Error(result.message || "Une erreur est survenue.");
+            }
+        } catch (error: any) {
+            toast({ title: "Erreur d'abonnement", description: error.message, variant: "destructive" });
+        } finally {
+            setIsSubscribing(false);
+            setSubscriptionDialog({ open: false, tier: null });
+        }
+    };
     
+    const calculateTotalPrice = () => {
+        if (!subscriptionDialog.tier) return 0;
+        const tier = subscriptionDialog.tier;
+        let totalPrice = tier.price * subscriptionDuration;
+        let discount = 0;
+        
+        if (subscriptionDuration === 3) discount = tier.discounts?.quarterly || 0;
+        else if (subscriptionDuration === 6) discount = tier.discounts?.semiAnnual || 0;
+        else if (subscriptionDuration === 12) discount = tier.discounts?.annual || 0;
+        
+        if (discount > 0) {
+            totalPrice = totalPrice * (1 - discount / 100);
+        }
+        
+        return totalPrice.toFixed(2);
+    };
+
+
     const contactPassPrice = globalSettings?.passContact?.price || 5;
     const hasUnlockedContact = !!(currentUser && user && currentUser.unlockedContacts?.includes(user.id));
 
@@ -356,7 +419,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                             </CardHeader>
                             <CardContent className="grid md:grid-cols-3 gap-4">
                                 {subscriptionTiers.map((tier, index) => (
-                                    <TierCard key={tier.id} tier={tier} isPopular={index === 1} />
+                                    <TierCard key={tier.id} tier={tier} isPopular={index === 1} onSubscribe={handleOpenSubscriptionDialog}/>
                                 ))}
                             </CardContent>
                         </Card>
@@ -387,6 +450,43 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                </div>
             </div>
         </div>
+        
+        {/* Subscription Confirmation Dialog */}
+        <AlertDialog open={subscriptionDialog.open} onOpenChange={(open) => setSubscriptionDialog({ open, tier: null })}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>S'abonner à "{subscriptionDialog.tier?.name}"</AlertDialogTitle>
+                    <AlertDialogDescription>Choisissez votre durée d'engagement. Le montant sera débité de votre portefeuille.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-4">
+                    <RadioGroup defaultValue="1" onValueChange={(value) => setSubscriptionDuration(Number(value))}>
+                        <div className="grid grid-cols-2 gap-2">
+                             {[1, 3, 6, 12].map(d => (
+                                <div key={d}>
+                                    <RadioGroupItem value={d.toString()} id={`d-${d}`} className="peer sr-only" />
+                                    <Label
+                                        htmlFor={`d-${d}`}
+                                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                                    >
+                                        <span className="font-bold">{d} Mois</span>
+                                    </Label>
+                                </div>
+                            ))}
+                        </div>
+                    </RadioGroup>
+                    <div className="text-center font-bold text-2xl">
+                        Total : {calculateTotalPrice()}€
+                    </div>
+                </div>
+                <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isSubscribing}>Annuler</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleSubscription} disabled={isSubscribing}>
+                        {isSubscribing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Confirmer l'Abonnement
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
 
         <AlertDialog open={callConfirmation.show} onOpenChange={(open) => setCallConfirmation({show: open, type: null})}>
             <AlertDialogContent>
@@ -502,3 +602,4 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   // Default to creator/producer profile view
   return <CreatorProfile user={user} isOwnProfile={isOwnProfile} />;
 }
+
