@@ -61,6 +61,15 @@ export interface Post {
     commentsCount: number;
     createdAt: Timestamp;
 }
+
+export interface Comment {
+    id: string;
+    authorId: string;
+    authorName: string;
+    authorImage: string;
+    content: string;
+    createdAt: Timestamp;
+}
 // ------------
 
 
