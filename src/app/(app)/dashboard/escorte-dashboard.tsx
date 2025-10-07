@@ -3,7 +3,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User as UserIcon, BookText, PenSquare, Sparkles, ShoppingBag, Newspaper, Bot, Film } from "lucide-react";
+import { User as UserIcon, BookText, PenSquare, Sparkles, ShoppingBag, Newspaper, Bot, Film, GanttChart } from "lucide-react";
 import Link from 'next/link';
 import type { User, CreatorStats, MonthlyRevenue } from "@/lib/types";
 import PageHeader from "@/components/shared/page-header";
@@ -87,12 +87,6 @@ const aiTools = [
     { title: "Générateur de Scénario", description: "Écrivez un scénario pour votre prochaine vidéo.", href: "/outils-ia/generer-scenario", icon: Film },
     { title: "Idées de Contenu", description: "Trouvez l'inspiration pour vos prochaines publications.", href: "/outils-ia/idees-contenu", icon: Bot },
     { title: "Suggestions de Posts", description: "Générez des publications engageantes pour vos fans.", href: "/outils-ia/posts-sociaux", icon: Bot },
-];
-
-const contentManagementTools = [
-    { title: "Gérer mes annonces", description: "Modifiez vos services, prix et disponibilités.", href: "/gestion/annonces", icon: Newspaper },
-    { title: "Gérer mes produits", description: "Ajoutez ou mettez à jour les articles de votre boutique.", href: "/gestion/produits", icon: ShoppingBag },
-    { title: "Gérer mes articles", description: "Rédigez et publiez de nouveaux articles de blog.", href: "/gestion/articles", icon: BookText },
 ];
 
 export default function EscorteDashboard({ user }: { user: User }) {
@@ -183,24 +177,18 @@ export default function EscorteDashboard({ user }: { user: User }) {
       </div>
 
        <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">Gestion de Contenu</CardTitle>
-          <CardDescription>Gérez l'ensemble de vos contenus, services et publications.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-6">
-            {contentManagementTools.map((tool) => (
-                <Link key={tool.title} href={tool.href} className="flex items-center justify-between space-x-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                    <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium leading-none flex items-center">
-                           {tool.icon && <tool.icon className="mr-2 h-4 w-4 text-primary" />}
-                           {tool.title}
-                        </p>
-                        <p className="text-sm text-muted-foreground">{tool.description}</p>
-                    </div>
-                    <Button variant="secondary">Gérer</Button>
-                </Link>
-            ))}
-        </CardContent>
+            <CardHeader>
+            <CardTitle className="font-headline">Gestion de Contenu</CardTitle>
+            <CardDescription>Gérez l'ensemble de vos contenus, services et publications.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button asChild size="lg" className="w-full">
+                    <Link href="/gestion">
+                        <GanttChart className="mr-2 h-5 w-5" />
+                        Accéder à l'espace de gestion
+                    </Link>
+                </Button>
+            </CardContent>
       </Card>
 
 
