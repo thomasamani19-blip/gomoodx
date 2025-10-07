@@ -1,9 +1,9 @@
 
-// /src/app/api/products/purchase/route.ts
+// /src/app/api/articles/purchase/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
-import type { Product, Wallet, Purchase, Transaction, Settings } from '@/lib/types';
+import type { BlogArticle, Wallet, Purchase, Transaction, Settings } from '@/lib/types';
 
 // Assurer l'initialisation de Firebase Admin
 if (!getApps().length) {
@@ -17,26 +17,31 @@ const PLATFORM_WALLET_ID = 'platform_wallet';
 
 export async function POST(request: Request) {
     try {
-        const { memberId, productId } = await request.json();
+        const { memberId, articleId } = await request.json();
 
-        if (!memberId || !productId) {
+        if (!memberId || !articleId) {
             return NextResponse.json({ status: 'error', message: 'Informations manquantes pour l\'achat.' }, { status: 400 });
         }
         
-        const productRef = db.collection('products').doc(productId);
+        const articleRef = db.collection('blog').doc(articleId);
         const memberWalletRef = db.collection('wallets').doc(memberId);
         const settingsRef = db.collection('settings').doc('global');
 
         const purchaseResult = await db.runTransaction(async (t) => {
-            const productDoc = await t.get(productRef);
-            if (!productDoc.exists) throw new Error("Le produit demandé n'existe pas.");
-            const product = productDoc.data() as Product;
+            const articleDoc = await t.get(articleRef);
+            if (!articleDoc.exists) throw new Error("L'article demandé n'existe pas.");
+            const article = articleDoc.data() as BlogArticle;
+            
+            const articlePrice = article.price || 0;
+            if (!article.isPremium || articlePrice <= 0) {
+                 throw new Error("Cet article n'est pas payant.");
+            }
 
             const memberWalletDoc = await t.get(memberWalletRef);
             if (!memberWalletDoc.exists) throw new Error("Portefeuille du membre introuvable.");
             const memberWallet = memberWalletDoc.data() as Wallet;
             
-            const sellerWalletRef = db.collection('wallets').doc(product.createdBy);
+            const sellerWalletRef = db.collection('wallets').doc(article.authorId);
             const sellerWalletDoc = await t.get(sellerWalletRef);
             if (!sellerWalletDoc.exists) throw new Error("Portefeuille du vendeur introuvable.");
 
@@ -45,38 +50,49 @@ export async function POST(request: Request) {
             const settingsDoc = await t.get(settingsRef);
             const commissionRate = (settingsDoc.data() as Settings)?.platformCommissionRate || 0;
             
-            if (memberWallet.balance < product.price) throw new Error("Solde insuffisant pour effectuer cet achat.");
-            if (product.createdBy === memberId) throw new Error("Vous ne pouvez pas acheter votre propre produit.");
+            if (memberWallet.balance < articlePrice) throw new Error("Solde insuffisant pour effectuer cet achat.");
+            if (article.authorId === memberId) throw new Error("Vous ne pouvez pas acheter votre propre article.");
+
+            // Vérifier si l'achat existe déjà
+            const purchasesQuery = db.collection('purchases')
+                                     .where('memberId', '==', memberId)
+                                     .where('contentId', '==', articleId)
+                                     .where('contentType', '==', 'article');
+            const existingPurchase = await t.get(purchasesQuery);
+            if (!existingPurchase.empty) {
+                return { message: "Article déjà acheté.", status: 'already_purchased' };
+            }
+
 
             const purchaseId = db.collection('purchases').doc().id;
             const purchaseRef = db.collection('purchases').doc(purchaseId);
 
             const newPurchase: Omit<Purchase, 'id'> = {
                 memberId,
-                sellerId: product.createdBy,
-                contentId: productId,
-                contentType: 'product',
-                contentTitle: product.title,
-                amount: product.price,
+                sellerId: article.authorId,
+                contentId: articleId,
+                contentType: 'article',
+                contentTitle: article.title,
+                amount: articlePrice,
                 status: 'completed',
                 createdAt: Timestamp.now(),
             };
             t.set(purchaseRef, newPurchase);
 
             t.update(memberWalletRef, {
-                balance: FieldValue.increment(-product.price),
-                totalSpent: FieldValue.increment(product.price)
+                balance: FieldValue.increment(-articlePrice),
+                totalSpent: FieldValue.increment(articlePrice)
             });
 
             const debitTxRef = memberWalletRef.collection('transactions').doc();
             t.set(debitTxRef, {
-                amount: product.price, type: 'purchase', createdAt: Timestamp.now(),
-                description: `Achat: ${product.title}`, status: 'success', reference: purchaseId
+                amount: articlePrice, type: 'article_purchase', createdAt: Timestamp.now(),
+                description: `Achat article: ${article.title}`, status: 'success', reference: purchaseId
             } as Omit<Transaction, 'id'>);
 
             // Commission logic
-            const commissionAmount = product.price * commissionRate;
-            const sellerAmount = product.price - commissionAmount;
+            const commissionAmount = articlePrice * commissionRate;
+            const sellerAmount = articlePrice - commissionAmount;
 
             // Credit seller
             t.update(sellerWalletRef, {
@@ -86,7 +102,7 @@ export async function POST(request: Request) {
             const creditTxRef = sellerWalletRef.collection('transactions').doc();
             t.set(creditTxRef, {
                 amount: sellerAmount, type: 'credit', createdAt: Timestamp.now(),
-                description: `Vente: ${product.title}`, status: 'success', reference: purchaseId
+                description: `Vente article: ${article.title}`, status: 'success', reference: purchaseId
             } as Omit<Transaction, 'id'>);
 
             // Credit platform
@@ -94,7 +110,7 @@ export async function POST(request: Request) {
             const platformTxRef = platformWalletRef.collection('transactions').doc();
             t.set(platformTxRef, {
                 amount: commissionAmount, type: 'commission', createdAt: Timestamp.now(),
-                description: `Commission sur vente: ${product.title}`, status: 'success', reference: purchaseId
+                description: `Commission sur vente article: ${article.title}`, status: 'success', reference: purchaseId
             } as Omit<Transaction, 'id'>);
             
             return { purchaseId: purchaseId, message: "Achat effectué avec succès." };
@@ -103,7 +119,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ status: 'success', ...purchaseResult });
 
     } catch (error: any) {
-        console.error('Erreur lors de la création de l\'achat:', error);
+        console.error('Erreur lors de l\'achat de l\'article:', error);
         return NextResponse.json({ status: 'error', message: error.message || "Une erreur interne est survenue." }, { status: 500 });
     }
 }

@@ -79,7 +79,7 @@ export interface Wallet {
 }
 
 // Transaction (subcollection of Wallet)
-export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'call_fee' | 'platform_fee' | 'commission' | 'points_conversion' | 'subscription_fee' | 'contact_pass';
+export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'call_fee' | 'platform_fee' | 'commission' | 'points_conversion' | 'subscription_fee' | 'contact_pass' | 'article_purchase';
 
 export type TransactionStatus = 'pending' | 'success' | 'failed';
 
@@ -114,6 +114,7 @@ export interface Annonce {
   ratingCount?: number;
   views: number;
   isSponsored?: boolean;
+  isPremium?: boolean;
 }
 
 // Review (subcollection of Annonce)
@@ -144,12 +145,15 @@ export interface Reservation {
 
 // Purchase
 export type PurchaseStatus = 'pending' | 'completed' | 'shipped' | 'cancelled';
+export type PurchaseContentType = 'product' | 'article';
+
 export interface Purchase {
   id: string;
   memberId: string;
-  sellerId: string; // creator or partner
-  productId: string;
-  productTitle: string;
+  sellerId: string;
+  contentId: string;
+  contentType: PurchaseContentType;
+  contentTitle: string;
   amount: number;
   status: PurchaseStatus;
   createdAt: Timestamp;
