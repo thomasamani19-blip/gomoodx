@@ -4,7 +4,7 @@
 import { useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useDoc, useFirestore } from '@/firebase';
-import type { Reservation, User, CallType } from '@/lib/types';
+import type { Reservation, User, CallType, ConfirmationStatus, ReservationStatus } from '@/lib/types';
 import { doc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/shared/page-header';
@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Phone, ShieldQuestion, Calendar, Tag, CreditCard, User as UserIcon, Users, Timer, BedDouble, Clock, HelpCircle, Check, X, Building, MapPin } from 'lucide-react';
+import { MessageSquare, Phone, ShieldQuestion, Calendar, Tag, CreditCard, User as UserIcon, Users, Timer, BedDouble, Clock, HelpCircle, Check, X, Building, MapPin, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -54,8 +54,10 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     const { toast } = useToast();
     const router = useRouter();
 
+    const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
     const reservationRef = useMemo(() => firestore ? doc(firestore, 'reservations', params.id) : null, [firestore, params.id]);
-    const { data: reservation, loading: reservationLoading } = useDoc<Reservation>(reservationRef);
+    const { data: reservation, loading: reservationLoading, setData: setReservation } = useDoc<Reservation>(reservationRef);
     
     const establishmentRef = useMemo(() => (firestore && reservation) ? doc(firestore, 'users', reservation.creatorId) : null, [firestore, reservation]);
     const { data: establishment, loading: establishmentLoading } = useDoc<User>(establishmentRef);
@@ -70,13 +72,48 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     const isCurrentUserAnEscortInvolved = reservation?.escorts?.some(e => e.id === currentUser?.id) ?? false;
     const isUserAllowed = isCurrentUserTheMember || isCurrentUserTheEstablishment || isCurrentUserAnEscortInvolved;
 
+    const handleEscortConfirmation = async (status: ConfirmationStatus) => {
+        if (!currentUser || !reservation) return;
+        setIsUpdatingStatus(true);
+        try {
+            const response = await fetch('/api/reservations/update-escort-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reservationId: reservation.id, escortId: currentUser.id, status })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message);
 
-    const handleFreeCall = async (otherUserId: string, otherUserName: string) => {
-        if (!currentUser || !firestore) return;
-        toast({ title: "Initiation de l'appel gratuit...", description: `Appel vocal avec ${otherUserName} en cours de préparation.` });
-        // ... (call logic)
+            toast({ title: "Statut mis à jour", description: result.message });
+            
+        } catch (error: any) {
+            toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsUpdatingStatus(false);
+        }
     };
     
+    const handleReservationStatusUpdate = async (newStatus: ReservationStatus) => {
+        if (!currentUser || !reservation) return;
+        setIsUpdatingStatus(true);
+        try {
+            const response = await fetch('/api/reservations/update-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reservationId: reservation.id, userId: currentUser.id, newStatus })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message);
+
+            toast({ title: "Réservation mise à jour", description: `La réservation est maintenant ${newStatus === 'confirmed' ? 'confirmée' : 'annulée'}.` });
+        } catch (error: any) {
+            toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsUpdatingStatus(false);
+        }
+    }
+
+
     if (loading) {
         return (
             <div>
@@ -101,25 +138,25 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     if (!reservation || !establishment || !member) {
         return <PageHeader title="Réservation introuvable" description="Cette réservation n'existe pas." />;
     }
+
+    const allEscortsConfirmed = reservation.escorts?.every(e => reservation.escortConfirmations[e.id]?.status === 'confirmed') ?? true;
     
     const mainActionButtons = () => {
         if (reservation.status === 'pending') {
             if (isCurrentUserTheMember) {
-                return <Button variant="destructive">Annuler la réservation</Button>
+                return <Button variant="destructive" onClick={() => handleReservationStatusUpdate('cancelled')} disabled={isUpdatingStatus}>
+                    {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null} Annuler la réservation
+                </Button>
             }
             if (isCurrentUserTheEstablishment) {
-                return <Button>Confirmer la réservation</Button>
+                return <Button onClick={() => handleReservationStatusUpdate('confirmed')} disabled={!allEscortsConfirmed || isUpdatingStatus}>
+                    {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null} Confirmer la réservation
+                </Button>
             }
         }
         
         if (reservation.status === 'confirmed') {
-            return (
-                <div className="flex flex-col gap-2">
-                    {isCurrentUserTheMember && !reservation.memberPresenceConfirmed && <Button>Confirmer ma présence</Button>}
-                    {isCurrentUserTheEstablishment && !reservation.establishmentPresenceConfirmed && <Button>Confirmer la présence des participants</Button>}
-                    {isCurrentUserAnEscortInvolved && !reservation.escortConfirmations?.[currentUser!.id]?.presenceConfirmed && <Button>Confirmer ma présence</Button>}
-                </div>
-            );
+            // ... Presence confirmation logic will go here
         }
 
         return null;
@@ -204,8 +241,12 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                          <div className='flex items-center gap-2'>
                                             {isCurrentUserAnEscortInvolved && currentUser?.id === escort.id && confirmation?.status === 'pending' && (
                                                 <div className='flex gap-1'>
-                                                    <Button size='sm' variant='destructive' className='h-8'>Refuser</Button>
-                                                    <Button size='sm' className='h-8'>Accepter</Button>
+                                                    <Button size='sm' variant='destructive' className='h-8' onClick={() => handleEscortConfirmation('declined')} disabled={isUpdatingStatus}>
+                                                        {isUpdatingStatus ? <Loader2 className='h-4 w-4 animate-spin' /> : 'Refuser'}
+                                                    </Button>
+                                                    <Button size='sm' className='h-8' onClick={() => handleEscortConfirmation('confirmed')} disabled={isUpdatingStatus}>
+                                                         {isUpdatingStatus ? <Loader2 className='h-4 w-4 animate-spin' /> : 'Accepter'}
+                                                    </Button>
                                                 </div>
                                             )}
                                              <Badge variant={confirmationStatusVariantMap[confirmation?.status || 'pending']}>
