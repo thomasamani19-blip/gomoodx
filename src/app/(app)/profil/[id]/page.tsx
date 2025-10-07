@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import { useCollection, useDoc, useFirestore } from '@/firebase';
-import type { User, Call, CallType, Annonce, Product, Settings } from '@/lib/types';
+import type { User, Call, CallType, Annonce, Product, Settings, SubscriptionTier } from '@/lib/types';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -55,6 +56,25 @@ const StarRating = ({ rating, ratingCount, className }: { rating: number, rating
     );
 };
 
+const TierCard = ({ tier, isPopular = false }: { tier: SubscriptionTier, isPopular?: boolean }) => (
+    <Card className={cn("flex flex-col", isPopular && "border-primary relative ring-2 ring-primary")}>
+        {isPopular && <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">Populaire</Badge>}
+        <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-primary">{tier.name}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex-1 space-y-4">
+            <p className="text-center text-4xl font-bold">{tier.price}€<span className="text-lg font-normal text-muted-foreground">/mois</span></p>
+            <ul className="space-y-2 text-sm text-muted-foreground list-disc list-inside">
+                {tier.description.split('\n').map((line, i) => <li key={i}>{line}</li>)}
+            </ul>
+        </CardContent>
+        <CardFooter>
+            <Button className="w-full" size="lg" variant={isPopular ? "default" : "secondary"}>
+                <Star className="mr-2 h-4 w-4"/> S'abonner
+            </Button>
+        </CardFooter>
+    </Card>
+);
 
 const CreatorAnnonces = ({ creatorId, name }: { creatorId: string, name: string }) => {
     const firestore = useFirestore();
@@ -135,6 +155,11 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
     
     const settingsRef = useMemo(() => firestore ? doc(firestore, 'settings', 'global') : null, [firestore]);
     const { data: globalSettings } = useDoc<Settings>(settingsRef);
+
+    const subscriptionTiers = useMemo(() => {
+        if (!user.subscriptionSettings?.enabled) return [];
+        return Object.values(user.subscriptionSettings.tiers).filter(t => t.isActive).sort((a,b) => a.price - b.price);
+    }, [user.subscriptionSettings]);
 
     const handleToggleFavorite = async () => {
         if (!currentUser || !firestore) {
@@ -321,6 +346,20 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                         <CardHeader><CardTitle>À propos de moi</CardTitle></CardHeader>
                         <CardContent><p className="text-muted-foreground whitespace-pre-wrap">{user.bio || "Aucune biographie."}</p></CardContent>
                     </Card>
+
+                    {subscriptionTiers.length > 0 && !isOwnProfile && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Soutenir {user.displayName}</CardTitle>
+                                <CardDescription>Abonnez-vous pour accéder à des avantages exclusifs.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="grid md:grid-cols-3 gap-4">
+                                {subscriptionTiers.map((tier, index) => (
+                                    <TierCard key={tier.id} tier={tier} isPopular={index === 1} />
+                                ))}
+                            </CardContent>
+                        </Card>
+                    )}
 
                     <CreatorAnnonces creatorId={user.id} name={user.displayName} />
 
