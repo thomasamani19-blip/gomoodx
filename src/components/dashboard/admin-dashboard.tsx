@@ -5,10 +5,11 @@ import type { User, Wallet, PartnerRequest } from "@/lib/types";
 import PageHeader from "../shared/page-header";
 import { useCollection, useDoc, useFirestore } from "@/firebase";
 import { collection, query, where, doc } from "firebase/firestore";
-import { DollarSign, Users, ShieldCheck, Handshake, Loader2 } from "lucide-react";
+import { DollarSign, Users, ShieldCheck, Handshake, Loader2, Bot } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "../ui/skeleton";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
+import { genererResumeAdmin, type GenererResumeAdminOutput } from "@/ai/flows/generer-resume-admin";
 
 const StatCard = ({ title, value, icon: Icon, href, loading }: { title: string, value: string | number, icon: React.ElementType, href: string, loading: boolean }) => {
     return (
@@ -23,6 +24,41 @@ const StatCard = ({ title, value, icon: Icon, href, loading }: { title: string, 
                 </CardContent>
             </Card>
         </Link>
+    )
+}
+
+function AdminAISummary() {
+    const [summary, setSummary] = useState<GenererResumeAdminOutput | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchSummary = async () => {
+            setIsLoading(true);
+            try {
+                const result = await genererResumeAdmin();
+                setSummary(result);
+            } catch (e) {
+                console.error("Failed to generate admin summary:", e);
+                setError("Le résumé de l'IA n'a pas pu être chargé.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchSummary();
+    }, []);
+
+    return (
+        <Card className="bg-primary/5 border-primary/20">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Bot className="h-5 w-5 text-primary" /> Résumé du Jour par l'IA</CardTitle>
+            </CardHeader>
+            <CardContent>
+                {isLoading && <Skeleton className="h-16 w-full" />}
+                {error && <p className="text-sm text-destructive">{error}</p>}
+                {summary && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{summary.resume}</p>}
+            </CardContent>
+        </Card>
     )
 }
 
@@ -44,11 +80,13 @@ export default function AdminDashboard({ user }: { user: User }) {
   const loading = walletLoading || usersLoading || verificationsLoading || partnersLoading;
 
   return (
-    <div>
+    <div className="space-y-8">
       <PageHeader
             title={`Tableau de Bord, ${user.displayName}`}
-            description="Vue d'ensemble de la plateforme GoMoodX."
+            description="Vue d'ensemble et résumé intelligent de la plateforme GoMoodX."
         />
+      
+      <AdminAISummary />
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
@@ -79,18 +117,6 @@ export default function AdminDashboard({ user }: { user: User }) {
             href="/admin/demandes-partenaires"
             loading={loading}
         />
-      </div>
-
-      <div className="mt-8">
-        <Card>
-            <CardHeader>
-            <CardTitle>Accès Rapides</CardTitle>
-            <CardDescription>Gérez les aspects clés de la plateforme.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground">D'autres modules de gestion apparaîtront ici.</p>
-            </CardContent>
-        </Card>
       </div>
 
     </div>
