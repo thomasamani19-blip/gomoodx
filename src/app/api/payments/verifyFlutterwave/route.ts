@@ -5,23 +5,20 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin SDK
-// This should be configured with your service account for production.
-// For development, if you're running this with `firebase emulators:exec`,
-// GOOGLE_APPLICATION_CREDENTIALS might be set automatically.
 try {
   if (!getApps().length) {
-    // If you have a service account JSON file, you can use it like this:
-    // const serviceAccount = require('../../../../../path/to/your/serviceAccountKey.json');
-    // initializeApp({ credential: cert(serviceAccount) });
-    
-    // For environments like Google Cloud Run/Functions, it might be auto-initialized
-    // This will use Application Default Credentials
     initializeApp();
   }
 } catch (e) {
   console.error('Firebase Admin SDK initialization error:', e);
 }
 
+const creditPacks = [
+  { name: 'Essentiel', price: 20, bonus: 0 },
+  { name: 'Confort', price: 50, bonus: 5 },
+  { name 'Premium', price: 100, bonus: 15 },
+  { name: 'Élite', price: 250, bonus: 50 },
+];
 
 const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
 
@@ -29,9 +26,9 @@ export async function POST(request: Request) {
   const db = getFirestore();
 
   try {
-    const { transaction_id, tx_ref, user_id, amount, currency } = await request.json();
+    const { transaction_id, tx_ref } = await request.json();
 
-    if (!transaction_id || !tx_ref || !user_id || !amount || !currency) {
+    if (!transaction_id || !tx_ref) {
       return NextResponse.json({ status: 'error', message: 'Des champs obligatoires sont manquants.' }, { status: 400 });
     }
 
@@ -49,34 +46,46 @@ export async function POST(request: Request) {
     );
 
     const result = await response.json();
+    const paymentData = result.data;
     
     // Perform thorough validation
     if (result.status === 'success' && 
-        result.data.status === 'successful' &&
-        result.data.tx_ref === tx_ref && 
-        result.data.amount >= amount && 
-        result.data.currency === currency) {
+        paymentData.status === 'successful' &&
+        paymentData.tx_ref === tx_ref) {
       
-      console.log('Paiement Flutterwave vérifié avec succès:', result.data);
+      const userId = paymentData.meta?.userId;
+      const paidAmount = paymentData.amount;
+      const currency = paymentData.currency;
+      
+      if (!userId) {
+        throw new Error("L'ID de l'utilisateur est manquant dans les métadonnées de la transaction.");
+      }
 
-      const walletRef = db.collection('wallets').doc(user_id);
-      const transactionRef = walletRef.collection('transactions').doc(result.data.id.toString());
+      console.log('Paiement Flutterwave vérifié avec succès:', paymentData);
+      
+      // Check for a matching pack to add a bonus
+      const pack = creditPacks.find(p => p.price === paidAmount);
+      const bonus = pack ? pack.bonus : 0;
+      const creditedAmount = paidAmount + bonus;
+
+      const walletRef = db.collection('wallets').doc(userId);
+      const transactionRef = walletRef.collection('transactions').doc(paymentData.id.toString());
 
       // Use a Firestore transaction to ensure atomicity
-      await db.runTransaction(async (t) => {
+      const creditedAmountFinal = await db.runTransaction(async (t) => {
         const walletDoc = await t.get(walletRef);
         const transactionDoc = await t.get(transactionRef);
 
         // Prevent duplicate processing
         if (transactionDoc.exists) {
             console.warn(`La transaction ${transactionRef.id} a déjà été traitée.`);
-            return;
+            return walletDoc.data()?.balance || 0;
         }
         
         if (!walletDoc.exists) {
             // If wallet doesn't exist, create it.
             t.set(walletRef, {
-                balance: result.data.amount, // Use the amount confirmed by Flutterwave
+                balance: creditedAmount,
                 currency: currency,
                 createdAt: FieldValue.serverTimestamp(),
                 updatedAt: FieldValue.serverTimestamp(),
@@ -84,23 +93,25 @@ export async function POST(request: Request) {
         } else {
             // If wallet exists, update balance.
             t.update(walletRef, {
-              balance: FieldValue.increment(result.data.amount),
+              balance: FieldValue.increment(creditedAmount),
               updatedAt: FieldValue.serverTimestamp(),
             });
         }
         
         // Create a new transaction record to log the event
         t.set(transactionRef, {
-            amount: result.data.amount,
+            amount: creditedAmount,
             type: 'deposit',
             createdAt: FieldValue.serverTimestamp(),
-            description: `Rechargement via Flutterwave`,
+            description: `Rechargement ${pack ? `Pack ${pack.name}` : ''} (${paidAmount}€ + ${bonus}€ bonus)`,
             status: 'success',
-            reference: result.data.flw_ref,
+            reference: paymentData.flw_ref,
         });
+
+        return (walletDoc.data()?.balance || 0) + creditedAmount;
       });
 
-      return NextResponse.json({ status: 'success', message: 'Paiement vérifié et portefeuille mis à jour.' });
+      return NextResponse.json({ status: 'success', message: 'Paiement vérifié et portefeuille mis à jour.', creditedAmount });
     } else {
       console.error('La vérification du paiement Flutterwave a échoué:', result);
       return NextResponse.json({ status: 'error', message: result.message || 'La vérification du paiement a échoué.' }, { status: 400 });

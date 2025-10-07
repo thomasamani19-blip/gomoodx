@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -9,24 +10,40 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CreditCard, Loader2 } from 'lucide-react';
+import { CreditCard, Loader2, Sparkles, Star } from 'lucide-react';
 import { FlutterWaveButton, closePaymentModal as closeFlutterwaveModal } from 'flutterwave-react-v3';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 type PaymentMethod = 'flutterwave' | 'kkiapay';
+
+const creditPacks = [
+  { name: 'Essentiel', price: 20, bonus: 0, icon: Sparkles },
+  { name: 'Confort', price: 50, bonus: 5, icon: Star },
+  { name: 'Premium', price: 100, bonus: 15, icon: Star, isPopular: true },
+  { name: 'Élite', price: 250, bonus: 50, icon: Star },
+];
 
 export default function RechargerPage() {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [amount, setAmount] = useState(50);
+  const [selectedPackPrice, setSelectedPackPrice] = useState(100);
+  const [customAmount, setCustomAmount] = useState(100);
+  const [isCustom, setIsCustom] = useState(false);
+  
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('flutterwave');
   const [isLoading, setIsLoading] = useState(false);
+
+  const finalAmount = isCustom ? customAmount : selectedPackPrice;
+  const selectedPack = creditPacks.find(p => p.price === selectedPackPrice);
 
   const fwPublicKey = process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY;
   const fwConfig = {
     public_key: fwPublicKey || '',
     tx_ref: `gomoodx-fw-${Date.now()}-${user?.id}`,
-    amount: amount,
+    amount: finalAmount,
     currency: 'EUR',
     payment_options: 'card,mobilemoney,ussd',
     customer: {
@@ -35,9 +52,13 @@ export default function RechargerPage() {
     },
     customizations: {
       title: 'GoMoodX - Rechargement',
-      description: `Rechargement de ${amount} €`,
+      description: `Rechargement de ${finalAmount} €`,
       logo: 'https://placehold.co/100x100/EAB308/000000?text=GMX',
     },
+    meta: {
+      userId: user?.id,
+      packPrice: finalAmount, // Send the exact price paid
+    }
   };
 
   const handleFlutterwaveSuccess = async (response: any) => {
@@ -49,15 +70,12 @@ export default function RechargerPage() {
             body: JSON.stringify({
                 transaction_id: response.transaction_id,
                 tx_ref: response.tx_ref,
-                user_id: user?.id,
-                amount: amount,
-                currency: 'EUR'
             }),
         });
 
         const result = await apiResponse.json();
         if (apiResponse.ok && result.status === 'success') {
-            toast({ title: 'Rechargement réussi !', description: `Votre portefeuille a été crédité de ${amount} €.` });
+            toast({ title: 'Rechargement réussi !', description: `Votre portefeuille a été crédité de ${result.creditedAmount.toFixed(2)} €.` });
             router.push('/portefeuille');
         } else {
             throw new Error(result.message || 'La vérification a échoué.');
@@ -85,12 +103,12 @@ export default function RechargerPage() {
         <FlutterWaveButton
           {...fwConfig}
           className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-          disabled={!fwPublicKey || !user}
+          disabled={!fwPublicKey || !user || finalAmount < 1}
           onClick={() => setIsLoading(true)}
           callback={handleFlutterwaveSuccess}
           onClose={() => setIsLoading(false)}
         >
-          Payer {amount} €
+          Payer {finalAmount} €
         </FlutterWaveButton>
       );
     }
@@ -106,42 +124,83 @@ export default function RechargerPage() {
         description="Ajoutez des fonds à votre compte pour les achats et services."
       />
       <div className="flex justify-center">
-         <Card className="w-full max-w-lg">
+         <Card className="w-full max-w-2xl">
             <CardHeader>
-                <CardTitle>Recharger des Crédits</CardTitle>
-                <CardDescription>Ajoutez des fonds à votre compte pour les achats et services.</CardDescription>
+                <CardTitle>Choisir un montant</CardTitle>
+                <CardDescription>Sélectionnez un pack ou entrez un montant personnalisé. Les bonus sont appliqués après l'achat.</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                    <Button variant={paymentMethod === 'flutterwave' ? 'secondary' : 'outline'} onClick={() => setPaymentMethod('flutterwave')}>
-                        Flutterwave (EUR)
-                    </Button>
-                    <Button variant={paymentMethod === 'kkiapay' ? 'secondary' : 'outline'} onClick={() => setPaymentMethod('kkiapay')} disabled>
-                        KkiaPay (XOF)
-                    </Button>
+                <RadioGroup 
+                    defaultValue="100" 
+                    onValueChange={(value) => {
+                        if (value === 'custom') {
+                            setIsCustom(true);
+                        } else {
+                            setIsCustom(false);
+                            setSelectedPackPrice(Number(value));
+                        }
+                    }}
+                    className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
+                >
+                    {creditPacks.map((pack) => (
+                        <div key={pack.name} className="relative">
+                            <RadioGroupItem value={pack.price.toString()} id={pack.name} className="peer sr-only" />
+                            <Label
+                                htmlFor={pack.name}
+                                className={cn(
+                                    "flex h-full flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary",
+                                    pack.isPopular && "border-primary"
+                                )}
+                            >
+                                {pack.isPopular && <Badge className="absolute -top-2" variant="secondary">Populaire</Badge>}
+                                <pack.icon className="mb-3 h-6 w-6 text-primary" />
+                                <span className="font-bold text-lg">{pack.name}</span>
+                                <span className="font-semibold text-2xl">{pack.price}€</span>
+                                {pack.bonus > 0 ? (
+                                    <span className="text-xs text-green-500 font-bold">+ {pack.bonus}€ offerts</span>
+                                ) : (
+                                    <span className="text-xs text-transparent">_</span>
+                                )}
+                            </Label>
+                        </div>
+                    ))}
+                </RadioGroup>
+
+                 <RadioGroup 
+                    defaultValue={isCustom ? "custom" : selectedPackPrice.toString()}
+                    onValueChange={(value) => {
+                        if (value === 'custom') { setIsCustom(true); } else { setIsCustom(false); setSelectedPackPrice(Number(value)); }
+                    }}
+                 >
+                    <div className={cn("rounded-md border-2 p-4 mt-4", isCustom && "border-primary")}>
+                         <div className="flex items-center space-x-2 mb-2">
+                             <RadioGroupItem value="custom" id="custom" />
+                             <Label htmlFor="custom">Ou entrez un montant personnalisé (EUR)</Label>
+                        </div>
+                        <Input
+                            id="amount"
+                            type="number"
+                            value={customAmount}
+                            onChange={(e) => setCustomAmount(Number(e.target.value))}
+                            onFocus={() => setIsCustom(true)}
+                            min="10"
+                            placeholder="Ex: 75"
+                        />
+                    </div>
+                </RadioGroup>
+
+                <div className="mt-8">
+                     <p className="text-sm font-semibold mb-2">Méthode de paiement</p>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Button variant={paymentMethod === 'flutterwave' ? 'secondary' : 'outline'} onClick={() => setPaymentMethod('flutterwave')}>
+                            Flutterwave (EUR)
+                        </Button>
+                        <Button variant={paymentMethod === 'kkiapay' ? 'secondary' : 'outline'} onClick={() => setPaymentMethod('kkiapay')} disabled>
+                            KkiaPay (XOF)
+                        </Button>
+                    </div>
                 </div>
-                <CardTitle>Choisir un montant</CardTitle>
-                <CardDescription className="mb-4">
-                  Le montant sera ajouté à votre solde après la transaction.
-                </CardDescription>
-                <div className="grid grid-cols-3 gap-2">
-                  {[50, 100, 200].map(val => (
-                    <Button key={val} variant={amount === val ? 'default' : 'outline'} onClick={() => setAmount(val)}>
-                      {`${val} €`}
-                    </Button>
-                  ))}
-                </div>
-                <div className="space-y-2 mt-4">
-                  <Label htmlFor="amount">Ou entrez un montant personnalisé (EUR)</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(Number(e.target.value))}
-                    min="10"
-                    placeholder="Ex: 75"
-                  />
-                </div>
+
             </CardContent>
             <CardFooter>
                 {renderPaymentButton()}
