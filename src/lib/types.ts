@@ -280,7 +280,6 @@ export interface LiveSession {
     imageUrl: string;
     imageHint?: string;
     creatorName?: string;
-    pricePerMinute?: number; // For private paid lives
     ticketPrice?: number; // For public paid lives
     purchasedBy?: string[]; // Array of user IDs who bought a ticket
 }

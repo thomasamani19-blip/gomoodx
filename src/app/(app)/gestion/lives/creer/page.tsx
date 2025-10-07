@@ -33,7 +33,7 @@ const liveSchema = z.object({
   description: z.string().min(10, "La description doit faire au moins 10 caractères."),
   image: z.any().refine(file => file instanceof File, 'Une image de couverture est requise.'),
   startTime: z.date({ required_error: "Une date et une heure sont requises."}).min(new Date(), "La date ne peut être dans le passé."),
-  isPaid: z.boolean().default(false),
+  isPaid: z.boolean().default(true),
   ticketPrice: z.coerce.number().optional(),
 }).refine(data => !data.isPaid || (data.ticketPrice && data.ticketPrice > 0), {
   message: "Le prix du ticket doit être supérieur à 0 pour un live payant.",
@@ -192,7 +192,7 @@ export default function CreerLivePage() {
                                         <Label htmlFor="paid-switch" className="text-base flex items-center"><Ticket className="mr-2 h-4 w-4 text-primary" />Live Payant</Label>
                                         <p className="text-sm text-muted-foreground">Vendez des tickets d'accès pour ce live.</p>
                                     </div>
-                                    <Switch id="paid-switch" checked={field.value} onCheckedChange={field.onChange} disabled />
+                                    <Switch id="paid-switch" checked={field.value} onCheckedChange={field.onChange} />
                                 </div>
                             )}
                         />

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -305,7 +306,8 @@ function VideoGeneratorTab() {
                 imageUrl: user.profileImage || `https://picsum.photos/seed/${user.id}/600/400`,
                 viewersCount: 0,
                 likes: 0,
-                price_per_minute: 0, // Always free
+                liveType: 'ai',
+                ticketPrice: 0,
             };
             const docRef = await addDoc(collection(firestore, 'lives'), liveSessionData);
             toast({ title: "Live lancé !", description: "Votre session de live simulé est maintenant visible." });
@@ -409,7 +411,7 @@ function VideoGeneratorTab() {
                                 </div>
                                 <Button onClick={handleLaunchLive} disabled={isSavingLive} className="w-full">
                                     {isSavingLive ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Clapperboard className="mr-2 h-4 w-4" />}
-                                    Lancer en Live (Gratuit & Public)
+                                    Lancer en Live IA (Gratuit & Public)
                                 </Button>
                             </div>
                         )}

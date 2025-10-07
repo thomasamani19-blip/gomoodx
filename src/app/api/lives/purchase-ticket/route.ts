@@ -49,7 +49,16 @@ export async function POST(request: Request) {
             const commissionRate = (settingsDoc.data() as Settings)?.platformCommissionRate || 0.20;
             
             if (userWallet.balance < ticketPrice) throw new Error("Solde insuffisant pour acheter ce ticket.");
-            if (session.purchasedBy?.includes(userId)) return { message: "Ticket déjà acheté.", status: 'already_purchased' };
+            
+            const purchasesQuery = db.collection('purchases')
+                .where('memberId', '==', userId)
+                .where('contentId', '==', sessionId)
+                .where('contentType', '==', 'live_ticket');
+            const existingPurchase = await t.get(purchasesQuery);
+            if (!existingPurchase.empty) {
+                return { message: "Ticket déjà acheté.", status: 'already_purchased' };
+            }
+
             if (session.hostId === userId) throw new Error("Vous ne pouvez pas acheter un ticket pour votre propre live.");
             
 
@@ -101,11 +110,6 @@ export async function POST(request: Request) {
                 amount: commissionAmount, type: 'commission', createdAt: Timestamp.now(),
                 description: `Commission sur ticket live: ${session.title}`, status: 'success', reference: purchaseId
             } as Omit<Transaction, 'id'>);
-
-            // Mark user as having purchased
-            t.update(sessionRef, {
-                purchasedBy: FieldValue.arrayUnion(userId)
-            });
             
             return { purchaseId: purchaseId, message: "Achat de ticket réussi." };
         });

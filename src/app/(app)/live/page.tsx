@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { collection, orderBy, query, where } from "firebase/firestore";
 import Link from "next/link";
 import { useMemo } from "react";
-import { Ticket, Video } from "lucide-react";
+import { Ticket, Video, Bot } from "lucide-react";
 
 export default function LivePage() {
   const firestore = useFirestore();
@@ -73,7 +73,7 @@ export default function LivePage() {
                     )}
                      <div className="absolute top-3 left-3">
                         {session.liveType === 'ai' ? 
-                            <Badge variant="outline"><Video className="h-3 w-3 mr-1"/> Live IA</Badge> : 
+                            <Badge variant="outline" className='bg-background/80'><Bot className="h-3 w-3 mr-1"/> Live IA</Badge> : 
                             <Badge><Ticket className="h-3 w-3 mr-1"/> Ticket Payant</Badge>
                         }
                      </div>
