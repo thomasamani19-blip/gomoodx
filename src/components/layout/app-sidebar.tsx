@@ -98,6 +98,7 @@ const adminNav = [
   { title: 'Utilisateurs', href: '/admin/users', icon: Users },
   { title: 'Demandes Partenaires', href: '/admin/demandes-partenaires', icon: FileText },
   { title: 'Vérifications', href: '/admin/moderation', icon: ShieldCheck },
+  { title: 'Portefeuille Plateforme', href: '/admin/portefeuille', icon: Wallet },
   { title: "Fil d'actualité", href: '/feed', icon: Newspaper },
 ];
 
