@@ -5,14 +5,14 @@
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useDoc, useCollection, useFirestore } from '@/firebase';
-import type { Wallet, Transaction, Call } from '@/lib/types';
+import type { Wallet, Transaction, Call, UserRole } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowDownCircle, ArrowUpCircle, PlusCircle, Video, Phone, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, PlusCircle, Video, Phone, ArrowRight, ArrowLeft, Eye, EyeOff, Banknote } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { doc, collection, query, or, where, orderBy } from 'firebase/firestore';
@@ -141,6 +141,8 @@ export default function PortefeuillePage() {
 
   const loading = authLoading || walletLoading || transactionsLoading;
 
+  const isEligibleForWithdrawal = user?.role === 'escorte' || user?.role === 'partenaire';
+
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'deposit':
@@ -183,13 +185,21 @@ export default function PortefeuillePage() {
                      <p className="text-5xl font-bold">{showBalance ? '0.00 €' : '****** €'}</p>
                 )}
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex-col items-stretch gap-2">
                 <Button asChild>
                     <Link href="/portefeuille/recharger">
                         <PlusCircle className="mr-2 h-4 w-4"/>
                         Acheter des Crédits
                     </Link>
                 </Button>
+                {isEligibleForWithdrawal && (
+                    <Button variant="outline" asChild>
+                        <Link href="/portefeuille/retrait">
+                            <Banknote className="mr-2 h-4 w-4"/>
+                            Effectuer un retrait
+                        </Link>
+                    </Button>
+                )}
             </CardFooter>
            </Card>
         </div>
@@ -245,3 +255,4 @@ export default function PortefeuillePage() {
     </div>
   );
 }
+
