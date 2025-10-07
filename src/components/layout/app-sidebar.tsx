@@ -67,7 +67,6 @@ const escorteNav = [
   { title: "Fil d'actualité", href: '/feed', icon: Newspaper },
   { title: 'Statistiques', href: '/statistiques', icon: BarChart3 },
   { title: 'Gestion', href: '/gestion', icon: GanttChart },
-  { title: 'Gérer les Lives', href: '/gestion/lives', icon: Video },
   { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
   { title: 'Mes Réservations', href: '/reservations', icon: CalendarCheck },
   { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
