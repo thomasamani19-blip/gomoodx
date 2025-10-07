@@ -35,17 +35,18 @@ export type RechercheMultilingueOutput = z.infer<typeof RechercheMultilingueOutp
 const rechercherProfilsEtContenu = ai.defineTool(
   {
     name: 'rechercherProfilsEtContenu',
-    description: "Recherche des profils d'escortes et du contenu basé sur un terme de recherche dans une langue spécifique.",
+    description: "Recherche des profils d'escortes et du contenu basé sur un terme de recherche dans une langue spécifique et avec des filtres.",
     inputSchema: z.object({
       query: z.string().describe("Le terme de recherche."),
       langue: LanguesSupporteesSchema.describe("La langue de la recherche."),
+      filtres: z.record(z.string(), z.boolean()).optional().describe("Filtres de recherche booléens."),
     }),
     outputSchema: z.array(ResultatRechercheSchema).describe("Un tableau de résultats de recherche."),
   },
   async input => {
     // TODO: Implémenter la logique de recherche ici (simulée pour le prototype)
-    // Remplacez ceci par une recherche réelle dans votre base de données
-    console.log(`Recherche pour: ${input.query} en langue: ${input.langue}`);
+    // Remplacez ceci par une recherche réelle dans votre base de données en utilisant les filtres.
+    console.log(`Recherche pour: ${input.query} en langue: ${input.langue} avec filtres: ${JSON.stringify(input.filtres)}`);
     const resultatsSimules: z.infer<typeof RechercheMultilingueOutputSchema> = [
       {
         type: 'profil',
@@ -80,7 +81,7 @@ const rechercheMultilingueFlow = ai.defineFlow(
     },
     async (input) => {
         const llmResponse = await ai.generate({
-            prompt: `Tu es un assistant de recherche multilingue. Traduis la requête de l'utilisateur si nécessaire, applique les filtres fournis, trouve les résultats pertinents, puis traduis ces résultats dans la langue cible.
+            prompt: `Tu es un assistant de recherche multilingue. Traduis la requête de l'utilisateur si nécessaire, applique les filtres fournis, trouve les résultats pertinents en utilisant l'outil de recherche, puis traduis ces résultats dans la langue cible.
             Requête: "${input.query}"
             Filtres: ${JSON.stringify(input.filtres || {})}
             Langue source: ${input.langueSource}
@@ -95,8 +96,9 @@ const rechercheMultilingueFlow = ai.defineFlow(
         const output = llmResponse.output;
         if (!output) {
             // Si l'IA ne peut pas directement formater, on fait le travail manuellement
+            // (Cette partie est simplifiée et pourrait nécessiter plus de logique)
             const toolResults = llmResponse.toolRequests();
-            // ... logique de traitement manuel des résultats d'outils
+            console.log("L'IA demande l'utilisation d'outils:", toolResults);
             return [];
         }
 
