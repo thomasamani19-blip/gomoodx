@@ -2,14 +2,14 @@
 
 // /src/app/api/payments/verifyFlutterwave/route.ts
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, cert, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, FieldValue, doc } from 'firebase-admin/firestore';
 import type { User, Settings } from '@/lib/types';
 
 // Initialize Firebase Admin SDK
 try {
   if (!getApps().length) {
-    initializeApp();
+    initializeApp({ credential: applicationDefault() });
   }
 } catch (e) {
   console.error('Firebase Admin SDK initialization error:', e);
@@ -57,7 +57,6 @@ export async function POST(request: Request) {
       
       const userId = paymentData.meta?.userId;
       const amountEUR = paymentData.meta?.amountEUR;
-      const currency = paymentData.currency;
       
       if (!userId || amountEUR === undefined) {
         throw new Error("Les métadonnées de la transaction sont incomplètes (userId ou amountEUR).");
@@ -84,6 +83,10 @@ export async function POST(request: Request) {
             return existingTransactionData?.amount || 0;
         }
 
+        if (!userDoc.exists) {
+            throw new Error("Utilisateur introuvable.");
+        }
+
         const userData = userDoc.data() as User;
         const settingsData = settingsDoc.data() as Settings;
 
@@ -102,7 +105,7 @@ export async function POST(request: Request) {
         if (!walletDoc.exists) {
             t.set(walletRef, {
                 balance: creditedAmount,
-                currency: 'EUR', // Wallets are standardized to EUR balance
+                currency: 'EUR',
                 createdAt: FieldValue.serverTimestamp(),
                 updatedAt: FieldValue.serverTimestamp(),
             });
@@ -140,3 +143,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: 'error', message: error.message || 'Erreur Interne du Serveur' }, { status: 500 });
   }
 }
+

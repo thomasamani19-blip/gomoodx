@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -13,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CreditCard, Loader2, Sparkles, Star, Gift, Ticket, Video, Info } from 'lucide-react';
 import { FlutterWaveButton, closePaymentModal as closeFlutterwaveModal } from 'flutterwave-react-v3';
+import { useKkiapay, KkiapayProvider } from 'kkiapay-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -42,25 +42,56 @@ const uses = [
     { name: 'Cadeaux Virtuels', icon: Gift },
 ];
 
-export default function AcheterCreditsPage() {
+function RechargeComponent() {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [selectedPackPriceEUR, setSelectedPackPriceEUR] = useState(100);
   const [customAmountEUR, setCustomAmountEUR] = useState(100);
   const [isCustom, setIsCustom] = useState(false);
-  const [currency, setCurrency] = useState<Currency>('XOF');
+  const [currency, setCurrency] = useState<Currency>('EUR');
   
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('flutterwave');
   const [isLoading, setIsLoading] = useState(false);
 
-  const convertPrice = (amountEUR: number, targetCurrency: Currency) => {
-    const rate = CONVERSION_RATES[targetCurrency] / CONVERSION_RATES.EUR;
-    return Math.round(amountEUR * rate);
-  };
-  
+  const { open: openKkiapay, state } = useKkiapay({
+    amount: isCustom ? customAmountEUR : selectedPackPriceEUR,
+    sandbox: true,
+    apikey: process.env.NEXT_PUBLIC_KKIAPAY_PUBLIC_KEY || '',
+    phone: user?.phone || '',
+    email: user?.email || '',
+    fullname: user?.displayName || 'Client GoMoodX',
+    callback: async (response: any) => {
+        setIsLoading(true);
+        try {
+            const apiResponse = await fetch('/api/payments/verifyKkiapay', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    transactionId: response.transactionId,
+                    userId: user?.id,
+                    amount: response.amount,
+                    currency: 'XOF'
+                }),
+            });
+            const result = await apiResponse.json();
+            if (apiResponse.ok && result.status === 'success') {
+                toast({ title: 'Achat réussi !', description: `Votre portefeuille a été crédité.` });
+                router.push('/portefeuille');
+            } else {
+                throw new Error(result.message || 'La vérification a échoué.');
+            }
+        } catch (error: any) {
+            toast({ title: 'Erreur de vérification', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsLoading(false);
+        }
+    },
+    onClose: () => setIsLoading(false)
+  });
+
   const finalAmountEUR = isCustom ? customAmountEUR : selectedPackPriceEUR;
-  const finalAmount = convertPrice(finalAmountEUR, currency);
+  const finalAmount = Math.round(finalAmountEUR * CONVERSION_RATES[currency]);
 
   const fwPublicKey = process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY;
   const fwConfig = {
@@ -120,20 +151,30 @@ export default function AcheterCreditsPage() {
         </Button>
       );
     }
+    
+    const amountToPay = (isCustom ? customAmountEUR : selectedPackPriceEUR) * CONVERSION_RATES[currency];
 
     if (paymentMethod === 'flutterwave') {
       return (
         <FlutterWaveButton
           {...fwConfig}
           className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-          disabled={!fwPublicKey || !user || finalAmount < 1}
+          disabled={!fwPublicKey || !user || amountToPay < 1}
           onClick={() => setIsLoading(true)}
           callback={handleFlutterwaveSuccess}
           onClose={() => setIsLoading(false)}
         >
-          Payer {finalAmount.toLocaleString('fr-FR')} {currency}
+          Payer {Math.round(amountToPay).toLocaleString('fr-FR')} {currency}
         </FlutterWaveButton>
       );
+    }
+
+    if (paymentMethod === 'kkiapay') {
+        return (
+            <Button className="w-full" onClick={() => openKkiapay()} disabled={!user || currency !== 'XOF'}>
+                Payer {Math.round(amountToPay).toLocaleString('fr-FR')} {currency}
+            </Button>
+        );
     }
 
     return null;
@@ -192,28 +233,32 @@ export default function AcheterCreditsPage() {
                         }}
                         className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
                     >
-                        {creditPacksEUR.map((pack) => (
-                            <div key={pack.name} className="relative">
-                                <RadioGroupItem value={pack.price.toString()} id={pack.name} className="peer sr-only" />
-                                <Label
-                                    htmlFor={pack.name}
-                                    className={cn(
-                                        "flex h-full flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary",
-                                        pack.isPopular && "border-primary"
-                                    )}
-                                >
-                                    {pack.isPopular && <Badge className="absolute -top-2" variant="secondary">Populaire</Badge>}
-                                    <pack.icon className="mb-3 h-6 w-6 text-primary" />
-                                    <span className="font-bold text-lg">{pack.name}</span>
-                                    <span className="font-semibold text-2xl">{convertPrice(pack.price, currency).toLocaleString('fr-FR')} {currency}</span>
-                                    {pack.bonus > 0 ? (
-                                        <span className="text-xs text-green-500 font-bold">+ {convertPrice(pack.bonus, currency).toLocaleString('fr-FR')} {currency} offerts</span>
-                                    ) : (
-                                        <span className="text-xs text-transparent">_</span>
-                                    )}
-                                </Label>
-                            </div>
-                        ))}
+                        {creditPacksEUR.map((pack) => {
+                            const convertedPrice = Math.round(pack.price * CONVERSION_RATES[currency]);
+                            const convertedBonus = Math.round(pack.bonus * CONVERSION_RATES[currency]);
+                            return (
+                                <div key={pack.name} className="relative">
+                                    <RadioGroupItem value={pack.price.toString()} id={pack.name} className="peer sr-only" />
+                                    <Label
+                                        htmlFor={pack.name}
+                                        className={cn(
+                                            "flex h-full flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary",
+                                            pack.isPopular && "border-primary"
+                                        )}
+                                    >
+                                        {pack.isPopular && <Badge className="absolute -top-2" variant="secondary">Populaire</Badge>}
+                                        <pack.icon className="mb-3 h-6 w-6 text-primary" />
+                                        <span className="font-bold text-lg">{pack.name}</span>
+                                        <span className="font-semibold text-2xl">{convertedPrice.toLocaleString('fr-FR')} {currency}</span>
+                                        {pack.bonus > 0 ? (
+                                            <span className="text-xs text-green-500 font-bold">+ {convertedBonus.toLocaleString('fr-FR')} {currency} offerts</span>
+                                        ) : (
+                                            <span className="text-xs text-transparent">_</span>
+                                        )}
+                                    </Label>
+                                </div>
+                            )
+                        })}
                     </RadioGroup>
 
                     <RadioGroup 
@@ -225,20 +270,16 @@ export default function AcheterCreditsPage() {
                         <div className={cn("rounded-md border-2 p-4 mt-4", isCustom && "border-primary")}>
                             <div className="flex items-center space-x-2 mb-2">
                                 <RadioGroupItem value="custom" id="custom" />
-                                <Label htmlFor="custom">Ou entrez un montant personnalisé (en {currency})</Label>
+                                <Label htmlFor="custom">Ou entrez un montant personnalisé (en EUR)</Label>
                             </div>
                             <Input
                                 id="amount"
                                 type="number"
-                                value={isCustom ? convertPrice(customAmountEUR, currency) : ''}
-                                onChange={(e) => {
-                                    const amountInCurrency = Number(e.target.value);
-                                    const rate = CONVERSION_RATES.EUR / CONVERSION_RATES[currency];
-                                    setCustomAmountEUR(amountInCurrency * rate);
-                                }}
+                                value={isCustom ? customAmountEUR : ''}
+                                onChange={(e) => setCustomAmountEUR(Number(e.target.value))}
                                 onFocus={() => setIsCustom(true)}
                                 min="10"
-                                placeholder={`Ex: ${convertPrice(50, currency)}`}
+                                placeholder={`Ex: 75`}
                             />
                         </div>
                     </RadioGroup>
@@ -253,6 +294,7 @@ export default function AcheterCreditsPage() {
                                 KkiaPay (XOF)
                             </Button>
                         </div>
+                         {paymentMethod === 'kkiapay' && currency !== 'XOF' && <p className="text-xs text-destructive mt-2">KkiaPay n'accepte que les paiements en XOF.</p>}
                     </div>
 
                 </CardContent>
@@ -282,4 +324,13 @@ export default function AcheterCreditsPage() {
       </div>
     </div>
   );
+}
+
+
+export default function AcheterCreditsPage() {
+    return (
+        <KkiapayProvider>
+            <RechargeComponent />
+        </KkiapayProvider>
+    )
 }
