@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useCollection, useDoc, useFirestore, useUser } from '@/firebase';
@@ -326,59 +327,15 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
   const { user } = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
-  const { toast } = useToast();
   
-  const [showContactPassDialog, setShowContactPassDialog] = useState(false);
-  const [isBuyingPass, setIsBuyingPass] = useState(false);
-
   const annonceRef = useMemo(() => firestore ? doc(firestore, 'services', params.id) : null, [firestore, params.id]);
   const { data: annonce, loading: annonceLoading } = useDoc<Annonce>(annonceRef);
   
   const creatorRef = useMemo(() => (annonce?.createdBy && firestore) ? doc(firestore, 'users', annonce.createdBy) : null, [annonce, firestore]);
   const { data: creator, loading: creatorLoading } = useDoc<User>(creatorRef);
   
-  const settingsRef = useMemo(() => firestore ? doc(firestore, 'settings', 'global') : null, [firestore]);
-  const { data: settings, loading: settingsLoading } = useDoc<Settings>(settingsRef);
-  
-  const loading = annonceLoading || creatorLoading || settingsLoading;
-  const canReserve = creator?.partnerType === 'establishment';
-  
-  const handleContact = () => {
-    if (!user || !creator) {
-        toast({ title: 'Connexion requise', variant: 'destructive' });
-        router.push('/connexion');
-        return;
-    }
-    if (user.unlockedContacts?.includes(creator.id)) {
-        router.push(`/messagerie?contact=${creator.id}`);
-    } else {
-        setShowContactPassDialog(true);
-    }
-  }
-  
-  const handleBuyContactPass = async () => {
-    if (!user || !creator) return;
-    setIsBuyingPass(true);
-    try {
-        const response = await fetch('/api/products/purchase-contact-pass', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id, sellerId: creator.id })
-        });
-        const result = await response.json();
-        if (result.status === 'success') {
-            toast({ title: "Contact débloqué !", description: "Vous pouvez maintenant envoyer un message." });
-            router.push(`/messagerie?contact=${creator.id}`);
-        } else {
-            throw new Error(result.message || "Une erreur est survenue.");
-        }
-    } catch (error: any) {
-        toast({ title: "Erreur d'achat", description: error.message, variant: "destructive" });
-    } finally {
-        setIsBuyingPass(false);
-        setShowContactPassDialog(false);
-    }
-  }
+  const loading = annonceLoading || creatorLoading;
+  const isCreatorAnEscort = creator?.role === 'escorte';
   
   if (loading) {
     return (
@@ -398,7 +355,7 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
     )
   }
 
-  if (!annonce) {
+  if (!annonce || !creator) {
     return (
       <div className="text-center">
         <h2 className="text-2xl font-bold">Annonce non trouvée</h2>
@@ -410,12 +367,9 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
     );
   }
 
-  const contactPassPrice = settings?.passContact?.price || 5;
-  const hasUnlockedContact = !!(user && creator && user.unlockedContacts?.includes(creator.id));
   const isAvailableNow = annonce.availableNowUntil && annonce.availableNowUntil.toDate() > new Date();
 
   return (
-    <>
     <div className="space-y-8">
         <div className="relative w-full h-64 md:h-96 rounded-lg overflow-hidden">
              <Image
@@ -456,70 +410,58 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                  <Card>
                     <CardHeader className="text-center">
                         <p className="text-4xl font-bold text-primary">{annonce.price} €</p>
-                         {canReserve && <p className="text-xs text-muted-foreground">par personne</p>}
+                         <p className="text-xs text-muted-foreground">{isCreatorAnEscort ? "Tarif indicatif" : "par personne"}</p>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
-                        {canReserve ? (
+                        {isCreatorAnEscort ? (
+                            <>
+                                <Button size="lg" asChild>
+                                    <Link href={`/reservations/creer/${annonce.id}`}>
+                                        <Calendar className="mr-2 h-4 w-4" />
+                                        Réserver un rendez-vous
+                                    </Link>
+                                </Button>
+                                <Button size="lg" variant="outline" asChild>
+                                    <Link href={`/messagerie?contact=${creator.id}`}>
+                                        <MessageCircle className="mr-2 h-4 w-4" />
+                                        Contacter
+                                    </Link>
+                                </Button>
+                            </>
+                        ) : (
                              <Button size="lg" asChild>
                                 <Link href={`/annonces/${params.id}/reserver`}>
                                     <Calendar className="mr-2 h-4 w-4" />
                                     Faire une réservation
                                 </Link>
                             </Button>
-                        ) : (
-                             <Button size="lg" onClick={handleContact}>
-                                {hasUnlockedContact ? <CheckCircle className="mr-2 h-4 w-4"/> : <MessageCircle className="mr-2 h-4 w-4" />}
-                                {hasUnlockedContact ? 'Contacter' : 'Contacter pour réserver'}
-                            </Button>
                         )}
                     </CardContent>
                  </Card>
-                 {creator && (
-                    <Card>
-                        <CardHeader>
-                             <CardTitle>Proposé par</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex items-center gap-4">
-                                <Avatar className="h-16 w-16">
-                                    <AvatarImage src={creator.profileImage} alt={creator.displayName} />
-                                    <AvatarFallback>{creator.displayName.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <Link href={`/profil/${creator.id}`} className="font-bold hover:underline">{creator.displayName}</Link>
-                                    <p className="text-sm text-muted-foreground capitalize">{creator.role}</p>
-                                </div>
+                 <Card>
+                    <CardHeader>
+                         <CardTitle>Proposé par</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center gap-4">
+                            <Avatar className="h-16 w-16">
+                                <AvatarImage src={creator.profileImage} alt={creator.displayName} />
+                                <AvatarFallback>{creator.displayName.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <Link href={`/profil/${creator.id}`} className="font-bold hover:underline">{creator.displayName}</Link>
+                                <p className="text-sm text-muted-foreground capitalize">{creator.role}</p>
                             </div>
-                            <div className="flex gap-2 mt-4">
-                                <Button variant="outline" size="sm" className="flex-1"><Heart className="mr-2 h-4 w-4" /> Suivre</Button>
-                                <Button variant="outline" size="icon"><Share2 className="h-4 w-4" /></Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
+                        </div>
+                        <div className="flex gap-2 mt-4">
+                            <Button variant="outline" size="sm" className="flex-1"><Heart className="mr-2 h-4 w-4" /> Suivre</Button>
+                            <Button variant="outline" size="icon"><Share2 className="h-4 w-4" /></Button>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         </div>
         {annonce.category && <SuggestedAnnonces category={annonce.category} currentAnnonceId={annonce.id} />}
     </div>
-    <AlertDialog open={showContactPassDialog} onOpenChange={setShowContactPassDialog}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Débloquer le Contact</AlertDialogTitle>
-                <AlertDialogDescription>
-                    Pour contacter ce créateur, vous devez acheter un "Pass Contact". Ce pass, d'un montant de <span className="font-bold">{contactPassPrice.toFixed(2)}€</span>, vous donnera accès à la messagerie privée avec ce créateur.
-                    <br/><br/>
-                    Ce montant est facturé par la plateforme pour la mise en relation.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel disabled={isBuyingPass}>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={handleBuyContactPass} disabled={isBuyingPass}>
-                    {isBuyingPass && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Payer le Pass et Contacter
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
-    </>
   );
 }
