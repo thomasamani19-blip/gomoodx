@@ -73,3 +73,5 @@ export default function PartenaireDashboard({ user }: { user: User }) {
     </div>
   );
 }
+
+    

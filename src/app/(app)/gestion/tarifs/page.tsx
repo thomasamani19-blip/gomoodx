@@ -28,3 +28,5 @@ export default function GestionTarifsPage() {
 
     return <PageHeader title="Accès non autorisé" description="Cette page est réservée aux partenaires établissements et aux créateurs." />;
 }
+
+    

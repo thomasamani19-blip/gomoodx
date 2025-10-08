@@ -120,3 +120,5 @@ export function CreatorPricingForm({ user }: CreatorPricingFormProps) {
         </div>
     );
 }
+
+    

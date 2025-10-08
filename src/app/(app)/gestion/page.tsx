@@ -1,9 +1,10 @@
+
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Newspaper, ShoppingBag, Star, Video } from "lucide-react";
+import { Newspaper, ShoppingBag, Star, Video, DollarSign } from "lucide-react";
 import Link from 'next/link';
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
@@ -16,6 +17,7 @@ const managementTools = [
     { title: "Gérer mes articles", description: "Rédigez et publiez de nouveaux articles de blog.", href: "/gestion/articles", icon: Newspaper },
     { title: "Gérer les abonnements", description: "Définissez vos niveaux d'abonnement pour les fans.", href: "/gestion/abonnement", icon: Star },
     { title: "Gérer les lives", description: "Planifiez et gérez vos sessions de live streaming.", href: "/gestion/lives", icon: Video },
+    { title: "Gérer mes tarifs", description: "Définissez vos prix pour les rencontres et appels.", href: "/gestion/tarifs", icon: DollarSign },
 ];
 
 export default function GestionPage() {
@@ -68,3 +70,5 @@ export default function GestionPage() {
         </div>
     )
 }
+
+    
