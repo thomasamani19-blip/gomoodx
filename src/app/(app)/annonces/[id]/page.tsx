@@ -417,7 +417,7 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                         {isCreatorAnEscort ? (
                             <>
                                 <Button size="lg" asChild>
-                                    <Link href={`/reservations/creer/${annonce.id}`}>
+                                    <Link href={`/reservations/creer/${creator.id}`}>
                                         <Calendar className="mr-2 h-4 w-4" />
                                         Prendre rendez-vous
                                     </Link>

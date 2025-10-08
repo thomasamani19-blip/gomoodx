@@ -1,0 +1,205 @@
+
+'use client';
+
+import { useState, useMemo, useEffect } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { useDoc, useFirestore } from '@/firebase';
+import type { User, CreatorRates, Settings } from '@/lib/types';
+import { doc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
+import PageHeader from '@/components/shared/page-header';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, Calendar as CalendarIcon, MapPin, Clock, Timer, Check, Info } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+export default function CreerReservationPage({ params }: { params: { creatorId: string } }) {
+    const { user, loading: authLoading } = useAuth();
+    const firestore = useFirestore();
+    const router = useRouter();
+    const { toast } = useToast();
+
+    // Fetching data
+    const creatorRef = useMemo(() => firestore ? doc(firestore, 'users', params.creatorId) : null, [firestore, params.creatorId]);
+    const { data: creator, loading: creatorLoading } = useDoc<User>(creatorRef);
+
+    const settingsRef = useMemo(() => firestore ? doc(firestore, 'settings', 'global') : null, [firestore]);
+    const { data: settings, loading: settingsLoading } = useDoc<Settings>(settingsRef);
+    
+    // Form state
+    const [step, setStep] = useState(1);
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+    const [selectedTime, setSelectedTime] = useState('19:00');
+    const [durationHours, setDurationHours] = useState(1);
+    const [location, setLocation] = useState('');
+    const [notes, setNotes] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // Derived values
+    const loading = authLoading || creatorLoading || settingsLoading;
+    const serviceFee = settings?.platformFee || 20; // Default fee if not set
+    const creatorRatePerHour = creator?.rates?.escortPerHour || 0;
+    const bookingCost = durationHours * creatorRatePerHour;
+    const totalCost = bookingCost + serviceFee;
+
+    useEffect(() => {
+        if (!loading && !user) {
+            toast({ title: "Connexion requise", description: "Vous devez être connecté pour faire une réservation." });
+            router.push('/connexion');
+        }
+        if (!loading && creator?.role !== 'escorte') {
+            toast({ title: "Réservation impossible", description: "Vous ne pouvez réserver que des escortes.", variant: "destructive"});
+            router.push('/annonces');
+        }
+    }, [loading, user, creator, router, toast]);
+
+    const handleNextStep = () => {
+        if (!selectedDate || !location.trim() || durationHours <= 0) {
+            toast({ title: "Champs requis", description: "Veuillez remplir la date, la durée et le lieu.", variant: 'destructive'});
+            return;
+        }
+        if(creatorRatePerHour <= 0) {
+             toast({ title: "Tarif non défini", description: "Ce créateur n'a pas encore défini son tarif horaire.", variant: 'destructive'});
+            return;
+        }
+        setStep(2);
+    };
+
+    const handleSubmit = async () => {
+        if (!user || !creator || !selectedDate) {
+            toast({ title: "Erreur", description: "Données de réservation manquantes.", variant: "destructive" });
+            return;
+        }
+        setIsSubmitting(true);
+        const [hours, minutes] = selectedTime.split(':');
+        const reservationDateTime = new Date(selectedDate);
+        reservationDateTime.setHours(parseInt(hours), parseInt(minutes));
+
+        // TODO: Mettre en place l'API de création de réservation et de paiement
+        console.log({
+            memberId: user.id,
+            creatorId: creator.id,
+            reservationDate: reservationDateTime.toISOString(),
+            durationHours: durationHours,
+            location: location,
+            notes: notes,
+            amount: totalCost,
+            fee: serviceFee
+        });
+        
+        // Simuler une attente et rediriger
+        setTimeout(() => {
+            toast({ title: "Paiement en attente", description: "Le système de paiement est en cours de développement." });
+             router.push('/reservations');
+            setIsSubmitting(false);
+        }, 2000);
+    };
+    
+    if (loading) {
+        return (
+            <div>
+                <PageHeader title="Chargement de la réservation..." />
+                <Card><CardContent className="pt-6"><Skeleton className="h-64 w-full" /></CardContent></Card>
+            </div>
+        )
+    }
+
+    if (!creator) {
+        return <PageHeader title="Créateur non trouvé" />
+    }
+
+    return (
+        <div>
+            <PageHeader title={`Rendez-vous avec ${creator.displayName}`} description="Planifiez les détails de votre rencontre." />
+            <div className="max-w-2xl mx-auto">
+                {step === 1 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Étape 1: Détails du rendez-vous</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="grid sm:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-2"><CalendarIcon className="h-4 w-4"/> Date</Label>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}>
+                                                {selectedDate ? format(selectedDate, "PPP", {locale: fr}) : <span>Choisissez une date</span>}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus disabled={{ before: new Date() }} /></PopoverContent>
+                                    </Popover>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-2"><Clock className="h-4 w-4"/> Heure</Label>
+                                    <Input type="time" value={selectedTime} onChange={e => setSelectedTime(e.target.value)} />
+                                </div>
+                            </div>
+                             <div className="space-y-2">
+                                <Label className="flex items-center gap-2"><Timer className="h-4 w-4"/> Durée (en heures)</Label>
+                                <Input type="number" value={durationHours} onChange={e => setDurationHours(Number(e.target.value))} min="1" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-2"><MapPin className="h-4 w-4"/> Lieu du rendez-vous</Label>
+                                <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="Ex: Hôtel Le Grand Paris" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Notes pour le créateur (optionnel)</Label>
+                                <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Préférences, informations utiles..." />
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Button onClick={handleNextStep}>Passer à la confirmation</Button>
+                        </CardFooter>
+                    </Card>
+                )}
+                {step === 2 && (
+                    <Card>
+                        <CardHeader>
+                             <CardTitle>Étape 2: Confirmation et Paiement</CardTitle>
+                             <CardDescription>Veuillez vérifier les informations avant de confirmer.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <ul className="space-y-3 rounded-lg border bg-muted/50 p-4 text-sm">
+                                <li className="flex justify-between"><span>Créateur:</span><span className="font-semibold">{creator.displayName}</span></li>
+                                <li className="flex justify-between"><span>Date:</span><span className="font-semibold">{selectedDate ? format(selectedDate, 'EEEE d MMM yyyy', {locale: fr}) : ''} à {selectedTime}</span></li>
+                                <li className="flex justify-between"><span>Durée:</span><span className="font-semibold">{durationHours} heure(s)</span></li>
+                                <li className="flex justify-between"><span>Lieu:</span><span className="font-semibold">{location}</span></li>
+                            </ul>
+                             <div className="space-y-3 rounded-lg border bg-muted/50 p-4">
+                                <div className="flex justify-between"><span>Tarif horaire de {creator.displayName}:</span><span>{creatorRatePerHour.toFixed(2)} €</span></div>
+                                <div className="flex justify-between"><span>Coût de la prestation ({durationHours}h):</span><span>{bookingCost.toFixed(2)} €</span></div>
+                                <div className="flex justify-between"><span>Frais de service GoMoodX:</span><span>{serviceFee.toFixed(2)} €</span></div>
+                                <hr className="border-border"/>
+                                <div className="flex justify-between text-xl font-bold"><span>Total à payer:</span><span>{totalCost.toFixed(2)} €</span></div>
+                             </div>
+                             <Alert>
+                                <Info className="h-4 w-4"/>
+                                <AlertTitle>Paiement Sécurisé</AlertTitle>
+                                <AlertDescription>Le montant total sera débité de votre portefeuille et conservé par GoMoodX jusqu'à la confirmation mutuelle du rendez-vous.</AlertDescription>
+                            </Alert>
+                        </CardContent>
+                        <CardFooter className="flex justify-between">
+                            <Button variant="ghost" onClick={() => setStep(1)}>Retour</Button>
+                            <Button onClick={handleSubmit} disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                Confirmer et Payer
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                )}
+            </div>
+        </div>
+    );
+}
+
