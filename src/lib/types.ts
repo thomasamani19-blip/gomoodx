@@ -95,6 +95,13 @@ export interface CreatorRates {
     escortOvernight?: number;
 }
 
+export interface BankDetails {
+  accountNumber?: string;
+  bankCode?: string; // e.g. "044" for Access Bank in NG
+  accountName?: string;
+  country?: string; // ISO 3166-1 alpha-2 code
+}
+
 
 // Base User structure
 export interface User {
@@ -151,6 +158,7 @@ export interface User {
     }
   };
   hasMadeFirstDeposit?: boolean;
+  bankDetails?: BankDetails;
 }
 
 // Wallet
