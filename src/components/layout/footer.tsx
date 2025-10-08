@@ -5,9 +5,9 @@ import Link from 'next/link';
 const quickLinks = [
   { label: 'À propos', href: '/a-propos' },
   { label: 'Comment ça marche ?', href: '/a-propos' },
-  { label: 'Contact', href: '#' },
-  { label: "Conditions d'utilisation", href: '#' },
-  { label: 'Politique de confidentialité', href: '#' },
+  { label: 'Contact', href: '/a-propos' },
+  { label: "Conditions d'utilisation", href: '/a-propos' },
+  { label: 'Politique de confidentialité', href: '/a-propos' },
 ];
 
 const forPartners = [

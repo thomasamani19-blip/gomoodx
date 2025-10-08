@@ -123,9 +123,10 @@ export default function Home() {
             <form onSubmit={handleSearch} className="mt-8 w-full max-w-xl">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input name="query" type="text" placeholder="Rechercher un créateur, un service, un lieu..." className="h-14 pl-12 pr-32 text-lg rounded-full shadow-lg bg-card/80 backdrop-blur-sm border-primary/30 focus:ring-primary" />
-                <Button type="submit" size="lg" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full h-11">
-                  Rechercher
+                <Input name="query" type="text" placeholder="Rechercher un créateur, un service, un lieu..." className="h-14 pl-12 pr-16 text-lg rounded-full shadow-lg bg-card/80 backdrop-blur-sm border-primary/30 focus:ring-primary" />
+                <Button type="submit" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full h-11 w-11">
+                  <Search className="h-5 w-5" />
+                   <span className="sr-only">Rechercher</span>
                 </Button>
               </div>
             </form>
