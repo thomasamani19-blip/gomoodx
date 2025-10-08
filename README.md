@@ -35,6 +35,10 @@ Suivez ces étapes pour lancer le projet en local.
 
     # Genkit / Google AI
     GEMINI_API_KEY="Votre_cle_API_Gemini"
+    
+    # Agora (for Live Streaming & Calls)
+    AGORA_APP_ID="votre_agora_app_id"
+    AGORA_APP_CERTIFICATE="votre_agora_app_certificate"
 
     # Clés API pour les paiements (à obtenir depuis les plateformes)
     NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY="FLWPUBK_TEST-..."
