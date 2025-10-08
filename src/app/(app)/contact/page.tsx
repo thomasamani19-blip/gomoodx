@@ -65,7 +65,7 @@ export default function ContactPage() {
                         <CardFooter>
                             <Button type="submit" disabled={isLoading}>
                                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Mail className="mr-2 h-4 w-4"/>}
-                                Envoyer le Message
+                                {isLoading ? 'Envoi en cours...' : 'Envoyer le Message'}
                             </Button>
                         </CardFooter>
                     </form>
