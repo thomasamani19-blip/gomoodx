@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Trash2, Loader2, Pencil, Star, Info } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Loader2, Pencil, Star, Info, Zap } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -30,6 +30,7 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 
 const SPONSOR_COST = 10;
+const AVAILABLE_NOW_COST = 5;
 
 export default function GestionAnnoncesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -43,6 +44,11 @@ export default function GestionAnnoncesPage() {
   const [isConfirmingSponsor, setIsConfirmingSponsor] = useState(false);
   const [annonceToSponsor, setAnnonceToSponsor] = useState<Annonce | null>(null);
   const [isSponsoring, setIsSponsoring] = useState(false);
+
+  const [isConfirmingAvailableNow, setIsConfirmingAvailableNow] = useState(false);
+  const [annonceToMakeAvailable, setAnnonceToMakeAvailable] = useState<Annonce | null>(null);
+  const [isActivating, setIsActivating] = useState(false);
+
 
   const walletRef = useMemo(() => user && firestore ? doc(firestore, 'wallets', user.id) : null, [user, firestore]);
   const { data: wallet, loading: walletLoading } = useDoc<Wallet>(walletRef);
@@ -131,6 +137,33 @@ export default function GestionAnnoncesPage() {
     }
   };
 
+  const handleAvailableNowConfirm = async () => {
+    if (!annonceToMakeAvailable || !user) return;
+    setIsActivating(true);
+    try {
+      const response = await fetch('/api/annonces/set-available-now', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          annonceId: annonceToMakeAvailable.id,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message);
+      toast({
+        title: "Statut activé !",
+        description: `Votre annonce est maintenant marquée comme disponible pour 24h.`
+      });
+    } catch (error: any) {
+      toast({ title: "Erreur d'activation", description: error.message, variant: 'destructive' });
+    } finally {
+      setIsActivating(false);
+      setIsConfirmingAvailableNow(false);
+      setAnnonceToMakeAvailable(null);
+    }
+  };
+
   const openSponsorDialog = (annonce: Annonce) => {
     if ((wallet?.balance || 0) < SPONSOR_COST) {
         toast({
@@ -143,6 +176,19 @@ export default function GestionAnnoncesPage() {
     setAnnonceToSponsor(annonce);
     setIsConfirmingSponsor(true);
   };
+
+  const openAvailableNowDialog = (annonce: Annonce) => {
+    if ((wallet?.balance || 0) < AVAILABLE_NOW_COST) {
+        toast({
+            title: "Solde insuffisant",
+            description: `Vous avez besoin de ${AVAILABLE_NOW_COST}€. Votre solde est de ${wallet?.balance.toFixed(2) || 0}€.`,
+            variant: "destructive",
+        });
+        return;
+    }
+    setAnnonceToMakeAvailable(annonce);
+    setIsConfirmingAvailableNow(true);
+  }
 
 
   return (
@@ -209,6 +255,10 @@ export default function GestionAnnoncesPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
+                           <DropdownMenuItem onClick={() => openAvailableNowDialog(annonce)}>
+                                <Zap className="mr-2 h-4 w-4 text-green-500" />
+                                Disponible maintenant
+                            </DropdownMenuItem>
                           {!annonce.isSponsored && (
                             <DropdownMenuItem onClick={() => openSponsorDialog(annonce)}>
                                 <Star className="mr-2 h-4 w-4" />
@@ -262,6 +312,26 @@ export default function GestionAnnoncesPage() {
             <AlertDialogAction onClick={handleSponsorConfirm} disabled={isSponsoring}>
               {isSponsoring && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Confirmer et Payer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isConfirmingAvailableNow} onOpenChange={setIsConfirmingAvailableNow}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer l'activation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Activer le statut "Disponible maintenant" pour "{annonceToMakeAvailable?.title}" coûtera <span className="font-bold">{AVAILABLE_NOW_COST}€</span>, qui seront débités de votre portefeuille.
+              Le statut sera actif pendant 24 heures.
+              Votre solde actuel est de <span className="font-bold">{wallet?.balance?.toFixed(2) || 0}€</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isActivating}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleAvailableNowConfirm} disabled={isActivating}>
+              {isActivating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Confirmer et Activer
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

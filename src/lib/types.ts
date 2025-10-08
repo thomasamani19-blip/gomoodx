@@ -205,6 +205,7 @@ export interface Annonce {
   views: number;
   isSponsored?: boolean;
   sponsorshipExpiresAt?: Timestamp;
+  availableNowUntil?: Timestamp;
   moderationStatus: ModerationStatus;
   moderationReason?: string;
 }

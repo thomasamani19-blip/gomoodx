@@ -45,7 +45,17 @@ export default function AnnoncesPage() {
 
   const sortedAnnonces = useMemo(() => {
     if (!annonces) return [];
-    return [...annonces].sort((a, b) => (b.isSponsored ? 1 : 0) - (a.isSponsored ? 1 : 0));
+    return [...annonces].sort((a, b) => {
+        const aAvailable = a.availableNowUntil && a.availableNowUntil.toDate() > new Date();
+        const bAvailable = b.availableNowUntil && b.availableNowUntil.toDate() > new Date();
+        if (aAvailable !== bAvailable) return aAvailable ? -1 : 1;
+        
+        const aSponsored = a.isSponsored;
+        const bSponsored = b.isSponsored;
+        if (aSponsored !== bSponsored) return aSponsored ? -1 : 1;
+
+        return 0; // or sort by date, etc.
+    });
   }, [annonces]);
 
   return (
@@ -88,6 +98,9 @@ export default function AnnoncesPage() {
                     />
                      {annonce.isSponsored && (
                         <Badge variant="secondary" className="absolute top-2 right-2">À la une</Badge>
+                     )}
+                     {annonce.availableNowUntil && annonce.availableNowUntil.toDate() > new Date() && (
+                        <Badge className="absolute top-2 left-2 bg-green-500 hover:bg-green-600 animate-pulse">Disponible maintenant</Badge>
                      )}
                   </div>
                 </Link>

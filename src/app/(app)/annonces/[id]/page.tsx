@@ -413,6 +413,7 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
 
   const contactPassPrice = settings?.passContact?.price || 5;
   const hasUnlockedContact = !!(user && creator && user.unlockedContacts?.includes(creator.id));
+  const isAvailableNow = annonce.availableNowUntil && annonce.availableNowUntil.toDate() > new Date();
 
   return (
     <>
@@ -427,6 +428,11 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                 priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+             {isAvailableNow && (
+                <div className="absolute top-4 left-4">
+                    <Badge className="bg-green-500 hover:bg-green-600 animate-pulse text-base shadow-lg">Disponible maintenant</Badge>
+                </div>
+             )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 -mt-24">
