@@ -231,6 +231,7 @@ async function seedDatabase() {
             ratingCount: 15,
             views: 1250,
             isSponsored: true,
+            moderationStatus: 'approved'
         });
 
          // Add reviews to the service
@@ -273,6 +274,7 @@ async function seedDatabase() {
             createdAt: Timestamp.now(),
             productType: 'physique',
             isSponsored: true,
+            moderationStatus: 'approved'
         });
 
         const product2Ref = doc(collection(firestore, 'products'));
@@ -286,6 +288,7 @@ async function seedDatabase() {
             createdAt: Timestamp.now(),
             productType: 'digital',
             isSponsored: false,
+            moderationStatus: 'approved'
         });
 
         // Example blog post
@@ -296,7 +299,9 @@ async function seedDatabase() {
             imageUrl: 'https://picsum.photos/seed/blog1/800/600',
             imageHint: 'seduction art',
             date: Timestamp.now(),
-            authorName: 'Eva Sensuelle'
+            authorId: creatorUid,
+            authorName: 'Eva Sensuelle',
+            moderationStatus: 'approved'
         });
 
         // Example Live Session
@@ -311,7 +316,10 @@ async function seedDatabase() {
             status: 'ended',
             imageUrl: 'https://picsum.photos/seed/live1/800/600',
             imageHint: 'intimate conversation',
-            creatorName: 'Eva Sensuelle'
+            creatorName: 'Eva Sensuelle',
+            hostId: creatorUid,
+            liveType: 'creator',
+            moderationStatus: 'approved'
         });
 
         console.log('\nDatabase seeding completed successfully!');
