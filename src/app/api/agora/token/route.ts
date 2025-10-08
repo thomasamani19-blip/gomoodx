@@ -1,4 +1,3 @@
-
 // /src/app/api/agora/token/route.ts
 import { NextResponse } from 'next/server';
 import { RtcTokenBuilder, RtcRole } from 'agora-token';
