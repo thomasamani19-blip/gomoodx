@@ -1,5 +1,3 @@
-
-
 import type { Timestamp } from 'firebase/firestore';
 
 // Main User Roles
@@ -474,5 +472,3 @@ export interface PartnerRequest {
 
 // API Payloads
 export type ContentType = 'service' | 'product';
-
-    
