@@ -4,7 +4,7 @@ import { RtcTokenBuilder, RtcRole } from 'agora-token';
 
 export async function POST(request: Request) {
   try {
-    const { channelName } = await request.json();
+    const { channelName, role: roleStr } = await request.json();
 
     if (!channelName) {
       return NextResponse.json({ status: 'error', message: 'Nom du canal manquant.' }, { status: 400 });
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     const uid = 0; // Utiliser 0 pour un token universel ou générer un UID unique par utilisateur
-    const role = RtcRole.PUBLISHER; // PUBLISHER peut publier et souscrire, SUBSCRIBER ne peut que souscrire
+    const role = roleStr === 'publisher' ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER;
     const expirationTimeInSeconds = 3600; // 1 heure
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     // Construire le token
     const token = RtcTokenBuilder.buildTokenWithUid(appId, appCertificate, channelName, uid, role, privilegeExpiredTs);
     
-    console.log(`Token généré pour le canal ${channelName}: ${token}`);
+    console.log(`Token généré pour le canal ${channelName}: ${token} avec le rôle ${roleStr}`);
 
     return NextResponse.json({ token, appId, uid });
 
