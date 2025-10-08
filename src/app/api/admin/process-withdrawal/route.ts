@@ -24,6 +24,7 @@ async function createFlutterwaveTransfer(user: User, transaction: Transaction) {
         throw new Error("La clé secrète Flutterwave n'est pas configurée.");
     }
     if (!user.bankDetails?.accountNumber || !user.bankDetails.bankCode) {
+        // This case is now handled before calling, but kept as a safeguard.
         throw new Error("Les détails bancaires de l'utilisateur sont incomplets.");
     }
 
@@ -94,26 +95,36 @@ export async function POST(request: Request) {
                 description: `Demande de retrait (Échouée)`
             });
         } else { // 'completed'
-            // Attempt to make the transfer via Flutterwave
-            try {
-                await createFlutterwaveTransfer(user, transaction);
-                // If successful, mark the transaction as completed.
-                t.update(transactionRef, { 
+            const hasBankDetails = user.bankDetails?.accountNumber && user.bankDetails.bankCode;
+
+            if (hasBankDetails) {
+                // Attempt to make the transfer via Flutterwave
+                try {
+                    await createFlutterwaveTransfer(user, transaction);
+                    // If successful, mark the transaction as completed.
+                    t.update(transactionRef, { 
+                        status: 'completed',
+                        description: `Retrait complété (Automatique)`
+                    });
+                } catch (apiError: any) {
+                    console.error("Erreur de l'API Flutterwave:", apiError);
+                    // If API fails, we must refund the user and mark the tx as failed
+                    t.update(walletRef, {
+                        balance: FieldValue.increment(transaction.amount)
+                    });
+                    t.update(transactionRef, { 
+                        status: 'failed',
+                        description: `Retrait échoué: ${apiError.message}`
+                    });
+                    // Re-throw to abort the Firestore transaction and inform the admin
+                    throw new Error(`Le virement automatique a échoué: ${apiError.message}`);
+                }
+            } else {
+                // If no bank details, assume manual processing and just update status
+                t.update(transactionRef, {
                     status: 'completed',
-                    description: `Retrait complété`
+                    description: `Retrait complété (Manuel)`
                 });
-            } catch (apiError: any) {
-                console.error("Erreur de l'API Flutterwave:", apiError);
-                // If API fails, we must refund the user and mark the tx as failed
-                t.update(walletRef, {
-                    balance: FieldValue.increment(transaction.amount)
-                });
-                t.update(transactionRef, { 
-                    status: 'failed',
-                    description: `Retrait échoué: ${apiError.message}`
-                });
-                // Re-throw to abort the Firestore transaction
-                throw new Error(`Le transfert a échoué: ${apiError.message}`);
             }
         }
     });
