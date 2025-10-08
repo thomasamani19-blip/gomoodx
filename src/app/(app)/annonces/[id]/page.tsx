@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useCollection, useDoc, useFirestore, useUser } from '@/firebase';
@@ -418,7 +419,7 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                                 <Button size="lg" asChild>
                                     <Link href={`/reservations/creer/${annonce.id}`}>
                                         <Calendar className="mr-2 h-4 w-4" />
-                                        Réserver un rendez-vous
+                                        Prendre rendez-vous
                                     </Link>
                                 </Button>
                                 <Button size="lg" variant="outline" asChild>

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef, Suspense } from 'react';
@@ -7,7 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Search, Send, Video, Phone, ChevronDown, CheckCircle } from 'lucide-react';
+import { MessageSquare, Search, Send, Video, Phone, ChevronDown, CheckCircle, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Message, User, Call, CallType, Reservation, Settings } from '@/lib/types';
@@ -167,6 +168,14 @@ function MessagerieContent() {
         };
 
         setIsCheckingUnlock(true);
+        // Free contact for escorts
+        if (selectedContact.role === 'escorte') {
+            setIsContactUnlocked(true);
+            setHasActiveReservation(false);
+            setIsCheckingUnlock(false);
+            return;
+        }
+
         const checkAccess = async () => {
             // 1. Check for Pass Contact
             if (user.unlockedContacts?.includes(selectedContact.id)) {
@@ -418,26 +427,35 @@ function MessagerieContent() {
                             </Avatar>
                             <h2 className="font-semibold text-lg group-hover:underline">{selectedContact.displayName}</h2>
                         </Link>
-                        {selectedContact.role === 'escorte' && (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                        <Phone className="h-5 w-5 text-primary" />
-                                        <ChevronDown className="h-4 w-4 text-primary/70" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => confirmCall('video')}>
-                                        <Video className="mr-2 h-4 w-4" />
-                                        Appel Vidéo {videoCallRate && `(${videoCallRate}€/min)`}
-                                    </DropdownMenuItem>
-                                     <DropdownMenuItem onClick={() => confirmCall('voice')}>
-                                        <Phone className="mr-2 h-4 w-4" />
-                                        Appel Vocal
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        )}
+                        <div className="flex items-center gap-2">
+                            {selectedContact.role === 'escorte' && (
+                                <Button variant="outline" asChild>
+                                    <Link href={`/reservations/creer/${selectedContact.id}`}>
+                                        <Calendar className="mr-2 h-4 w-4" /> Prendre rendez-vous
+                                    </Link>
+                                </Button>
+                            )}
+                            {selectedContact.role === 'escorte' && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon">
+                                            <Phone className="h-5 w-5 text-primary" />
+                                            <ChevronDown className="h-4 w-4 text-primary/70" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem onClick={() => confirmCall('video')}>
+                                            <Video className="mr-2 h-4 w-4" />
+                                            Appel Vidéo {videoCallRate && `(${videoCallRate}€/min)`}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => confirmCall('voice')}>
+                                            <Phone className="mr-2 h-4 w-4" />
+                                            Appel Vocal
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
+                        </div>
                     </div>
                     <ScrollArea className="flex-1 p-6 bg-muted/20">
                         <div className="space-y-6">

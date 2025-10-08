@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, MessageCircle, Video, Phone, ChevronDown, Star, CheckCircle, Banknote } from 'lucide-react';
+import { Heart, MessageCircle, Video, Phone, ChevronDown, Star, CheckCircle, Banknote, Calendar } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { doc, updateDoc, arrayUnion, arrayRemove, addDoc, collection, serverTimestamp, query, where, limit, and, or, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -344,35 +344,8 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
             router.push('/connexion');
             return;
         }
-        if (currentUser.unlockedContacts?.includes(user.id)) {
-            router.push(`/messagerie?contact=${user.id}`);
-        } else {
-            setShowContactPassDialog(true);
-        }
-    };
-    
-    const handleBuyContactPass = async () => {
-        if (!currentUser || !user) return;
-        setIsBuyingPass(true);
-        try {
-            const response = await fetch('/api/products/purchase-contact-pass', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: currentUser.id, sellerId: user.id })
-            });
-            const result = await response.json();
-            if (result.status === 'success') {
-                toast({ title: "Contact débloqué !", description: "Vous pouvez maintenant envoyer un message." });
-                router.push(`/messagerie?contact=${user.id}`);
-            } else {
-                throw new Error(result.message || "Une erreur est survenue.");
-            }
-        } catch (error: any) {
-            toast({ title: "Erreur d'achat", description: error.message, variant: "destructive" });
-        } finally {
-            setIsBuyingPass(false);
-            setShowContactPassDialog(false);
-        }
+        // Logic for free contact
+        router.push(`/messagerie?contact=${user.id}`);
     };
 
     const handleOpenSubscriptionDialog = (tier: SubscriptionTier) => {
@@ -419,9 +392,9 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         let totalPrice = tier.price * subscriptionDuration;
         let discount = 0;
         
-        if (subscriptionDuration === 3 && tier.discounts?.quarterly) discount = tier.discounts.quarterly;
-        else if (subscriptionDuration === 6 && tier.discounts?.semiAnnual) discount = tier.discounts.semiAnnual;
-        else if (subscriptionDuration === 12 && tier.discounts?.annual) discount = tier.discounts.annual;
+        if (durationMonths === 3 && tier.discounts?.quarterly) discount = tier.discounts.quarterly;
+        else if (durationMonths === 6 && tier.discounts?.semiAnnual) discount = tier.discounts.semiAnnual;
+        else if (durationMonths === 12 && tier.discounts?.annual) discount = tier.discounts.annual;
         
         if (discount > 0) {
             totalPrice = totalPrice * (1 - discount / 100);
@@ -429,10 +402,6 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         
         return totalPrice.toFixed(2);
     };
-
-
-    const contactPassPrice = globalSettings?.passContact?.price || 5;
-    const hasUnlockedContact = !!(currentUser && user && currentUser.unlockedContacts?.includes(user.id));
 
     return (
         <>
@@ -466,8 +435,13 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                             <Heart className="mr-2 h-4 w-4" /> 
                             {isFavorite ? 'Retiré des favoris' : 'Ajouter aux favoris'}
                         </Button>
+                         <Button variant="outline" asChild>
+                            <Link href={`/reservations/creer/${user.id}`}>
+                                <Calendar className="mr-2 h-4 w-4" /> Prendre rendez-vous
+                            </Link>
+                        </Button>
                          <Button variant="outline" onClick={handleContact}>
-                            {hasUnlockedContact ? <CheckCircle className="mr-2 h-4 w-4"/> : <MessageCircle className="mr-2 h-4 w-4" />}
+                            <MessageCircle className="mr-2 h-4 w-4" />
                             Message
                         </Button>
                          {(user.role === 'escorte' || user.partnerType === 'producer') && (
@@ -611,26 +585,6 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
-        
-        <AlertDialog open={showContactPassDialog} onOpenChange={setShowContactPassDialog}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Débloquer le Contact</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Pour envoyer un message à ce créateur, vous devez acheter un "Pass Contact". Ce pass, d'un montant de <span className="font-bold">{contactPassPrice.toFixed(2)}€</span>, vous donnera un accès permanent à la messagerie privée avec cette personne.
-                        <br/><br/>
-                        Ce montant est facturé par la plateforme pour la mise en relation.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel disabled={isBuyingPass}>Annuler</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleBuyContactPass} disabled={isBuyingPass}>
-                        {isBuyingPass && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Payer le Pass et Contacter
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
         </>
     );
 };
@@ -711,5 +665,3 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   // Default to creator/producer profile view
   return <CreatorProfile user={user} isOwnProfile={isOwnProfile} />;
 }
-
-    
