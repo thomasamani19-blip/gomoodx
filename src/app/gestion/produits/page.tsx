@@ -116,7 +116,7 @@ export default function GestionProduitsPage() {
 
         const result = await response.json();
         if (response.ok && result.status === 'success') {
-            setProduits(prev => prev?.map(p => p.id === productToSponsor.id ? { ...p, isSponsored: true } : p) || null);
+            setProduits(prev => prev?.map(p => p.id === productToSponsor.id ? { ...p, isSponsored: true, sponsorshipExpiresAt: result.expiresAt } : p) || null);
             toast({
                 title: "Produit Sponsorisé !",
                 description: `Votre produit "${productToSponsor.title}" est maintenant mis en avant.`,
