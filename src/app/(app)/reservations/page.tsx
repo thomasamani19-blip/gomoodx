@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore } from '@/firebase';
-import type { Reservation } from '@/lib/types';
+import type { Reservation, User } from '@/lib/types';
 import { collection, query, where, orderBy, or } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Link from 'next/link';
 import { CalendarCheck, Eye } from 'lucide-react';
+import { useDoc } from '@/firebase/firestore/use-doc';
 
 const statusVariantMap = {
     pending: 'outline',
@@ -30,6 +31,21 @@ const statusTextMap = {
     cancelled: 'Annulée',
     completed: 'Terminée',
 };
+
+const OtherPartyCell = ({ userId }: { userId: string }) => {
+    const firestore = useFirestore();
+    const userRef = useMemo(() => firestore ? firestore.collection('users').doc(userId) : null, [firestore, userId]);
+    const { data: user, loading } = useDoc<User>(userRef);
+
+    if (loading) return <Skeleton className="h-4 w-24" />;
+    if (!user) return <span>Utilisateur inconnu</span>;
+
+    return (
+        <Link href={`/profil/${user.id}`} className="hover:underline font-medium">
+            {user.displayName}
+        </Link>
+    );
+}
 
 export default function ReservationsPage() {
     const { user, loading: authLoading } = useAuth();
@@ -84,10 +100,14 @@ export default function ReservationsPage() {
                             </TableHeader>
                             <TableBody>
                                 {reservations && reservations.length > 0 ? (
-                                    reservations.map(res => (
+                                    reservations.map(res => {
+                                        const otherPartyId = user?.id === res.memberId ? res.creatorId : res.memberId;
+                                        return (
                                         <TableRow key={res.id}>
                                             <TableCell className="font-medium">{res.annonceTitle}</TableCell>
-                                            <TableCell>{/* We'd need to fetch the other user's name here */}</TableCell>
+                                            <TableCell>
+                                                <OtherPartyCell userId={otherPartyId} />
+                                            </TableCell>
                                             <TableCell>
                                                 {res.reservationDate ? format(res.reservationDate.toDate(), 'd MMM yyyy à HH:mm', { locale: fr }) : 'N/A'}
                                             </TableCell>
@@ -102,7 +122,7 @@ export default function ReservationsPage() {
                                                 </Button>
                                             </TableCell>
                                         </TableRow>
-                                    ))
+                                    )})
                                 ) : (
                                     <TableRow>
                                         <TableCell colSpan={5} className="h-48 text-center">

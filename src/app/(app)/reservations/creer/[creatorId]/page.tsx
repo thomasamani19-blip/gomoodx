@@ -54,11 +54,11 @@ export default function CreerReservationPage({ params }: { params: { creatorId: 
 
     useEffect(() => {
         if (!loading && !user) {
-            toast({ title: "Connexion requise", description: "Vous devez être connecté pour faire une réservation." });
+            toast({ title: "Connexion requise", description: "Vous devez être connecté pour prendre un rendez-vous." });
             router.push('/connexion');
         }
         if (!loading && creator?.role !== 'escorte') {
-            toast({ title: "Réservation impossible", description: "Vous ne pouvez réserver que des escortes.", variant: "destructive"});
+            toast({ title: "Réservation impossible", description: "Vous ne pouvez prendre rendez-vous qu'avec une escorte.", variant: "destructive"});
             router.push('/annonces');
         }
     }, [loading, user, creator, router, toast]);
@@ -77,7 +77,7 @@ export default function CreerReservationPage({ params }: { params: { creatorId: 
 
     const handleSubmit = async () => {
         if (!user || !creator || !selectedDate) {
-            toast({ title: "Erreur", description: "Données de réservation manquantes.", variant: "destructive" });
+            toast({ title: "Erreur", description: "Données de rendez-vous manquantes.", variant: "destructive" });
             return;
         }
         setIsSubmitting(true);
@@ -85,30 +85,39 @@ export default function CreerReservationPage({ params }: { params: { creatorId: 
         const reservationDateTime = new Date(selectedDate);
         reservationDateTime.setHours(parseInt(hours), parseInt(minutes));
 
-        // TODO: Mettre en place l'API de création de réservation et de paiement
-        console.log({
-            memberId: user.id,
-            creatorId: creator.id,
-            reservationDate: reservationDateTime.toISOString(),
-            durationHours: durationHours,
-            location: location,
-            notes: notes,
-            amount: totalCost,
-            fee: serviceFee
-        });
-        
-        // Simuler une attente et rediriger
-        setTimeout(() => {
-            toast({ title: "Paiement en attente", description: "Le système de paiement est en cours de développement." });
-             router.push('/reservations');
+        try {
+            const response = await fetch('/api/reservations/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    memberId: user.id,
+                    creatorId: creator.id,
+                    reservationDate: reservationDateTime.toISOString(),
+                    durationHours: durationHours,
+                    location: location,
+                    notes: notes,
+                    amount: totalCost,
+                }),
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                toast({ title: "Demande envoyée", description: "Votre demande a été envoyée au créateur pour confirmation." });
+                router.push(`/reservations/${result.reservationId}`);
+            } else {
+                throw new Error(result.message || "Une erreur est survenue.");
+            }
+        } catch (error: any) {
+            toast({ title: "Erreur de réservation", description: error.message, variant: "destructive" });
+        } finally {
             setIsSubmitting(false);
-        }, 2000);
+        }
     };
     
     if (loading) {
         return (
             <div>
-                <PageHeader title="Chargement de la réservation..." />
+                <PageHeader title="Chargement du formulaire..." />
                 <Card><CardContent className="pt-6"><Skeleton className="h-64 w-full" /></CardContent></Card>
             </div>
         )
@@ -202,4 +211,3 @@ export default function CreerReservationPage({ params }: { params: { creatorId: 
         </div>
     );
 }
-

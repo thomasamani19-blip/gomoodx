@@ -59,41 +59,22 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     const reservationRef = useMemo(() => firestore ? doc(firestore, 'reservations', params.id) : null, [firestore, params.id]);
     const { data: reservation, loading: reservationLoading, setData: setReservation } = useDoc<Reservation>(reservationRef);
     
-    const establishmentRef = useMemo(() => (firestore && reservation) ? doc(firestore, 'users', reservation.creatorId) : null, [firestore, reservation]);
-    const { data: establishment, loading: establishmentLoading } = useDoc<User>(establishmentRef);
-    
-    const memberRef = useMemo(() => (firestore && reservation) ? doc(firestore, 'users', reservation.memberId) : null, [firestore, reservation]);
-    const { data: member, loading: memberLoading } = useDoc<User>(memberRef);
+    const otherPartyId = useMemo(() => {
+        if (!reservation || !currentUser) return null;
+        return reservation.memberId === currentUser.id ? reservation.creatorId : reservation.memberId;
+    }, [reservation, currentUser]);
 
-    const loading = authLoading || reservationLoading || establishmentLoading || memberLoading;
+    const otherPartyRef = useMemo(() => (firestore && otherPartyId) ? doc(firestore, 'users', otherPartyId) : null, [firestore, otherPartyId]);
+    const { data: otherParty, loading: otherPartyLoading } = useDoc<User>(otherPartyRef);
+    
+    const loading = authLoading || reservationLoading || otherPartyLoading;
     
     const isCurrentUserTheMember = currentUser?.id === reservation?.memberId;
-    const isCurrentUserTheEstablishment = currentUser?.id === reservation?.creatorId;
-    const isCurrentUserAnEscortInvolved = reservation?.escorts?.some(e => e.id === currentUser?.id) ?? false;
-    const isUserAllowed = isCurrentUserTheMember || isCurrentUserTheEstablishment || isCurrentUserAnEscortInvolved;
-
-    const handleEscortConfirmation = async (status: ConfirmationStatus) => {
-        if (!currentUser || !reservation) return;
-        setIsUpdatingStatus(true);
-        try {
-            const response = await fetch('/api/reservations/update-escort-status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reservationId: reservation.id, escortId: currentUser.id, status })
-            });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.message);
-
-            toast({ title: "Statut mis à jour", description: result.message });
-            
-        } catch (error: any) {
-            toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
-        } finally {
-            setIsUpdatingStatus(false);
-        }
-    };
+    const isCurrentUserTheCreator = currentUser?.id === reservation?.creatorId;
     
-    const handleReservationStatusUpdate = async (newStatus: ReservationStatus) => {
+    const isUserAllowedToView = isCurrentUserTheMember || isCurrentUserTheCreator;
+
+    const handleStatusUpdate = async (newStatus: ConfirmationStatus | ReservationStatus) => {
         if (!currentUser || !reservation) return;
         setIsUpdatingStatus(true);
         try {
@@ -105,13 +86,13 @@ export default function ReservationDetailPage({ params }: { params: { id: string
             const result = await response.json();
             if (!response.ok) throw new Error(result.message);
 
-            toast({ title: "Réservation mise à jour", description: `La réservation est maintenant ${newStatus === 'confirmed' ? 'confirmée' : 'annulée'}.` });
+            toast({ title: "Statut mis à jour", description: result.message });
         } catch (error: any) {
             toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
         } finally {
             setIsUpdatingStatus(false);
         }
-    }
+    };
 
 
     if (loading) {
@@ -130,28 +111,33 @@ export default function ReservationDetailPage({ params }: { params: { id: string
             </div>
         );
     }
-
-    if (!isUserAllowed) {
+    
+    if (!isUserAllowedToView) {
         return <PageHeader title="Accès non autorisé" description="Vous n'êtes pas autorisé à voir cette réservation." />;
     }
     
-    if (!reservation || !establishment || !member) {
+    if (!reservation || !otherParty) {
         return <PageHeader title="Réservation introuvable" description="Cette réservation n'existe pas." />;
     }
-
-    const allEscortsConfirmed = reservation.escorts?.every(e => reservation.escortConfirmations[e.id]?.status === 'confirmed') ?? true;
     
     const mainActionButtons = () => {
         if (reservation.status === 'pending') {
             if (isCurrentUserTheMember) {
-                return <Button variant="destructive" onClick={() => handleReservationStatusUpdate('cancelled')} disabled={isUpdatingStatus}>
+                return <Button variant="destructive" onClick={() => handleStatusUpdate('cancelled')} disabled={isUpdatingStatus}>
                     {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null} Annuler la réservation
                 </Button>
             }
-            if (isCurrentUserTheEstablishment) {
-                return <Button onClick={() => handleReservationStatusUpdate('confirmed')} disabled={!allEscortsConfirmed || isUpdatingStatus}>
-                    {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null} Confirmer la réservation
-                </Button>
+            if (isCurrentUserTheCreator) {
+                return (
+                    <div className="flex gap-2">
+                         <Button variant="destructive" onClick={() => handleStatusUpdate('cancelled')} disabled={isUpdatingStatus}>
+                            {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <X />} Refuser
+                        </Button>
+                        <Button onClick={() => handleStatusUpdate('confirmed')} disabled={isUpdatingStatus}>
+                            {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check />} Confirmer
+                        </Button>
+                    </div>
+                );
             }
         }
         
@@ -198,67 +184,31 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                 </div>
                             </div>
                             <div className="flex items-start gap-3">
-                                <BedDouble className="h-5 w-5 text-muted-foreground mt-1" />
+                                <MapPin className="h-5 w-5 text-muted-foreground mt-1" />
                                 <div>
-                                    <h4 className="font-medium">Type de Chambre</h4>
-                                    <p className="text-sm text-muted-foreground capitalize">{reservation.roomType || 'Standard'}</p>
+                                    <h4 className="font-medium">Lieu</h4>
+                                    <p className="text-sm text-muted-foreground">{reservation.location || 'Non spécifié'}</p>
                                 </div>
                             </div>
                              <div className="flex items-start gap-3">
                                 <CreditCard className="h-5 w-5 text-muted-foreground mt-1" />
                                 <div>
-                                    <h4 className="font-medium">Montant</h4>
-                                    <p className="text-sm text-muted-foreground">{reservation.amount.toFixed(2)} €</p>
+                                    <h4 className="font-medium">Montant total</h4>
+                                    <p className="text-sm text-muted-foreground">{reservation.amount.toFixed(2)} € (incl. {reservation.fee}€ de frais)</p>
                                 </div>
                             </div>
+                            {reservation.notes && (
+                                <div className="flex items-start gap-3 sm:col-span-2">
+                                    <HelpCircle className="h-5 w-5 text-muted-foreground mt-1" />
+                                    <div>
+                                        <h4 className="font-medium">Notes</h4>
+                                        <p className="text-sm text-muted-foreground">{reservation.notes}</p>
+                                    </div>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                     
-                    {/* Confirmation Status Card */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><ShieldQuestion className="h-5 w-5"/> Statut des Confirmations</CardTitle>
-                            <CardDescription>Suivi des validations par chaque participant.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
-                                <div className="flex items-center gap-3">
-                                    <Building className="h-5 w-5 text-muted-foreground" />
-                                    <span className="font-semibold">{establishment.displayName} (Établissement)</span>
-                                </div>
-                                <Badge variant={reservation.establishmentConfirmed ? 'default' : 'outline'}>
-                                    {reservation.establishmentConfirmed ? 'Confirmé' : 'En attente'}
-                                </Badge>
-                            </div>
-                            {reservation.escorts && reservation.escorts.length > 0 && reservation.escorts.map(escort => {
-                                const confirmation = reservation.escortConfirmations?.[escort.id];
-                                return (
-                                    <div key={escort.id} className="flex items-center justify-between p-3 rounded-lg bg-muted">
-                                        <div className="flex items-center gap-3">
-                                            <UserIcon className="h-5 w-5 text-muted-foreground" />
-                                            <span className="font-semibold">{escort.name} (Escorte)</span>
-                                        </div>
-                                         <div className='flex items-center gap-2'>
-                                            {isCurrentUserAnEscortInvolved && currentUser?.id === escort.id && confirmation?.status === 'pending' && (
-                                                <div className='flex gap-1'>
-                                                    <Button size='sm' variant='destructive' className='h-8' onClick={() => handleEscortConfirmation('declined')} disabled={isUpdatingStatus}>
-                                                        {isUpdatingStatus ? <Loader2 className='h-4 w-4 animate-spin' /> : 'Refuser'}
-                                                    </Button>
-                                                    <Button size='sm' className='h-8' onClick={() => handleEscortConfirmation('confirmed')} disabled={isUpdatingStatus}>
-                                                         {isUpdatingStatus ? <Loader2 className='h-4 w-4 animate-spin' /> : 'Accepter'}
-                                                    </Button>
-                                                </div>
-                                            )}
-                                             <Badge variant={confirmationStatusVariantMap[confirmation?.status || 'pending']}>
-                                                {confirmationStatusTextMap[confirmation?.status || 'pending']}
-                                             </Badge>
-                                         </div>
-                                    </div>
-                                )
-                            })}
-                        </CardContent>
-                    </Card>
-
                      {/* On-site Presence Card */}
                      {reservation.status === 'confirmed' && (
                          <Card>
@@ -268,18 +218,20 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div className={cn("flex items-center justify-between p-3 rounded-lg", reservation.memberPresenceConfirmed ? "bg-green-500/10 text-green-700" : "bg-muted")}>
-                                    <span className="font-semibold">{member.displayName} (Client)</span>
+                                    <span className="font-semibold">{isCurrentUserTheMember ? 'Votre présence' : `Présence de ${otherParty.displayName}`}</span>
                                     {reservation.memberPresenceConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
                                 </div>
-                                {reservation.escorts && reservation.escorts.map(escort => (
-                                    <div key={escort.id} className={cn("flex items-center justify-between p-3 rounded-lg", reservation.escortConfirmations?.[escort.id]?.presenceConfirmed ? "bg-green-500/10 text-green-700" : "bg-muted")}>
-                                        <span className="font-semibold">{escort.name} (Escorte)</span>
-                                        {reservation.escortConfirmations?.[escort.id]?.presenceConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
-                                    </div>
-                                ))}
+                                <div className={cn("flex items-center justify-between p-3 rounded-lg", reservation.escortConfirmations[reservation.creatorId]?.presenceConfirmed ? "bg-green-500/10 text-green-700" : "bg-muted")}>
+                                     <span className="font-semibold">{isCurrentUserTheCreator ? 'Votre présence' : `Présence de ${otherParty.displayName}`}</span>
+                                    {reservation.escortConfirmations[reservation.creatorId]?.presenceConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
+                                </div>
                             </CardContent>
-                             <CardFooter>
-                                <p className="text-xs text-muted-foreground">La confirmation finale par l'établissement déclenchera le paiement.</p>
+                             <CardFooter className="flex-col items-start gap-4">
+                               <p className="text-xs text-muted-foreground">Lorsque les deux participants auront confirmé leur présence, les fonds seront transférés au créateur.</p>
+                               <Button disabled={isUpdatingStatus}>
+                                 {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4" />}
+                                 Confirmer ma présence sur les lieux
+                               </Button>
                              </CardFooter>
                          </Card>
                      )}
@@ -289,17 +241,13 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                     <Card>
                          <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                Participants
+                                Participant
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <Link href={`/profil/${member.id}`} className="flex items-center gap-4 p-2 rounded-md hover:bg-accent">
-                                <Avatar className="h-12 w-12"><AvatarImage src={member.profileImage} /><AvatarFallback>{member.displayName.charAt(0)}</AvatarFallback></Avatar>
-                                <div><p className="font-bold">{member.displayName}</p><p className="text-xs text-muted-foreground">Client</p></div>
-                            </Link>
-                            <Link href={`/partenaire/${establishment.id}`} className="flex items-center gap-4 p-2 rounded-md hover:bg-accent">
-                                <Avatar className="h-12 w-12"><AvatarImage src={establishment.profileImage} /><AvatarFallback>{establishment.displayName.charAt(0)}</AvatarFallback></Avatar>
-                                <div><p className="font-bold">{establishment.displayName}</p><p className="text-xs text-muted-foreground">Établissement</p></div>
+                        <CardContent>
+                             <Link href={`/profil/${otherParty.id}`} className="flex items-center gap-4 p-2 rounded-md hover:bg-accent">
+                                <Avatar className="h-12 w-12"><AvatarImage src={otherParty.profileImage} /><AvatarFallback>{otherParty.displayName.charAt(0)}</AvatarFallback></Avatar>
+                                <div><p className="font-bold">{otherParty.displayName}</p><p className="text-xs text-muted-foreground capitalize">{otherParty.role}</p></div>
                             </Link>
                         </CardContent>
                     </Card>
@@ -307,16 +255,11 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                         <CardHeader><CardTitle>Actions</CardTitle></CardHeader>
                         <CardContent className="flex flex-col gap-2">
                             {mainActionButtons()}
-                             <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="outline" className="w-full" disabled={reservation.status !== 'confirmed'}>
-                                        <Phone className="mr-2 h-4 w-4" /> Appeler (Gratuit)
-                                    </Button>
-                                </TooltipTrigger>
-                                {reservation.status !== 'confirmed' && (
-                                    <TooltipContent><p>L'appel gratuit sera disponible une fois la réservation confirmée.</p></TooltipContent>
-                                )}
-                            </Tooltip>
+                            <Button asChild variant="outline">
+                                <Link href={`/messagerie?contact=${otherParty.id}`}>
+                                    <MessageSquare className="mr-2 h-4 w-4" /> Contacter
+                                </Link>
+                            </Button>
                         </CardContent>
                      </Card>
                 </div>

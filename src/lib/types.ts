@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 // Main User Roles
@@ -242,26 +243,30 @@ export interface EscortConfirmation {
 export interface Reservation {
     id: string;
     memberId: string; // Client making the reservation
-    creatorId: string; // Creator providing the service (establishment)
+    creatorId: string; // Creator providing the service (escort or establishment)
     annonceId: string;
     annonceTitle: string;
     amount: number;
+    fee?: number;
     status: ReservationStatus;
     createdAt: Timestamp;
     reservationDate: Timestamp; // The date for which the service is booked
-    durationHours?: number | null; // Duration of the stay in hours
-    escorts?: { id: string; name: string, profileImage?: string, rate: number }[];
+    durationHours?: number | null; // Duration of the stay/service in hours
+    location?: string;
     notes?: string;
+    
+    // For establishment reservations
+    escorts?: { id: string; name: string, profileImage?: string, rate: number }[];
     roomType?: string;
-    // Confirmation tracking
-    establishmentConfirmed: boolean;
+    establishmentConfirmed?: boolean;
     establishmentConfirmedAt?: Timestamp;
+
     escortConfirmations: {
       [escortId: string]: EscortConfirmation;
     };
     // On-site presence confirmation
     memberPresenceConfirmed: boolean;
-    establishmentPresenceConfirmed: boolean; // Final confirmation by establishment
+    establishmentPresenceConfirmed: boolean; // Final confirmation by establishment for their bookings
 }
 
 // Purchase
@@ -394,6 +399,7 @@ export interface Settings {
         price: number;
     };
     platformCommissionRate?: number;
+    platformFee?: number; // Fixed service fee for bookings
     rewardPointsConversionRate?: number; // e.g., 100 points = 1 EUR
     withdrawalMinAmount?: number;
     withdrawalMaxAmount?: number;
