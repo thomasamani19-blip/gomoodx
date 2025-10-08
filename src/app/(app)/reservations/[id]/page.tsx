@@ -15,11 +15,12 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Phone, ShieldQuestion, Calendar, Tag, CreditCard, User as UserIcon, Users, Timer, BedDouble, Clock, HelpCircle, Check, X, Building, MapPin, Loader2 } from 'lucide-react';
+import { MessageSquare, Phone, ShieldQuestion, Calendar, Tag, CreditCard, User as UserIcon, Users, Timer, BedDouble, Clock, HelpCircle, Check, X, Building, MapPin, Loader2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const statusVariantMap = {
     pending: 'outline',
@@ -251,6 +252,15 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                 </div>
                             </CardContent>
                              <CardFooter className="flex-col items-start gap-4">
+                                {memberHasConfirmed !== creatorHasConfirmed && (
+                                    <Alert>
+                                        <Info className="h-4 w-4" />
+                                        <AlertTitle>En attente de l'autre participant</AlertTitle>
+                                        <AlertDescription>
+                                            N'oubliez pas de demander à <strong>{otherParty.displayName}</strong> de confirmer sa présence également pour finaliser le rendez-vous.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
                                <p className="text-xs text-muted-foreground">Lorsque les deux participants auront confirmé leur présence, les fonds seront transférés au créateur.</p>
                                <Button onClick={handlePresenceConfirm} disabled={isUpdatingStatus || currentUserHasConfirmed}>
                                  {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4" />}
@@ -284,6 +294,13 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                     <MessageSquare className="mr-2 h-4 w-4" /> Contacter
                                 </Link>
                             </Button>
+                            {reservation.status === 'confirmed' && (
+                                <Button asChild variant="outline">
+                                    <Link href={`/messagerie?contact=${otherParty.id}&call=true`}>
+                                        <Phone className="mr-2 h-4 w-4" /> Appeler (Gratuit)
+                                    </Link>
+                                </Button>
+                            )}
                         </CardContent>
                      </Card>
                 </div>

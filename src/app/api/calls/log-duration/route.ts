@@ -1,3 +1,4 @@
+
 // /src/app/api/calls/log-duration/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -13,7 +14,7 @@ const db = getFirestore();
 
 export async function POST(request: Request) {
     try {
-        const { userId, duration } = await request.json() as { userId: string, duration: number };
+        const { userId, duration, callId } = await request.json() as { userId: string, duration: number, callId?: string };
 
         if (!userId || duration === undefined || duration < 0) {
             return NextResponse.json({ status: 'error', message: 'ID utilisateur ou durée invalide.' }, { status: 400 });
@@ -22,6 +23,12 @@ export async function POST(request: Request) {
         const userRef = db.collection('users').doc(userId);
         
         const transactionResult = await db.runTransaction(async (t) => {
+            // Log billed duration on the call itself, regardless of payment type
+            if (callId) {
+                 const callRef = db.collection('calls').doc(callId);
+                 t.update(callRef, { billedDuration: duration });
+            }
+            
             const userDoc = await t.get(userRef);
             if (!userDoc.exists) throw new Error("L'utilisateur n'existe pas.");
             

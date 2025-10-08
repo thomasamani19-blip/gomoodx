@@ -1,3 +1,4 @@
+
 // /src/app/api/calls/billing/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -30,8 +31,10 @@ export async function POST(request: Request) {
             
             const callData = callDoc.data() as Call;
 
+            // Update billed duration on the call doc first
+            t.update(callRef, { billedDuration: duration });
+
             if (callData.isFreeCall || !callData.pricePerMinute || callData.pricePerMinute <= 0) {
-                 t.update(callRef, { billedDuration: duration });
                 return { message: "Aucune facturation requise pour cet appel.", totalCost: 0 };
             }
 
@@ -102,8 +105,6 @@ export async function POST(request: Request) {
                     description: `Revenu Appel ${callData.type} de ${callData.callerName} vers ${receiverUser.displayName}`, status: 'success', reference: callId
                  } as Omit<Transaction, 'id'>);
             }
-            
-            t.update(callRef, { billedDuration: duration });
             
             return { message: "Facturation de l'appel réussie.", totalCost };
         });
