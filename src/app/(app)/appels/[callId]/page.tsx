@@ -16,7 +16,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDuration } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import AgoraRTC, { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack, IRemoteVideoTrack } from 'agora-rtc-sdk-ng';
+import AgoraRTC, { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack, IRemoteVideoTrack, IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
 
 
 const VIRTUAL_GIFTS = [
@@ -43,7 +43,7 @@ export default function CallPage({ params }: { params: { callId: string } }) {
 
   const [localAudioTrack, setLocalAudioTrack] = useState<IMicrophoneAudioTrack | null>(null);
   const [localVideoTrack, setLocalVideoTrack] = useState<ICameraVideoTrack | null>(null);
-  const [remoteVideoTrack, setRemoteVideoTrack] = useState<IRemoteVideoTrack | null>(null);
+  const [remoteUser, setRemoteUser] = useState<IAgoraRTCRemoteUser | null>(null);
   
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -65,6 +65,7 @@ export default function CallPage({ params }: { params: { callId: string } }) {
   
   const isCaller = user && callDoc && callDoc.callerId === user.id;
 
+  // Utilisation de useMemo pour la fonction hangUp pour la stabiliser
   const hangUp = useMemo(() => async (updateDb = true) => {
     if (callStatus === 'ended') return;
     setCallStatus('ended');
@@ -73,6 +74,7 @@ export default function CallPage({ params }: { params: { callId: string } }) {
     localVideoTrack?.close();
     if (isJoined) {
         await agoraClient.leave();
+        setIsJoined(false);
     }
     
     const callDuration = callStartTimeRef.current ? Math.floor((new Date().getTime() - callStartTimeRef.current.getTime()) / 1000) : 0;
@@ -102,87 +104,105 @@ export default function CallPage({ params }: { params: { callId: string } }) {
     }
 
     if (updateDb && callRef) {
-        await updateDoc(callRef, { status: 'ended', endedAt: serverTimestamp() });
+        try {
+            await updateDoc(callRef, { status: 'ended', endedAt: serverTimestamp() });
+        } catch(e) { /* ignore */ }
     }
     router.push('/messagerie');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localAudioTrack, localVideoTrack, isJoined, callDoc, callRef, isCaller, router, toast, callStatus]);
 
 
   // Setup and teardown Agora client
   useEffect(() => {
-    if (!user || !firestore || !callDoc || callStatus === 'ended') return;
+    if (!user || !firestore || !callDoc || isJoined || callStatus === 'ended') return;
 
+    let isMounted = true;
     const joinChannel = async () => {
-        const isVoiceCall = callDoc.type === 'voice';
+        if (!isMounted) return;
 
-        const response = await fetch('/api/agora/token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ channelName: params.callId, role: 'publisher' }),
-        });
-        const { token, appId, uid } = await response.json();
+        try {
+            const isVoiceCall = callDoc.type === 'voice';
 
-        await agoraClient.join(appId, params.callId, token, uid);
-        setIsJoined(true);
-        setCallStatus('connecting');
+            const response = await fetch('/api/agora/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ channelName: params.callId, uid: user.id }),
+            });
+            const { token, appId } = await response.json();
 
-        const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-        setLocalAudioTrack(audioTrack);
-        setLocalVideoTrack(videoTrack);
+            await agoraClient.join(appId, params.callId, token, user.id);
+            if (!isMounted) { await agoraClient.leave(); return; };
+            setIsJoined(true);
+            setCallStatus('connecting');
 
-        await agoraClient.publish([audioTrack, videoTrack]);
-        if (localVideoRef.current) {
-            videoTrack.play(localVideoRef.current);
-        }
+            const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks({}, {
+                encoderConfig: isVoiceCall ? undefined : "480p_1"
+            });
+             if (!isMounted) { audioTrack.close(); videoTrack.close(); await agoraClient.leave(); return; };
+            
+            setLocalAudioTrack(audioTrack);
+            setLocalVideoTrack(videoTrack);
 
-        if (isVoiceCall) {
-            videoTrack.setEnabled(false);
-            setIsVideoOff(true);
+            if (isVoiceCall) {
+                await videoTrack.setEnabled(false);
+                setIsVideoOff(true);
+            }
+
+            await agoraClient.publish([audioTrack, videoTrack]);
+            if (localVideoRef.current) {
+                videoTrack.play(localVideoRef.current);
+            }
+        } catch(error) {
+            console.error("Agora Join Error:", error);
+            toast({ title: "Erreur de Connexion", description: "Impossible de démarrer l'appel.", variant: "destructive" });
+            if (isMounted) hangUp();
         }
     };
     
-    joinChannel().catch(error => {
-        console.error("Agora Join Error:", error);
-        toast({ title: "Erreur de Connexion", description: "Impossible de démarrer l'appel.", variant: "destructive" });
-        hangUp();
-    });
+    joinChannel();
+    
+    const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
+        await agoraClient.subscribe(user, mediaType);
+        if (!isMounted) return;
 
-    const handleUserPublished = async (agoraUser: any, mediaType: 'audio' | 'video') => {
-        await agoraClient.subscribe(agoraUser, mediaType);
         if (mediaType === 'video') {
-            setRemoteVideoTrack(agoraUser.videoTrack);
+            setRemoteUser(user);
             if (remoteVideoRef.current) {
-                agoraUser.videoTrack.play(remoteVideoRef.current);
+                user.videoTrack?.play(remoteVideoRef.current);
             }
-            setCallStatus('connected');
-            callStartTimeRef.current = new Date();
-             if (callRef) updateDoc(callRef, { startedAt: serverTimestamp() });
+            if (callStatus !== 'connected') {
+                setCallStatus('connected');
+                callStartTimeRef.current = new Date();
+                if (callRef) updateDoc(callRef, { startedAt: serverTimestamp() });
+            }
         }
         if (mediaType === 'audio') {
-            agoraUser.audioTrack.play();
+            user.audioTrack?.play();
         }
     };
     
-    const handleUserUnpublished = () => {
-        setRemoteVideoTrack(null);
+    const handleUserLeft = () => {
+        setRemoteUser(null);
+        if (isMounted) hangUp();
     };
 
     agoraClient.on("user-published", handleUserPublished);
-    agoraClient.on("user-unpublished", handleUserUnpublished);
+    agoraClient.on("user-left", handleUserLeft);
     
-    // Listen for call status changes from Firestore
-    const unsubscribe = onSnapshot(callRef!, snapshot => {
+    const unsubFirestore = onSnapshot(callRef!, snapshot => {
         const data = snapshot.data();
         if (data?.status === 'ended' || data?.status === 'declined' || data?.status === 'missed') {
-            hangUp(false); // don't update doc again
+            if (isMounted) hangUp(false);
         }
     });
 
     return () => {
-        hangUp();
+        isMounted = false;
         agoraClient.off("user-published", handleUserPublished);
-        agoraClient.off("user-unpublished", handleUserUnpublished);
-        unsubscribe();
+        agoraClient.off("user-left", handleUserLeft);
+        unsubFirestore();
+        hangUp();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, firestore, callDoc?.id]);
@@ -197,7 +217,7 @@ export default function CallPage({ params }: { params: { callId: string } }) {
   }, [callStatus]);
 
   const toggleMute = () => {
-      localAudioTrack?.setEnabled(isMuted).then(() => setIsMuted(!isMuted));
+      localAudioTrack?.setMuted(!isMuted).then(() => setIsMuted(!isMuted));
   }
 
   const toggleVideo = () => {
@@ -205,7 +225,7 @@ export default function CallPage({ params }: { params: { callId: string } }) {
           toast({ title: "Mode vocal", description: "La vidéo ne peut pas être activée pendant un appel vocal." });
           return;
       }
-      localVideoTrack?.setEnabled(isVideoOff).then(() => setIsVideoOff(!isVideoOff));
+      localVideoTrack?.setEnabled(!isVideoOff).then(() => setIsVideoOff(!isVideoOff));
   }
 
   const handleSendGift = async (gift: {name: string, price: number}) => {
@@ -234,7 +254,7 @@ export default function CallPage({ params }: { params: { callId: string } }) {
       return <div className="w-full h-screen flex items-center justify-center bg-black"><Skeleton className="w-full h-full" /></div>
   }
   
-  const hasRemoteVideo = remoteVideoTrack !== null;
+  const hasRemoteVideo = remoteUser?.hasVideo;
   const isVoiceCall = callDoc.type === 'voice';
 
   return (
@@ -262,7 +282,7 @@ export default function CallPage({ params }: { params: { callId: string } }) {
             </Card>
         )}
         
-        {callStatus === 'connected' && hasRemoteVideo && (
+        {callStatus === 'connected' && (
              <Badge variant="secondary" className="absolute top-4 left-4 text-base">
                 {formatTime(callTimer)}
             </Badge>
