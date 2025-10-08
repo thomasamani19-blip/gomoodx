@@ -96,8 +96,9 @@ export interface CreatorRates {
 }
 
 export interface BankDetails {
-  accountNumber?: string;
-  bankCode?: string; // e.g. "044" for Access Bank in NG
+  accountType: 'bank' | 'mobile_money';
+  accountNumber: string;
+  bankCode: string; // Bank code for bank, network for mobile money
   accountName?: string;
   country?: string; // ISO 3166-1 alpha-2 code
 }

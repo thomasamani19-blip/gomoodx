@@ -17,6 +17,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { uploadFile } from '@/lib/storage';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import type { BankDetails } from '@/lib/types';
 
 function fileToDataUrl(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -51,7 +53,7 @@ export default function ProfilPage() {
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
   const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
 
-  const [bankDetails, setBankDetails] = useState({ accountNumber: '', bankCode: '' });
+  const [bankDetails, setBankDetails] = useState<BankDetails>({ accountType: 'bank', accountNumber: '', bankCode: '' });
 
   const [isSaving, setIsSaving] = useState(false);
   const isCreatorOrPartner = user?.role === 'escorte' || user?.role === 'partenaire';
@@ -70,6 +72,7 @@ export default function ProfilPage() {
       setGalleryPreviews(user.galleryImages || []);
       if (user.bankDetails) {
         setBankDetails({
+          accountType: user.bankDetails.accountType || 'bank',
           accountNumber: user.bankDetails.accountNumber || '',
           bankCode: user.bankDetails.bankCode || '',
         });
@@ -321,35 +324,76 @@ export default function ProfilPage() {
             {isCreatorOrPartner && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Banknote /> Informations Bancaires</CardTitle>
+                  <CardTitle className="flex items-center gap-2"><Banknote /> Informations de Retrait</CardTitle>
                   <CardDescription>
                     Ces informations sont nécessaires pour recevoir vos paiements. Elles resteront confidentielles et sécurisées.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CardContent className="space-y-6">
                     <div className="space-y-2">
-                      <Label htmlFor="accountNumber">Numéro de compte</Label>
-                      <Input 
-                        id="accountNumber" 
-                        value={bankDetails.accountNumber}
-                        onChange={(e) => setBankDetails(prev => ({...prev, accountNumber: e.target.value}))} 
-                        placeholder="Votre numéro de compte bancaire" 
-                      />
+                        <Label>Type de Compte de Destination</Label>
+                        <RadioGroup 
+                            value={bankDetails.accountType} 
+                            onValueChange={(value) => setBankDetails(prev => ({...prev, accountType: value as 'bank' | 'mobile_money'}))}
+                            className="flex gap-4"
+                        >
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="bank" id="bank" />
+                                <Label htmlFor="bank">Compte Bancaire</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="mobile_money" id="mobile_money" />
+                                <Label htmlFor="mobile_money">Mobile Money</Label>
+                            </div>
+                        </RadioGroup>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="bankCode">Code Banque</Label>
-                      <Input 
-                        id="bankCode" 
-                        value={bankDetails.bankCode}
-                        onChange={(e) => setBankDetails(prev => ({...prev, bankCode: e.target.value}))} 
-                        placeholder="Ex: 044 (pour Flutterwave)"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Recherchez le code de votre banque sur la documentation de Flutterwave.
-                      </p>
-                    </div>
-                  </div>
+
+                    {bankDetails.accountType === 'bank' && (
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="accountNumber">Numéro de Compte (IBAN)</Label>
+                                <Input 
+                                    id="accountNumber" 
+                                    value={bankDetails.accountNumber}
+                                    onChange={(e) => setBankDetails(prev => ({...prev, accountNumber: e.target.value}))} 
+                                    placeholder="FR76..." 
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="bankCode">Code Banque (BIC/SWIFT)</Label>
+                                <Input 
+                                    id="bankCode" 
+                                    value={bankDetails.bankCode}
+                                    onChange={(e) => setBankDetails(prev => ({...prev, bankCode: e.target.value}))} 
+                                    placeholder="Ex: CITIUS33"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                     {bankDetails.accountType === 'mobile_money' && (
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="mobileNumber">Numéro de Téléphone</Label>
+                                <Input 
+                                    id="mobileNumber" 
+                                    value={bankDetails.accountNumber}
+                                    onChange={(e) => setBankDetails(prev => ({...prev, accountNumber: e.target.value}))} 
+                                    placeholder="Ex: 2250707070707" 
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="mobileNetwork">Opérateur Mobile</Label>
+                                <Input 
+                                    id="mobileNetwork" 
+                                    value={bankDetails.bankCode}
+                                    onChange={(e) => setBankDetails(prev => ({...prev, bankCode: e.target.value}))} 
+                                    placeholder="Ex: MTN, ORANGE, MOOV"
+                                />
+                                <p className="text-xs text-muted-foreground">Entrez le code opérateur fourni par Flutterwave (ex: `MTN_CIV`)</p>
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
               </Card>
             )}

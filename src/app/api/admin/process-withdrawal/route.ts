@@ -1,10 +1,8 @@
-
 // /src/app/api/admin/process-withdrawal/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
-import { getFirestore, FieldValue, WriteBatch } from 'firebase-admin/firestore';
-import type { Transaction, TransactionStatus, User } from '@/lib/types';
-import { randomBytes } from 'crypto';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import type { Transaction, User, BankDetails } from '@/lib/types';
 
 
 // Initialize Firebase Admin SDK if not already done
@@ -24,21 +22,40 @@ async function createFlutterwaveTransfer(user: User, transaction: Transaction) {
     if (!FLUTTERWAVE_SECRET_KEY) {
         throw new Error("La clé secrète Flutterwave n'est pas configurée.");
     }
-    if (!user.bankDetails?.accountNumber || !user.bankDetails.bankCode) {
-        // This case is now handled before calling, but kept as a safeguard.
-        throw new Error("Les détails bancaires de l'utilisateur sont incomplets.");
+
+    const bankDetails = user.bankDetails;
+    if (!bankDetails || !bankDetails.accountNumber || !bankDetails.bankCode || !bankDetails.accountType) {
+        throw new Error("Les détails du compte de l'utilisateur sont incomplets.");
+    }
+    
+    let transferData: any;
+
+    if (bankDetails.accountType === 'bank') {
+         transferData = {
+            account_bank: bankDetails.bankCode,
+            account_number: bankDetails.accountNumber,
+            amount: transaction.amount,
+            narration: `Retrait GoMoodX - ${user.displayName}`,
+            currency: 'EUR', // Assuming EUR for now, could be dynamic
+            reference: `gomoodx_withdrawal_${transaction.id}_${Date.now()}`,
+            callback_url: "https://gomoodx.com/api/webhooks/flutterwave", // Your webhook URL
+            debit_currency: 'EUR'
+        };
+    } else if (bankDetails.accountType === 'mobile_money') {
+        transferData = {
+            account_bank: bankDetails.bankCode, // e.g., 'MTN', 'ORANGE' - user must find the correct code
+            account_number: bankDetails.accountNumber,
+            amount: transaction.amount,
+            narration: `Retrait GoMoodX - ${user.displayName}`,
+            currency: 'XOF', // Mobile money transfers are often in local currency
+            reference: `gomoodx_withdrawal_${transaction.id}_${Date.now()}`,
+            callback_url: "https://gomoodx.com/api/webhooks/flutterwave",
+            debit_currency: 'XOF'
+        };
+    } else {
+        throw new Error("Type de compte de destination non supporté.");
     }
 
-    const transferData = {
-        account_bank: user.bankDetails.bankCode,
-        account_number: user.bankDetails.accountNumber,
-        amount: transaction.amount,
-        narration: `Retrait GoMoodX - ${user.displayName}`,
-        currency: 'EUR', // Assuming EUR for now, could be dynamic
-        reference: `gomoodx_withdrawal_${transaction.id}_${Date.now()}`,
-        callback_url: "https://gomoodx.com/api/webhooks/flutterwave", // Your webhook URL
-        debit_currency: 'EUR'
-    };
 
     const response = await fetch(`${FLUTTERWAVE_API_URL}/transfers`, {
         method: 'POST',
@@ -96,16 +113,16 @@ export async function POST(request: Request) {
                 description: `Demande de retrait (Échouée)`
             });
         } else { // 'completed'
-            const hasBankDetails = user.bankDetails?.accountNumber && user.bankDetails.bankCode;
+            const hasCompleteBankDetails = user.bankDetails?.accountNumber && user.bankDetails.bankCode && user.bankDetails.accountType;
 
-            if (hasBankDetails) {
+            if (hasCompleteBankDetails) {
                 // Attempt to make the transfer via Flutterwave
                 try {
                     await createFlutterwaveTransfer(user, transaction);
                     // If successful, mark the transaction as completed.
                     t.update(transactionRef, { 
                         status: 'completed',
-                        description: `Retrait complété (Automatique)`
+                        description: `Retrait complété (Automatique via ${user.bankDetails?.accountType})`
                     });
                 } catch (apiError: any) {
                     console.error("Erreur de l'API Flutterwave:", apiError);
