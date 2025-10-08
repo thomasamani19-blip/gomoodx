@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -30,7 +31,7 @@ const FAKE_COMMENTS = [
     "Qui est de Paris ici ?", "Quelqu'un sait quelle est la musique ?", "C'est génial !", "On t'adore 😍"
 ];
 
-const client = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
+const client: IAgoraRTCClient = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
 
 const ChatMessage = ({ author, message }: { author: string, message: string }) => (
     <div className="text-sm p-2 rounded-lg flex items-start gap-2">
@@ -98,9 +99,13 @@ function LiveChat({ sessionId, hostId }: { sessionId: string, hostId: string }) 
 
 function LiveVideoPlayer({ channelName, isHost }: { channelName: string, isHost: boolean }) {
     const videoRef = useRef<HTMLDivElement>(null);
-    let agoraClient: IAgoraRTCClient | null = client;
+    const [isJoined, setIsJoined] = useState(false);
 
     useEffect(() => {
+        let agoraClient: IAgoraRTCClient | null = client;
+        let localAudioTrack: IMicrophoneAudioTrack | null = null;
+        let localVideoTrack: ICameraVideoTrack | null = null;
+
         const joinAndDisplay = async () => {
             try {
                 const response = await fetch('/api/agora/token', {
@@ -111,20 +116,32 @@ function LiveVideoPlayer({ channelName, isHost }: { channelName: string, isHost:
                 const { token, appId, uid } = await response.json();
 
                 if (isHost) {
-                  agoraClient!.setClientRole('host');
+                  await agoraClient.setClientRole('host');
                 } else {
-                  agoraClient!.setClientRole('audience');
+                  await agoraClient.setClientRole('audience');
                 }
                 
-                await agoraClient!.join(appId, channelName, token, uid);
+                await agoraClient.join(appId, channelName, token, uid);
+                setIsJoined(true);
 
-                agoraClient!.on("user-published", async (user, mediaType) => {
-                    await agoraClient!.subscribe(user, mediaType);
-                    if (mediaType === "video" && videoRef.current) {
-                        const remoteVideoTrack = user.videoTrack;
-                        remoteVideoTrack!.play(videoRef.current);
-                    }
-                });
+                if (isHost) {
+                    // Logic for host to publish stream (from studio page)
+                    [localAudioTrack, localVideoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+                    if(videoRef.current) localVideoTrack.play(videoRef.current);
+                    await agoraClient.publish([localAudioTrack, localVideoTrack]);
+
+                } else {
+                    agoraClient.on("user-published", async (user, mediaType) => {
+                        await agoraClient!.subscribe(user, mediaType);
+                        if (mediaType === "video" && videoRef.current) {
+                            const remoteVideoTrack = user.videoTrack;
+                            remoteVideoTrack?.play(videoRef.current);
+                        }
+                        if (mediaType === "audio") {
+                            user.audioTrack?.play();
+                        }
+                    });
+                }
             } catch (error) {
                 console.error("Agora connection error:", error);
             }
@@ -133,9 +150,17 @@ function LiveVideoPlayer({ channelName, isHost }: { channelName: string, isHost:
         joinAndDisplay();
 
         return () => {
-            agoraClient?.leave();
+            const cleanup = async () => {
+                if (localAudioTrack) localAudioTrack.close();
+                if (localVideoTrack) localVideoTrack.close();
+                if (isJoined) {
+                    await agoraClient?.leave();
+                }
+                agoraClient = null;
+            }
+            cleanup();
         };
-    }, [channelName, isHost, agoraClient]);
+    }, [channelName, isHost, isJoined]);
 
     return <div ref={videoRef} className="w-full h-full rounded-lg bg-black" />;
 }
