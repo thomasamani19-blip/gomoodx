@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
@@ -162,6 +163,7 @@ export default function ProfilPage() {
       const updatedData: any = {
         displayName,
         pseudo,
+        // email cannot be updated from here
         bio,
         profileImage: avatarUrl,
         bannerImage: bannerUrl,
