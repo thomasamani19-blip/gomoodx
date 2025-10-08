@@ -97,7 +97,8 @@ function LiveChat({ sessionId, hostId }: { sessionId: string, hostId: string }) 
     );
 }
 
-function LiveVideoPlayer({ channelName, isHost }: { channelName: string, isHost: boolean }) {
+function LiveVideoPlayer({ channelName, isHost, hostId }: { channelName: string, isHost: boolean, hostId: string }) {
+    const { user } = useAuth();
     const videoRef = useRef<HTMLDivElement>(null);
     const [isJoined, setIsJoined] = useState(false);
 
@@ -107,40 +108,31 @@ function LiveVideoPlayer({ channelName, isHost }: { channelName: string, isHost:
         let localVideoTrack: ICameraVideoTrack | null = null;
 
         const joinAndDisplay = async () => {
+            if (!user || isJoined) return;
             try {
                 const response = await fetch('/api/agora/token', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ channelName }),
+                    body: JSON.stringify({ channelName: channelName, uid: user.id }),
                 });
-                const { token, appId, uid } = await response.json();
+                const { token, appId } = await response.json();
 
                 if (isHost) {
-                  await agoraClient.setClientRole('host');
+                    await agoraClient.setClientRole('host');
                 } else {
-                  await agoraClient.setClientRole('audience');
+                    await agoraClient.setClientRole('audience');
                 }
-                
-                await agoraClient.join(appId, channelName, token, uid);
+
+                await agoraClient.join(appId, channelName, token, user.id);
                 setIsJoined(true);
 
                 if (isHost) {
                     // Logic for host to publish stream (from studio page)
+                    // This component won't execute this part if the host is on the studio page.
+                    // This is more for a case where the host watches their own stream.
                     [localAudioTrack, localVideoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
                     if(videoRef.current) localVideoTrack.play(videoRef.current);
                     await agoraClient.publish([localAudioTrack, localVideoTrack]);
-
-                } else {
-                    agoraClient.on("user-published", async (user, mediaType) => {
-                        await agoraClient!.subscribe(user, mediaType);
-                        if (mediaType === "video" && videoRef.current) {
-                            const remoteVideoTrack = user.videoTrack;
-                            remoteVideoTrack?.play(videoRef.current);
-                        }
-                        if (mediaType === "audio") {
-                            user.audioTrack?.play();
-                        }
-                    });
                 }
             } catch (error) {
                 console.error("Agora connection error:", error);
@@ -149,18 +141,34 @@ function LiveVideoPlayer({ channelName, isHost }: { channelName: string, isHost:
 
         joinAndDisplay();
 
+        const handleUserPublished = async (remoteUser: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
+             await agoraClient!.subscribe(remoteUser, mediaType);
+             if (mediaType === "video" && videoRef.current) {
+                 if (remoteUser.uid === hostId) {
+                    remoteUser.videoTrack?.play(videoRef.current);
+                 }
+             }
+             if (mediaType === "audio") {
+                 remoteUser.audioTrack?.play();
+             }
+         };
+         
+         agoraClient.on("user-published", handleUserPublished);
+
         return () => {
             const cleanup = async () => {
+                agoraClient?.off("user-published", handleUserPublished);
                 if (localAudioTrack) localAudioTrack.close();
                 if (localVideoTrack) localVideoTrack.close();
                 if (isJoined) {
                     await agoraClient?.leave();
+                    setIsJoined(false);
                 }
-                agoraClient = null;
             }
             cleanup();
         };
-    }, [channelName, isHost, isJoined]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [channelName, isHost, user, hostId]);
 
     return <div ref={videoRef} className="w-full h-full rounded-lg bg-black" />;
 }
@@ -247,7 +255,7 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
             throw new Error(result.message || 'Une erreur est survenue.');
         }
     } catch (error: any) {
-        toast({ title: "Erreur d'envoi du cadeau", description: error.message, variant: 'destructive' });
+        toast({ title: "Erreur d'envoi du cadeau", description: error.message, variant: "destructive" });
     } finally {
         setIsSendingGift(null);
     }
@@ -306,7 +314,7 @@ export default function LiveSessionPage({ params }: { params: { id: string } }) 
                             <p className="text-muted-foreground">Revenez à l'heure prévue !</p>
                         </div>
                     ) : (
-                       <LiveVideoPlayer channelName={params.id} isHost={isHost} />
+                       <LiveVideoPlayer channelName={params.id} isHost={isHost} hostId={session.hostId} />
                     )
                 ) : (
                   <div className="p-8 bg-card text-card-foreground rounded-lg flex flex-col items-center gap-4">
