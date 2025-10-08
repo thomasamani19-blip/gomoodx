@@ -93,6 +93,26 @@ export default function ReservationDetailPage({ params }: { params: { id: string
             setIsUpdatingStatus(false);
         }
     };
+    
+    const handlePresenceConfirm = async () => {
+        if (!currentUser || !reservation) return;
+        setIsUpdatingStatus(true);
+        try {
+            const response = await fetch('/api/reservations/confirm-presence', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reservationId: reservation.id, userId: currentUser.id })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message);
+
+            toast({ title: "Confirmation enregistrée", description: result.message });
+        } catch (error: any) {
+            toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsUpdatingStatus(false);
+        }
+    };
 
 
     if (loading) {
@@ -147,6 +167,10 @@ export default function ReservationDetailPage({ params }: { params: { id: string
 
         return null;
     }
+
+    const memberHasConfirmed = reservation.memberPresenceConfirmed;
+    const creatorHasConfirmed = reservation.escortConfirmations[reservation.creatorId]?.presenceConfirmed;
+    const currentUserHasConfirmed = isCurrentUserTheMember ? memberHasConfirmed : creatorHasConfirmed;
 
     return (
     <TooltipProvider>
@@ -217,20 +241,20 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                 <CardDescription>Chaque participant doit confirmer sa présence une fois sur les lieux pour finaliser la réservation.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                <div className={cn("flex items-center justify-between p-3 rounded-lg", reservation.memberPresenceConfirmed ? "bg-green-500/10 text-green-700" : "bg-muted")}>
-                                    <span className="font-semibold">{isCurrentUserTheMember ? 'Votre présence' : `Présence de ${otherParty.displayName}`}</span>
-                                    {reservation.memberPresenceConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
+                                <div className={cn("flex items-center justify-between p-3 rounded-lg", memberHasConfirmed ? "bg-green-500/10 text-green-700" : "bg-muted")}>
+                                    <span className="font-semibold">{isCurrentUserTheMember ? 'Votre présence' : `Présence de ${isCurrentUserTheCreator ? reservation.memberId : otherParty.displayName}`}</span>
+                                    {memberHasConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
                                 </div>
-                                <div className={cn("flex items-center justify-between p-3 rounded-lg", reservation.escortConfirmations[reservation.creatorId]?.presenceConfirmed ? "bg-green-500/10 text-green-700" : "bg-muted")}>
+                                <div className={cn("flex items-center justify-between p-3 rounded-lg", creatorHasConfirmed ? "bg-green-500/10 text-green-700" : "bg-muted")}>
                                      <span className="font-semibold">{isCurrentUserTheCreator ? 'Votre présence' : `Présence de ${otherParty.displayName}`}</span>
-                                    {reservation.escortConfirmations[reservation.creatorId]?.presenceConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
+                                    {creatorHasConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
                                 </div>
                             </CardContent>
                              <CardFooter className="flex-col items-start gap-4">
                                <p className="text-xs text-muted-foreground">Lorsque les deux participants auront confirmé leur présence, les fonds seront transférés au créateur.</p>
-                               <Button disabled={isUpdatingStatus}>
+                               <Button onClick={handlePresenceConfirm} disabled={isUpdatingStatus || currentUserHasConfirmed}>
                                  {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4" />}
-                                 Confirmer ma présence sur les lieux
+                                 {currentUserHasConfirmed ? 'Votre présence est confirmée' : 'Confirmer ma présence sur les lieux'}
                                </Button>
                              </CardFooter>
                          </Card>
