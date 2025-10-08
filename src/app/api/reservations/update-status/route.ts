@@ -1,3 +1,4 @@
+
 // /src/app/api/reservations/update-status/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -30,31 +31,26 @@ export async function POST(request: Request) {
 
             // Authorization checks
             const isMember = reservation.memberId === userId;
-            const isEstablishment = reservation.creatorId === userId;
+            const isCreator = reservation.creatorId === userId;
 
-            if (!isMember && !isEstablishment) {
+            if (!isMember && !isCreator) {
                 throw new Error("Action non autorisée.");
             }
             
             if (newStatus === 'confirmed') {
-                if (!isEstablishment) throw new Error("Seul l'établissement peut confirmer une réservation.");
+                if (!isCreator) throw new Error("Seul le créateur peut confirmer une réservation.");
                 if (reservation.status !== 'pending') throw new Error("La réservation doit être en attente pour être confirmée.");
                 
-                // Check if all escorts have confirmed
-                const allEscortsConfirmed = reservation.escorts?.every(e => reservation.escortConfirmations[e.id]?.status === 'confirmed') ?? true;
-                if (!allEscortsConfirmed) {
-                    throw new Error("Toutes les escortes n'ont pas encore confirmé leur participation.");
-                }
-
                 t.update(reservationRef, {
                     status: 'confirmed',
-                    establishmentConfirmed: true,
-                    establishmentConfirmedAt: Timestamp.now()
                 });
 
             } else if (newStatus === 'cancelled') {
                  if (reservation.status !== 'pending') throw new Error("Seules les réservations en attente peuvent être annulées.");
                  t.update(reservationRef, { status: 'cancelled' });
+                 
+                 // TODO: Rembourser le membre. Pour l'instant, on met à jour le statut.
+                 // Cette logique sera plus complexe (rembourser le portefeuille, gérer les frais, etc.)
             }
         });
         

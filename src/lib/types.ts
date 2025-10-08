@@ -257,7 +257,6 @@ export interface Reservation {
     
     // For establishment reservations
     escorts?: { id: string; name: string, profileImage?: string, rate: number }[];
-    roomType?: string;
     establishmentConfirmed?: boolean;
     establishmentConfirmedAt?: Timestamp;
 
