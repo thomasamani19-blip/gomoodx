@@ -11,6 +11,7 @@ Suivez ces étapes pour lancer le projet en local.
 - Node.js (v18 ou supérieur)
 - npm ou yarn
 - Un compte Firebase
+- Firebase CLI (`npm install -g firebase-tools`)
 
 ### 2. Configuration de l'Environnement
 
@@ -37,7 +38,7 @@ Suivez ces étapes pour lancer le projet en local.
     GEMINI_API_KEY="Votre_cle_API_Gemini"
     
     # Agora (for Live Streaming & Calls)
-    AGORA_APP_ID="votre_agora_app_id"
+    NEXT_PUBLIC_AGORA_APP_ID="votre_agora_app_id"
     AGORA_APP_CERTIFICATE="votre_agora_app_certificate"
 
     # Clés API pour les paiements (à obtenir depuis les plateformes)
@@ -99,6 +100,12 @@ Le projet inclut des données de démarrage dans `src/lib/seed.ts`. Pour peupler
     ```bash
     npx tsx src/lib/seed.ts
     ```
+    
+3. **Déployer les règles de sécurité (Important pour le développement)**
+   Pour autoriser l'accès à la base de données en développement, vous devez déployer les règles permissives :
+   ```bash
+   firebase deploy --only firestore:rules
+   ```
 
 **Comptes de test par défaut :**
 -   **Admin** : `admin@gomoodx.com` / `password123`
