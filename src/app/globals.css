@@ -2,79 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: 'PT Sans', sans-serif;
-}
-
 @layer base {
   :root {
-    --background: 0 0% 8%; /* Dark background */
-    --foreground: 0 0% 98%;
-    
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 98%;
-    
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 98%;
+    --background: 240 10% 97%; /* Gris très clair */
+    --foreground: 240 10% 3.9%;
 
-    --primary: 45 100% 51%; /* Gold */
-    --primary-foreground: 45 100% 5%;
-
-    --secondary: 333 91% 64%; /* Neon Pink */
-    --secondary-foreground: 333 30% 98%;
-    
-    --muted: 0 0% 15.9%;
-    --muted-foreground: 0 0% 64.9%;
-
-    --accent: 45 100% 65%; /* Brighter Gold for accents */
-    --accent-foreground: 45 100% 10%;
-
-    --destructive: 0 62.8% 30.6%;
+    --card: 240 10% 100%;
+    --card-foreground: 240 10% 3.9%;
+ 
+    --popover: 240 10% 100%;
+    --popover-foreground: 240 10% 3.9%;
+ 
+    --primary: 0 84.2% 35.1%; /* Rouge Bordeaux (#900D0D) */
+    --primary-foreground: 0 0% 98%;
+ 
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 210 40% 9.8%;
+ 
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 210 8.9% 64.9%;
+ 
+    --accent: 43 74% 49%; /* Or (#D4AF37) */
+    --accent-foreground: 43 100% 10%;
+ 
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 45 100% 51%;
-
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 0 84.2% 45.1%;
+ 
     --radius: 0.5rem;
   }
-
+ 
   .dark {
-    --background: 0 0% 8%;
+    --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
-    
-    --card: 0 0% 12%;
+ 
+    --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
-    
-    --popover: 0 0% 8%;
+ 
+    --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-
-    --primary: 45 100% 51%; /* Gold */
-    --primary-foreground: 45 100% 5%;
-
-    --secondary: 333 91% 64%; /* Neon Pink */
-    --secondary-foreground: 333 30% 98%;
-    
-    --muted: 0 0% 15.9%;
-    --muted-foreground: 0 0% 64.9%;
-
-    --accent: 45 100% 65%; /* Brighter Gold for accents */
-    --accent-foreground: 45 100% 10%;
-
+ 
+    --primary: 0 84.2% 45.1%; /* Rouge Bordeaux */
+    --primary-foreground: 0 0% 98%;
+ 
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 0 0% 98%;
+ 
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 217.2 12.3% 69.8%;
+ 
+    --accent: 43 74% 49%; /* Or */
+    --accent-foreground: 43 100% 10%;
+ 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 45 100% 51%;
+ 
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 0 84.2% 55.1%;
   }
 }
-
+ 
 @layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-pt-sans), sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-playfair), serif;
   }
 }

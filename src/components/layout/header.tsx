@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -51,7 +52,7 @@ export function Header() {
           {/* Auth buttons for desktop */}
           <div className="hidden md:flex items-center gap-2">
             {user ? (
-               <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
+               <Button asChild>
                   <Link href="/dashboard">Tableau de bord</Link>
                </Button>
             ) : (
@@ -59,7 +60,7 @@ export function Header() {
                 <Button variant="ghost" asChild>
                   <Link href="/connexion">Connexion</Link>
                 </Button>
-                <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Button asChild>
                   <Link href="/inscription">S'inscrire</Link>
                 </Button>
               </div>
@@ -92,7 +93,7 @@ export function Header() {
                   </nav>
                   <div className="mt-8 pt-8 border-t border-border/50">
                      {user ? (
-                       <Button asChild className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                       <Button asChild className="w-full text-lg">
                           <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>Tableau de bord</Link>
                        </Button>
                     ) : (
@@ -100,7 +101,7 @@ export function Header() {
                         <Button variant="ghost" asChild className="w-full text-lg">
                           <Link href="/connexion" onClick={() => setIsMobileMenuOpen(false)}>Connexion</Link>
                         </Button>
-                        <Button asChild className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg">
+                        <Button asChild className="w-full text-lg">
                           <Link href="/inscription" onClick={() => setIsMobileMenuOpen(false)}>S'inscrire</Link>
                         </Button>
                       </div>

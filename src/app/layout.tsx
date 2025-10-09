@@ -1,0 +1,52 @@
+
+import type { Metadata } from 'next';
+import { PT_Sans } from 'next/font/google';
+import { Playfair_Display } from 'next/font/google';
+import './globals.css';
+import { ThemeProvider } from 'next-themes';
+import { Toaster } from '@/components/ui/toaster';
+import { AuthProvider } from '@/hooks/use-auth';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { AppShell } from '@/components/layout/app-shell';
+
+const ptSans = PT_Sans({ 
+  subsets: ['latin'], 
+  weight: ['400', '700'],
+  variable: '--font-pt-sans'
+});
+
+const playfair = Playfair_Display({ 
+  subsets: ['latin'], 
+  variable: '--font-playfair'
+});
+
+export const metadata: Metadata = {
+  title: 'Élixir Sensuel',
+  description: 'Votre destination pour des contenus et des expériences exclusives.',
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="fr" suppressHydrationWarning>
+      <body className={`${ptSans.variable} ${playfair.variable}`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <FirebaseClientProvider>
+            <AuthProvider>
+                <AppShell>{children}</AppShell>
+                <Toaster />
+            </AuthProvider>
+          </FirebaseClientProvider>
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}

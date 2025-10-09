@@ -1,12 +1,13 @@
+
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { AppSidebar } from './app-sidebar';
 import { AppHeader } from './app-header';
 import { Header } from './header';
 import { Footer } from './footer';
 import CallListener from './call-listener';
 import { SidebarProvider } from '../ui/sidebar';
+import { AppSidebar } from './app-sidebar';
 
 const appRoutes = [
     '/dashboard', '/profil', '/portefeuille', '/messagerie', '/favoris', '/reservations',
@@ -15,11 +16,14 @@ const appRoutes = [
 
 const authRoutes = ['/connexion', '/inscription'];
 
+const publicPagesWithCustomLayout = ['/cgu', '/politique-de-confidentialite', '/contact', '/a-propos', '/recherche'];
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const isAppRoute = appRoutes.some(route => pathname.startsWith(route));
   const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
+  const isPublicWithLayout = publicPagesWithCustomLayout.some(route => pathname.startsWith(route)) || pathname === '/';
 
   if (isAuthRoute) {
     return <main>{children}</main>;
@@ -32,7 +36,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <AppSidebar />
           <div className="flex flex-col flex-1">
             <AppHeader />
-            <main className="flex-1 p-4 md:p-6 lg:p-8 bg-background/95">
+            <main className="flex-1 p-4 md:p-6 lg:p-8 bg-muted/30">
               {children}
             </main>
           </div>
@@ -42,12 +46,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Default layout for public pages
+  // Default layout for public pages (landing, cgu, etc.)
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-1">{children}</main>
-      <Footer />
-    </div>
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-8">
+            {children}
+        </main>
+        <Footer />
+      </div>
   );
 }

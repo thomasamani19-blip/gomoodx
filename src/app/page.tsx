@@ -22,6 +22,7 @@ import { fr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
+import AgeGate from '@/components/features/auth/age-gate';
 
 const TestimonialCard = ({ quote, author, role }: { quote: string, author: string, role: string }) => (
     <Card className="bg-card/50 border-primary/20 flex flex-col justify-between">
@@ -97,26 +98,28 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-black via-background to-background">
+    <>
+    <AgeGate />
+    <div className="flex min-h-screen flex-col bg-background">
       <Header />
       <main className="flex-1">
-        <section className="relative h-[90vh] w-full">
+        <section className="relative h-[90vh] w-full flex items-center justify-center">
           {heroImage && (
             <Image
               src={heroImage.imageUrl}
               alt={heroImage.description}
               fill
-              className="object-cover object-top opacity-20"
+              className="object-cover object-center opacity-30"
               data-ai-hint={heroImage.imageHint}
               priority
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
-            <h1 className="font-headline text-5xl md:text-7xl font-bold drop-shadow-[0_2px_2px_rgba(234,179,8,0.5)]">
-              L'Exclusivité à votre Portée
+          <div className="relative z-10 flex flex-col items-center justify-center text-center text-white p-4">
+            <h1 className="font-headline text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary-foreground drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
+              Élixir Sensuel
             </h1>
-            <p className="mt-4 max-w-2xl text-lg md:text-xl text-muted-foreground drop-shadow-md">
+            <p className="mt-4 max-w-2xl text-lg md:text-xl text-foreground/80 drop-shadow-md">
               La destination privilégiée pour des rencontres et des contenus uniques.
             </p>
             
@@ -139,7 +142,7 @@ export default function Home() {
           </div>
         </section>
 
-        <div className="space-y-24 md:space-y-32 py-16 md:py-24">
+        <div className="space-y-24 md:space-y-32 py-16 md:py-24 bg-background">
         
           <section className="container mx-auto px-4">
             <div className="text-center mb-12">
@@ -190,7 +193,7 @@ export default function Home() {
             </div>
             <div className="grid md:grid-cols-2 gap-8">
                 <TestimonialCard 
-                    quote="GoMoodX a transformé ma façon de créer du contenu. La plateforme est intuitive et les outils IA sont incroyables."
+                    quote="Élixir Sensuel a transformé ma façon de créer du contenu. La plateforme est intuitive et les outils IA sont incroyables."
                     author="Eva"
                     role="Créatrice"
                 />
@@ -203,7 +206,7 @@ export default function Home() {
           </section>
 
           <section className="container mx-auto px-4">
-              <Card className="bg-gradient-to-r from-secondary/80 to-primary/80 text-primary-foreground p-8 md:p-12">
+              <Card className="bg-gradient-to-r from-primary/90 to-accent/90 text-primary-foreground p-8 md:p-12">
                   <div className="flex flex-col md:flex-row items-center justify-between gap-8">
                       <div className="text-center md:text-left">
                           <h2 className="font-headline text-3xl font-bold">Prêt à rejoindre l'expérience ?</h2>
@@ -225,5 +228,6 @@ export default function Home() {
       </main>
       <Footer />
     </div>
+    </>
   );
 }
