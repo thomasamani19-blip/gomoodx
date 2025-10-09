@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Trash2, Loader2, Video, Ticket, Bot } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Loader2, Video, Ticket, Bot, Play } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { format } from 'date-fns';
@@ -105,6 +105,11 @@ export default function GestionLivesPage() {
                     <TableCell>{format(live.startTime.toDate(), "d MMM yyyy 'à' HH:mm", { locale: fr })}</TableCell>
                     <TableCell><Badge variant={live.status === 'live' ? 'destructive' : 'secondary'}>{live.status}</Badge></TableCell>
                     <TableCell className="text-right">
+                       <Button asChild>
+                         <Link href={`/gestion/lives/studio/${live.id}`}>
+                           <Play className="mr-2 h-4 w-4" /> Lancer le studio
+                         </Link>
+                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent>

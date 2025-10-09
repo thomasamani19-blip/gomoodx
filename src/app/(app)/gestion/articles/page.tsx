@@ -47,7 +47,7 @@ export default function GestionArticlesPage() {
     );
   }, [user, firestore]);
 
-  const { data: articles, loading: articlesLoading } = useCollection<BlogArticle>(articlesQuery);
+  const { data: articles, loading: articlesLoading, setData: setArticles } = useCollection<BlogArticle>(articlesQuery);
 
   const loading = authLoading || articlesLoading;
 
@@ -70,6 +70,9 @@ export default function GestionArticlesPage() {
             }
         }
       }
+      
+      // Optimistically update UI
+      setArticles(prev => prev?.filter(a => a.id !== articleToDelete.id) || null);
 
       toast({
         title: "Article supprimé",

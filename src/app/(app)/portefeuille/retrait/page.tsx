@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -36,7 +35,7 @@ export default function RetraitPage() {
 
   const isEligibleForWithdrawal = user?.role === 'escorte' || user?.role === 'partenaire';
 
-  if (!isEligibleForWithdrawal) {
+  if (!isEligibleForWithdrawal && user) {
     router.push('/portefeuille');
     toast({ title: 'Accès non autorisé', description: "La fonction de retrait est réservée aux créateurs et partenaires.", variant: 'destructive'});
     return null;

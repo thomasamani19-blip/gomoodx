@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import PageHeader from '@/components/shared/page-header';
@@ -152,6 +151,10 @@ export default function PortefeuillePage() {
       case 'debit':
       case 'withdrawal':
       case 'call_fee':
+      case 'subscription_fee':
+      case 'contact_pass':
+      case 'article_purchase':
+      case 'live_ticket':
         return <ArrowDownCircle className="h-5 w-5 text-red-500" />;
       default:
         return null;
@@ -255,4 +258,3 @@ export default function PortefeuillePage() {
     </div>
   );
 }
-
