@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -12,12 +11,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CreditCard, Loader2, Sparkles, Star, Gift, Ticket, Video, Info } from 'lucide-react';
 import { FlutterWaveButton, closePaymentModal as closeFlutterwaveModal } from 'flutterwave-react-v3';
-import { useKkiapay, KkiapayProvider } from 'kkiapay-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import Kkiapay from 'kkiapay';
 
 type PaymentMethod = 'flutterwave' | 'kkiapay';
 type Currency = 'XOF' | 'EUR' | 'USD';
@@ -42,7 +41,27 @@ const uses = [
     { name: 'Cadeaux Virtuels', icon: Gift },
 ];
 
-function RechargeComponent() {
+function openKkiapayWidget({ amount, phone, email, fullname, callback, onClose }: any) {
+  const kkiapay = new Kkiapay(
+    process.env.NEXT_PUBLIC_KKIAPAY_PUBLIC_KEY || '',
+    { sandbox: true }
+  );
+  kkiapay.open({
+    amount,
+    phone,
+    email,
+    fullname,
+    callback: (response: any) => {
+        kkiapay.close();
+        callback(response);
+    },
+    onClose: () => {
+        onClose();
+    }
+  });
+}
+
+export default function AcheterCreditsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -54,41 +73,32 @@ function RechargeComponent() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('flutterwave');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { open: openKkiapay, state } = useKkiapay({
-    amount: isCustom ? customAmountEUR : selectedPackPriceEUR,
-    sandbox: true,
-    apikey: process.env.NEXT_PUBLIC_KKIAPAY_PUBLIC_KEY || '',
-    phone: user?.phone || '',
-    email: user?.email || '',
-    fullname: user?.displayName || 'Client GoMoodX',
-    callback: async (response: any) => {
-        setIsLoading(true);
-        try {
-            const apiResponse = await fetch('/api/payments/verifyKkiapay', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    transactionId: response.transactionId,
-                    userId: user?.id,
-                    amount: response.amount,
-                    currency: 'XOF'
-                }),
-            });
-            const result = await apiResponse.json();
-            if (apiResponse.ok && result.status === 'success') {
-                toast({ title: 'Achat réussi !', description: `Votre portefeuille a été crédité.` });
-                router.push('/portefeuille');
-            } else {
-                throw new Error(result.message || 'La vérification a échoué.');
-            }
-        } catch (error: any) {
-            toast({ title: 'Erreur de vérification', description: error.message, variant: 'destructive' });
-        } finally {
-            setIsLoading(false);
-        }
-    },
-    onClose: () => setIsLoading(false)
-  });
+  const handleKkiapayCallback = async (response: any) => {
+      setIsLoading(true);
+      try {
+          const apiResponse = await fetch('/api/payments/verifyKkiapay', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  transactionId: response.transactionId,
+                  userId: user?.id,
+                  amount: response.amount,
+                  currency: 'XOF'
+              }),
+          });
+          const result = await apiResponse.json();
+          if (apiResponse.ok && result.status === 'success') {
+              toast({ title: 'Achat réussi !', description: `Votre portefeuille a été crédité.` });
+              router.push('/portefeuille');
+          } else {
+              throw new Error(result.message || 'La vérification a échoué.');
+          }
+      } catch (error: any) {
+          toast({ title: 'Erreur de vérification', description: error.message, variant: 'destructive' });
+      } finally {
+          setIsLoading(false);
+      }
+  };
 
   const finalAmountEUR = isCustom ? customAmountEUR : selectedPackPriceEUR;
   const finalAmount = Math.round(finalAmountEUR * CONVERSION_RATES[currency]);
@@ -170,8 +180,20 @@ function RechargeComponent() {
     }
 
     if (paymentMethod === 'kkiapay') {
+        const handleKkiapayClick = () => {
+            setIsLoading(true);
+            openKkiapayWidget({
+                amount: Math.round(amountToPay),
+                phone: user?.phone || '',
+                email: user?.email || '',
+                fullname: user?.displayName || 'Client GoMoodX',
+                callback: handleKkiapayCallback,
+                onClose: () => setIsLoading(false)
+            });
+        };
+
         return (
-            <Button className="w-full" onClick={() => openKkiapay()} disabled={!user || currency !== 'XOF'}>
+            <Button className="w-full" onClick={handleKkiapayClick} disabled={!user || currency !== 'XOF'}>
                 Payer {Math.round(amountToPay).toLocaleString('fr-FR')} {currency}
             </Button>
         );
@@ -324,13 +346,4 @@ function RechargeComponent() {
       </div>
     </div>
   );
-}
-
-
-export default function AcheterCreditsPage() {
-    return (
-        <KkiapayProvider>
-            <RechargeComponent />
-        </KkiapayProvider>
-    )
 }
