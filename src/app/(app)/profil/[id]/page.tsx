@@ -1,9 +1,8 @@
 
-
 'use client';
 
 import { useCollection, useDoc, useFirestore } from '@/firebase';
-import type { User, Call, CallType, Annonce, Product, Settings, SubscriptionTier, Reservation, Wallet } from '@/lib/types';
+import type { User, Call, CallType, Annonce, Product, Settings, SubscriptionTier, Reservation } from '@/lib/types';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -34,6 +33,7 @@ import { Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import type { Wallet } from '@/lib/types';
 
 
 // StarRating component copied from annonces/page.tsx
@@ -392,9 +392,9 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         let totalPrice = tier.price * subscriptionDuration;
         let discount = 0;
         
-        if (durationMonths === 3 && tier.discounts?.quarterly) discount = tier.discounts.quarterly;
-        else if (durationMonths === 6 && tier.discounts?.semiAnnual) discount = tier.discounts.semiAnnual;
-        else if (durationMonths === 12 && tier.discounts?.annual) discount = tier.discounts.annual;
+        if (subscriptionDuration === 3 && tier.discounts?.quarterly) discount = tier.discounts.quarterly;
+        else if (subscriptionDuration === 6 && tier.discounts?.semiAnnual) discount = tier.discounts.semiAnnual;
+        else if (subscriptionDuration === 12 && tier.discounts?.annual) discount = tier.discounts.annual;
         
         if (discount > 0) {
             totalPrice = totalPrice * (1 - discount / 100);

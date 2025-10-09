@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import type { User, Wallet, PartnerRequest } from "@/lib/types";
 import PageHeader from "../shared/page-header";
 import { useCollection, useDoc, useFirestore } from "@/firebase";
 import { collection, query, where, doc } from "firebase/firestore";
-import { DollarSign, Users, ShieldCheck, Handshake, Loader2, Bot } from "lucide-react";
+import { DollarSign, Users, ShieldCheck, Handshake, Bot } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "../ui/skeleton";
 import { useMemo, useEffect, useState } from "react";
@@ -107,7 +108,7 @@ export default function AdminDashboard({ user }: { user: User }) {
             title="Vérifications en attente"
             value={pendingVerifications?.length || 0}
             icon={ShieldCheck}
-            href="/admin/moderation"
+            href="/admin/verifications"
             loading={loading}
         />
         <StatCard 
