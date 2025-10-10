@@ -1,4 +1,3 @@
-
 # Guide de Configuration GoMoodX sur Termux (Android)
 
 Ce guide vous aidera à configurer et lancer le projet GoMoodX sur votre appareil Android en utilisant l'application Termux. Les instructions sont adaptées pour une utilisation avec le clavier virtuel de votre téléphone.
@@ -24,15 +23,30 @@ npm install -g firebase-tools
 
 ## 3. Configuration du projet
 
-Si vous n'avez pas encore les fichiers du projet sur votre téléphone, clonez-le. Sinon, naviguez jusqu'au répertoire du projet.
+### Étape 3.1 : Récupérer le code du projet
+
+Pour commencer, vous devez avoir les fichiers du projet sur votre téléphone. La méthode la plus courante est de "cloner" le projet depuis un dépôt Git (comme GitHub).
+
+**Remplacez l'URL ci-dessous par le lien de votre propre dépôt Git.**
 
 ```bash
-# Si besoin, clonez le projet (remplacez l'URL par celle de votre dépôt)
-# git clone https://votre-repo/gomoodx.git
-# cd gomoodx
+git clone https://votre-repo-git/gomoodx.git
+```
+Cette commande va télécharger le projet dans un nouveau dossier nommé `gomoodx`.
+
+### Étape 3.2 : Ouvrir le dossier du projet
+
+Une fois le téléchargement terminé, vous devez vous "déplacer" à l'intérieur de ce nouveau dossier. Pour cela, utilisez la commande `cd` (change directory) :
+
+```bash
+cd gomoodx
 ```
 
-Une fois dans le dossier du projet, installez les dépendances :
+*Astuce : Vous pouvez vérifier que vous êtes bien dans le bon dossier en tapant la commande `ls`. Elle listera tous les fichiers du projet, comme `package.json`, `src`, etc.*
+
+### Étape 3.3 : Installer les dépendances
+
+Maintenant que vous êtes dans le dossier du projet, installez toutes les dépendances nécessaires avec cette commande :
 
 ```bash
 npm install
