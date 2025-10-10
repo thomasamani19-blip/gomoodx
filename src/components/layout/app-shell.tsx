@@ -10,13 +10,12 @@ import { SidebarProvider } from '../ui/sidebar';
 import { AppSidebar } from './app-sidebar';
 
 const appRoutePrefixes = [
-    '/dashboard', '/profil', '/portefeuille', '/messagerie', '/favoris', '/reservations',
-    '/gestion', '/statistiques', '/abonnement', '/parametres', '/outils-ia', '/admin'
+    '/dashboard', '/profil/', '/portefeuille', '/messagerie', '/favoris', '/reservations',
+    '/gestion', '/statistiques', '/abonnement', '/parametres', '/outils-ia', '/admin',
+    '/annonces/', '/boutique/', '/live/', '/blog/'
 ];
 
-const publicPagesWithCustomLayout = [
-    '/cgu', '/politique-de-confidentialite', '/contact', '/a-propos', '/recherche'
-];
+const publicOnlyRoutes = ['/', '/connexion', '/inscription'];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -41,6 +40,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   // Layout for public pages (landing, cgu, etc.)
-  // These pages have their own Header/Footer
+  if (publicOnlyRoutes.includes(pathname) || ['/cgu', '/politique-de-confidentialite', '/contact', '/a-propos', '/recherche'].some(p => pathname.startsWith(p))) {
+      return (
+          <>
+            <Header />
+            <main>{children}</main>
+            <Footer />
+          </>
+      )
+  }
+
+  // Fallback for pages that don't fit either layout (e.g. auth pages without Header/Footer)
   return <main>{children}</main>;
 }

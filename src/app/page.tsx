@@ -4,8 +4,6 @@
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Header } from '@/components/layout/header';
-import { Footer } from '@/components/layout/footer';
 import { CreatorCarousel } from '@/components/features/creators/creator-carousel';
 import { AnnonceCarousel } from '@/components/features/annonces/annonce-carousel';
 import { ProductCarousel } from '@/components/features/products/product-carousel';
@@ -101,7 +99,6 @@ export default function Home() {
     <>
     <AgeGate />
     <div className="flex min-h-screen flex-col bg-background">
-      <Header />
       <main className="flex-1">
         <section className="relative h-[90vh] w-full flex items-center justify-center">
           {heroImage && (
@@ -226,7 +223,6 @@ export default function Home() {
 
         </div>
       </main>
-      <Footer />
     </div>
     </>
   );

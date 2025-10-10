@@ -111,7 +111,9 @@ export default function ProfilPage() {
 
   const removeGalleryImage = (index: number) => {
     const urlToRemove = galleryPreviews[index];
-
+    const newPreviews = galleryPreviews.filter((_, i) => i !== index);
+    setGalleryPreviews(newPreviews);
+    
     // If the URL is a data URL, it corresponds to a newly added file
     if (urlToRemove.startsWith('data:')) {
         let fileIndexToRemove = -1;
@@ -122,14 +124,11 @@ export default function ProfilPage() {
             }
         }
         fileIndexToRemove = dataUrlCount - 1;
-
+        
         if (fileIndexToRemove > -1) {
             setGalleryFiles(prev => prev.filter((_, i) => i !== fileIndexToRemove));
         }
     }
-    
-    // Always remove from previews
-    setGalleryPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
 
