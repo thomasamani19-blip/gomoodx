@@ -85,7 +85,6 @@ export default function ClientDashboard({ user }: { user: User }) {
   const favoriteIds = user?.favorites && user.favorites.length > 0 ? user.favorites : [];
   const creatorsQuery = useMemo(() => {
     if (favoriteIds.length === 0 || !firestore) return null;
-    // Query for the first 4 favorite creators
     return query(collection(firestore, 'users'), where('__name__', 'in', favoriteIds.slice(0, 4)));
   }, [firestore, favoriteIds]);
   const { data: creators, loading: creatorsLoading } = useCollection<User>(creatorsQuery);

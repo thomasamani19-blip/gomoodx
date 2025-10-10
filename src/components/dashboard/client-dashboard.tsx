@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
@@ -7,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowRight, Eye, EyeOff, Heart, MessageSquare, Wallet } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Heart, MessageSquare, Wallet, UserPlus } from "lucide-react";
 import type { User, Transaction } from "@/lib/types";
 import Link from 'next/link';
 import { useCollection, useDoc, useFirestore } from "@/firebase";
@@ -17,6 +16,67 @@ import { useMemo, useState } from "react";
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
+function SuggestedCreators({ currentUser }: { currentUser: User }) {
+    const firestore = useFirestore();
+    const favoritesAndSelf = [...(currentUser.favorites || []), currentUser.id];
+
+    // This query is simplified. For production, a more sophisticated recommendation algorithm would be better.
+    // It fetches up to 4 escorts that are NOT in the user's favorites list.
+    const suggestionsQuery = useMemo(() => {
+        if (!firestore) return null;
+        return query(
+            collection(firestore, 'users'),
+            where('role', '==', 'escorte'),
+            limit(4) 
+        );
+    }, [firestore]);
+    
+    const { data, loading } = useCollection<User>(suggestionsQuery);
+
+    // Post-filter the results to exclude favorites
+    const suggestions = useMemo(() => {
+        if (!data) return [];
+        return data.filter(u => !favoritesAndSelf.includes(u.id));
+    }, [data, favoritesAndSelf]);
+
+
+    if (loading) {
+        return (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="flex flex-col items-center gap-2">
+                        <Skeleton className="h-20 w-20 rounded-full" />
+                        <Skeleton className="h-4 w-16" />
+                    </div>
+                ))}
+            </div>
+        );
+    }
+    
+    if (suggestions.length === 0) return null;
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><UserPlus className="h-5 w-5 text-primary"/> Suggestions pour vous</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {suggestions.map(creator => (
+                    <div key={creator.id} className="flex flex-col items-center gap-2 group">
+                        <Link href={`/profil/${creator.id}`} className="flex flex-col items-center gap-2 text-center">
+                            <Avatar className="h-20 w-20 border-2 border-transparent group-hover:border-primary transition-colors">
+                                <AvatarImage src={creator.profileImage} alt={creator.displayName} />
+                                <AvatarFallback>{creator.displayName?.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm font-medium">{creator.displayName}</span>
+                        </Link>
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function ClientDashboard({ user }: { user: User }) {
   const firestore = useFirestore();
   const [showBalance, setShowBalance] = useState(true);
@@ -25,7 +85,6 @@ export default function ClientDashboard({ user }: { user: User }) {
   const favoriteIds = user?.favorites && user.favorites.length > 0 ? user.favorites : [];
   const creatorsQuery = useMemo(() => {
     if (favoriteIds.length === 0 || !firestore) return null;
-    // Query for the first 4 favorite creators
     return query(collection(firestore, 'users'), where('__name__', 'in', favoriteIds.slice(0, 4)));
   }, [firestore, favoriteIds]);
   const { data: creators, loading: creatorsLoading } = useCollection<User>(creatorsQuery);
@@ -39,7 +98,7 @@ export default function ClientDashboard({ user }: { user: User }) {
     firestore 
       ? query(
           collection(firestore, `wallets/${user.id}/transactions`), 
-          where('type', 'in', ['purchase', 'debit']), 
+          where('type', 'in', ['purchase', 'debit', 'subscription_fee', 'live_ticket', 'contact_pass', 'article_purchase']), 
           orderBy('createdAt', 'desc'), 
           limit(3)
         )
@@ -182,6 +241,8 @@ export default function ClientDashboard({ user }: { user: User }) {
                 </CardContent>
             </Card>
         </div>
+
+        <SuggestedCreators currentUser={user} />
     </div>
   );
 }

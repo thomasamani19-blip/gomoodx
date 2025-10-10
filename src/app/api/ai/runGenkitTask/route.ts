@@ -3,10 +3,12 @@ import { NextResponse } from 'next/server';
 // import { firestore } from '@/lib/firebase';
 // import { collection, doc, setDoc, Timestamp } from 'firebase/firestore';
 import {run} from 'genkit/flow';
-import {
-    genererBioEscorteFlow,
-    ideesContenuVisuelFlow,
-  } from '@/ai/flows';
+// Note: This API route is a placeholder and doesn't seem to be used.
+// The imported flows below are not exported from the source files.
+// import {
+//     genererBioEscorteFlow,
+//     ideesContenuVisuelFlow,
+//   } from '@/ai/flows';
 
 export async function POST(request: Request) {
   try {
@@ -27,12 +29,12 @@ export async function POST(request: Request) {
     // 2. Trigger the correct Genkit flow based on `type`.
     let output;
     switch (type) {
-       case 'bio':
-         output = await run(genererBioEscorteFlow, input);
-         break;
-       case 'ideas':
-         output = await run(ideesContenuVisuelFlow, input);
-         break;
+    //    case 'bio':
+    //      output = await run(genererBioEscorteFlow, input);
+    //      break;
+    //    case 'ideas':
+    //      output = await run(ideesContenuVisuelFlow, input);
+    //      break;
       // case 'image':
       //   output = await generateImageFlow.run(input);
       //   // Save output to storage and get URL

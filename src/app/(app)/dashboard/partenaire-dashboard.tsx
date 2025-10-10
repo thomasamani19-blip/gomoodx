@@ -3,19 +3,19 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { User, CreatorStats, MonthlyRevenue, Reservation } from "@/lib/types";
-import PageHeader from "../shared/page-header";
+import PageHeader from "@/components/shared/page-header";
 import Link from "next/link";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import { Building, ShoppingBag, Newspaper, DollarSign, PenSquare, UserCircle, GanttChart, Sparkles, BookText, Film, Bot, TrendingUp, BarChart, Calendar, CalendarCheck } from "lucide-react";
 import { useDoc, useFirestore, useCollection } from "@/firebase";
 import { useMemo } from "react";
 import { collection, doc, query, where, orderBy, limit } from "firebase/firestore";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AreaChart as RechartsAreaChart, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Area, ResponsiveContainer } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { format } from "date-fns";
 import { fr } from 'date-fns/locale';
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 
 const chartConfig = {

@@ -9,32 +9,20 @@ import CallListener from './call-listener';
 import { SidebarProvider } from '../ui/sidebar';
 import { AppSidebar } from './app-sidebar';
 
-const appRoutes = [
+const appRoutePrefixes = [
     '/dashboard', '/profil', '/portefeuille', '/messagerie', '/favoris', '/reservations',
     '/gestion', '/statistiques', '/abonnement', '/parametres', '/outils-ia', '/admin'
 ];
 
-const authRoutes = ['/connexion', '/inscription'];
-
-const publicPagesWithCustomLayout = ['/cgu', '/politique-de-confidentialite', '/contact', '/a-propos', '/recherche'];
+const publicPagesWithCustomLayout = [
+    '/cgu', '/politique-de-confidentialite', '/contact', '/a-propos', '/recherche'
+];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-
-  const isAppRoute = appRoutes.some(route => pathname.startsWith(route));
-  const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
-  const isPublicWithLayout = publicPagesWithCustomLayout.some(route => pathname.startsWith(route));
-  const isHomePage = pathname === '/';
-
-  // Specific layout for the homepage to avoid double header/footer
-  if (isHomePage) {
-      return <>{children}</>;
-  }
-
-  if (isAuthRoute) {
-    return <main>{children}</main>;
-  }
   
+  const isAppRoute = appRoutePrefixes.some(prefix => pathname.startsWith(prefix));
+
   if (isAppRoute) {
     return (
       <SidebarProvider>
@@ -52,19 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Layout for public pages (cgu, etc.)
-  if (isPublicWithLayout) {
-      return (
-          <div className="flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-1 container mx-auto px-4 py-8">
-                {children}
-            </main>
-            <Footer />
-          </div>
-      );
-  }
-  
-  // Fallback for any other page, like the root for example
+  // Layout for public pages (landing, cgu, etc.)
+  // These pages have their own Header/Footer
   return <main>{children}</main>;
 }

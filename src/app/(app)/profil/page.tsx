@@ -110,24 +110,26 @@ export default function ProfilPage() {
   };
 
   const removeGalleryImage = (index: number) => {
-    const removedPreview = galleryPreviews[index];
-    const newPreviews = galleryPreviews.filter((_, i) => i !== index);
+    const urlToRemove = galleryPreviews[index];
 
-    if (removedPreview.startsWith('data:')) {
+    // If the URL is a data URL, it corresponds to a newly added file
+    if (urlToRemove.startsWith('data:')) {
         let fileIndexToRemove = -1;
         let dataUrlCount = 0;
-        for (let i=0; i<=index; i++) {
+        for (let i = 0; i <= index; i++) {
             if (galleryPreviews[i].startsWith('data:')) {
                 dataUrlCount++;
             }
         }
         fileIndexToRemove = dataUrlCount - 1;
-        
-        setGalleryFiles(prevFiles => prevFiles.filter((_, i) => i !== fileIndexToRemove));
-        setGalleryPreviews(newPreviews);
-    } else {
-        setGalleryPreviews(newPreviews);
+
+        if (fileIndexToRemove > -1) {
+            setGalleryFiles(prev => prev.filter((_, i) => i !== fileIndexToRemove));
+        }
     }
+    
+    // Always remove from previews
+    setGalleryPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
 
@@ -159,6 +161,7 @@ export default function ProfilPage() {
       );
       
       const finalGalleryUrls = galleryPreviews.filter(url => !url.startsWith('data:'));
+
       
       const updatedData: any = {
         displayName,

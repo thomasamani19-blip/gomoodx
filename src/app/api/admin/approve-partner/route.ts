@@ -57,8 +57,15 @@ export async function POST(request: Request) {
       disabled: false,
     });
     
-    console.log(`Mot de passe temporaire pour ${partnerRequest.companyName}: ${password}`); // Log password for admin
     // In a real app, you would email this password to the user.
+    // For development, we log it, but in production, this should be an email service.
+    if (process.env.NODE_ENV === 'production') {
+        // TODO: Implement email service to send temporary password
+        console.log(`Production: Should email temporary password to ${partnerRequest.companyEmail}`);
+    } else {
+        console.log(`Mot de passe temporaire pour ${partnerRequest.companyName}: ${password}`);
+    }
+
 
     const batch: WriteBatch = db.batch();
 

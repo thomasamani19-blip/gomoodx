@@ -4,10 +4,10 @@
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import EscorteDashboard from '@/components/dashboard/escorte-dashboard';
-import ClientDashboard from '@/components/dashboard/client-dashboard';
-import PartenaireDashboard from '@/components/dashboard/partenaire-dashboard';
-import AdminDashboard from '@/components/dashboard/admin-dashboard';
+import EscorteDashboard from './escorte-dashboard';
+import ClientDashboard from './client-dashboard';
+import PartenaireDashboard from './partenaire-dashboard';
+import AdminDashboard from './admin-dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { User } from '@/lib/types';
 
