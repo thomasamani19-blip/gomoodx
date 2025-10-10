@@ -1,3 +1,4 @@
+
 'use client';
 
 import { usePathname } from 'next/navigation';
@@ -24,6 +25,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
   const isPublicWithLayout = publicPagesWithCustomLayout.some(route => pathname.startsWith(route));
   const isHomePage = pathname === '/';
+
+  // Specific layout for the homepage to avoid double header/footer
+  if (isHomePage) {
+      return <>{children}</>;
+  }
 
   if (isAuthRoute) {
     return <main>{children}</main>;
@@ -59,11 +65,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       );
   }
   
-  // Specific layout for the homepage to avoid double header/footer
-  if (isHomePage) {
-      return <>{children}</>;
-  }
-
-  // Fallback for any other page
+  // Fallback for any other page, like the root for example
   return <main>{children}</main>;
 }
