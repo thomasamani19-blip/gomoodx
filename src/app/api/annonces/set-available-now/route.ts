@@ -66,7 +66,7 @@ export async function POST(request: Request) {
                 availableNowUntil: Timestamp.fromDate(expirationDate)
             });
             
-            return { message: "Statut 'Disponible maintenant' activé pour 24h." };
+            return { message: "Statut 'Disponible maintenant' activé pour 24h.", expiresAt: expirationDate.toISOString() };
         });
         
         return NextResponse.json({ status: 'success', ...activationResult });

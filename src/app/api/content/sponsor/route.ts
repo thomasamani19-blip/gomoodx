@@ -73,7 +73,7 @@ export async function POST(request: Request) {
                 sponsorshipExpiresAt: Timestamp.fromDate(expirationDate)
             });
             
-            return { message: "Contenu sponsorisé avec succès." };
+            return { message: "Contenu sponsorisé avec succès.", expiresAt: expirationDate.toISOString() };
         });
         
         return NextResponse.json({ status: 'success', ...sponsorshipResult });

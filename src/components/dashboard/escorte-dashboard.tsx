@@ -1,20 +1,35 @@
 
 'use client';
 
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User as UserIcon, BookText, PenSquare, Sparkles, ShoppingBag, Newspaper, Bot, Film, GanttChart } from "lucide-react";
+import { User as UserIcon, BookText, PenSquare, Sparkles, ShoppingBag, Newspaper, Bot, Film, GanttChart, Zap } from "lucide-react";
 import Link from 'next/link';
-import type { User, CreatorStats, MonthlyRevenue } from "@/lib/types";
+import type { User, CreatorStats, MonthlyRevenue, Annonce, Product } from "@/lib/types";
 import PageHeader from "../shared/page-header";
-import { useDoc, useFirestore } from "@/firebase";
+import { useDoc, useFirestore, useCollection } from "@/firebase";
 import { Skeleton } from "../ui/skeleton";
-import { doc } from "firebase/firestore";
-import { BarChart as BarChartIcon, TrendingUp, Users } from "lucide-react";
-import { useMemo } from "react";
+import { collection, doc, query, where, orderBy, limit } from "firebase/firestore";
+import { BarChart as BarChartIcon, TrendingUp, Users, Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { AreaChart, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar, Area, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
+
+const SPONSOR_COST = 10;
+const AVAILABLE_NOW_COST = 5;
 
 const chartData: MonthlyRevenue[] = [
   { month: 'Jan', revenue: 1860 },
@@ -76,6 +91,118 @@ const StatCard = ({ title, value, change, icon: Icon, loading }: { title: string
                 <p className={`text-xs text-muted-foreground ${changeIsPositive ? 'text-green-600' : 'text-red-600'}`}>{change}</p>
             </CardContent>
         </Card>
+    );
+};
+
+const QuickActions = ({ user }: { user: User }) => {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [selectedContent, setSelectedContent] = useState<string | null>(null);
+    const [isSponsoring, setIsSponsoring] = useState(false);
+    const [isActivating, setIsActivating] = useState(false);
+    const [confirmAction, setConfirmAction] = useState<'sponsor' | 'available' | null>(null);
+    
+    const annoncesQuery = useMemo(() => firestore ? query(collection(firestore, 'services'), where('createdBy', '==', user.id)) : null, [firestore, user.id]);
+    const productsQuery = useMemo(() => firestore ? query(collection(firestore, 'products'), where('createdBy', '==', user.id)) : null, [firestore, user.id]);
+
+    const { data: annonces, loading: annoncesLoading } = useCollection<Annonce>(annoncesQuery);
+    const { data: products, loading: productsLoading } = useCollection<Product>(productsQuery);
+
+    const allContent = useMemo(() => {
+        const services = annonces?.map(a => ({ id: a.id, title: a.title, type: 'service' as 'service' | 'product' })) || [];
+        const prods = products?.map(p => ({ id: p.id, title: p.title, type: 'product' as 'service' | 'product' })) || [];
+        return [...services, ...prods];
+    }, [annonces, products]);
+    
+    const selectedItem = allContent.find(c => c.id === selectedContent);
+    
+    const handleSponsor = async () => {
+        if (!selectedItem) return;
+        setIsSponsoring(true);
+        setConfirmAction(null);
+        try {
+            const response = await fetch('/api/content/sponsor', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.id, contentId: selectedItem.id, contentType: selectedItem.type })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message);
+            toast({ title: "Contenu Sponsorisé !", description: `Votre contenu "${selectedItem.title}" est maintenant mis en avant.` });
+        } catch (e: any) {
+            toast({ title: "Erreur de sponsorisation", description: e.message, variant: "destructive" });
+        } finally {
+            setIsSponsoring(false);
+        }
+    };
+
+    const handleActivate = async () => {
+        if (!selectedItem || selectedItem.type !== 'service') return;
+        setIsActivating(true);
+        setConfirmAction(null);
+         try {
+            const response = await fetch('/api/annonces/set-available-now', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.id, annonceId: selectedItem.id })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message);
+            toast({ title: "Statut activé !", description: `Votre annonce est maintenant marquée comme disponible pour 24h.` });
+        } catch (e: any) {
+            toast({ title: "Erreur d'activation", description: e.message, variant: "destructive" });
+        } finally {
+            setIsActivating(false);
+        }
+    };
+    
+    const loading = annoncesLoading || productsLoading;
+
+    return (
+        <>
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Actions Rapides</CardTitle>
+                <CardDescription>Boostez votre visibilité en quelques clics.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {loading ? <Skeleton className="h-10 w-full" /> : (
+                    <Select onValueChange={setSelectedContent} value={selectedContent || undefined}>
+                        <SelectTrigger><SelectValue placeholder="Sélectionnez un contenu à promouvoir..." /></SelectTrigger>
+                        <SelectContent>
+                            {allContent.map(c => <SelectItem key={c.id} value={c.id}>{c.title} ({c.type === 'service' ? 'Annonce' : 'Produit'})</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                )}
+            </CardContent>
+            <CardFooter className="gap-2">
+                <Button onClick={() => setConfirmAction('sponsor')} disabled={!selectedContent || isSponsoring}>
+                    {isSponsoring ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
+                    Sponsoriser ({SPONSOR_COST}€)
+                </Button>
+                {selectedItem?.type === 'service' && (
+                    <Button variant="secondary" onClick={() => setConfirmAction('available')} disabled={!selectedContent || isActivating}>
+                        {isActivating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
+                        Disponible Maintenant ({AVAILABLE_NOW_COST}€)
+                    </Button>
+                )}
+            </CardFooter>
+        </Card>
+        
+         <AlertDialog open={confirmAction !== null} onOpenChange={(open) => !open && setConfirmAction(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmer l'action</AlertDialogTitle>
+                    <AlertDialogDescription>
+                       {confirmAction === 'sponsor' && `Mettre en avant "${selectedItem?.title}" pour 7 jours coûtera ${SPONSOR_COST}€, qui seront débités de votre portefeuille.`}
+                       {confirmAction === 'available' && `Marquer l'annonce "${selectedItem?.title}" comme "Disponible maintenant" pour 24h coûtera ${AVAILABLE_NOW_COST}€, qui seront débités de votre portefeuille.`}
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction onClick={confirmAction === 'sponsor' ? handleSponsor : handleActivate}>Confirmer</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </>
     );
 };
 
@@ -175,6 +302,8 @@ export default function EscorteDashboard({ user }: { user: User }) {
           </CardContent>
         </Card>
       </div>
+       
+      <QuickActions user={user} />
 
        <Card>
             <CardHeader>
