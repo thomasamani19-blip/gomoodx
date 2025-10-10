@@ -1,4 +1,3 @@
-
 'use client';
 
 import { usePathname } from 'next/navigation';
@@ -23,7 +22,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const isAppRoute = appRoutes.some(route => pathname.startsWith(route));
   const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
-  const isPublicWithLayout = publicPagesWithCustomLayout.some(route => pathname.startsWith(route)) || pathname === '/';
+  const isPublicWithLayout = publicPagesWithCustomLayout.some(route => pathname.startsWith(route));
+  const isHomePage = pathname === '/';
 
   if (isAuthRoute) {
     return <main>{children}</main>;
@@ -46,14 +46,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Default layout for public pages (landing, cgu, etc.)
-  return (
-      <div className="flex min-h-screen flex-col">
-        <Header />
-        <main className="flex-1 container mx-auto px-4 py-8">
-            {children}
-        </main>
-        <Footer />
-      </div>
-  );
+  // Layout for public pages (cgu, etc.)
+  if (isPublicWithLayout) {
+      return (
+          <div className="flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1 container mx-auto px-4 py-8">
+                {children}
+            </main>
+            <Footer />
+          </div>
+      );
+  }
+  
+  // Specific layout for the homepage to avoid double header/footer
+  if (isHomePage) {
+      return <>{children}</>;
+  }
+
+  // Fallback for any other page
+  return <main>{children}</main>;
 }
