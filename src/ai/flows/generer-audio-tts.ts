@@ -11,7 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { googleAI } from '@genkit-ai/google-genai';
-import { z } from 'genkit/zod';
+import { z } from 'genkit';
 import wav from 'wav';
 
 export const GenererAudioTTSInputSchema = z.object({

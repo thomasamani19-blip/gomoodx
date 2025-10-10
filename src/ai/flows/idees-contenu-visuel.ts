@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -9,7 +10,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit/zod';
+import {z} from 'genkit';
 
 export const IdeesContenuVisuelInputSchema = z.object({
   theme: z.string().describe("Le thème général du contenu recherché (par exemple, 'voyage', 'mode', 'fitness', 'sexy')."),

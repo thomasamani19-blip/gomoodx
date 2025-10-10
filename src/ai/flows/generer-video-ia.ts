@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Flow Genkit pour générer des vidéos à l'aide de l'IA (Veo).
@@ -8,7 +9,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit/zod';
+import { z } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 import { media as genkitMedia } from 'genkit/ai';
 import type { MediaPart } from 'genkit';

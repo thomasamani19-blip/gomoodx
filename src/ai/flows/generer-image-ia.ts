@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -10,7 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { googleAI } from '@genkit-ai/google-genai';
-import { z } from 'genkit/zod';
+import { z } from 'genkit';
 
 export const GenererImageIAInputSchema = z.object({
   prompt: z.string().describe('Une description détaillée de l’image à générer.'),

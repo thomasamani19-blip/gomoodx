@@ -9,7 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit/zod';
+import {z} from 'genkit';
 
 export const GenererBioEscorteInputSchema = z.object({
   typeDeService: z.string().describe("Le type de service offert par l'escorte (e.g., rencontres, massages, etc.)."),

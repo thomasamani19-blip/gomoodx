@@ -10,7 +10,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit/zod';
+import {z} from 'genkit';
 
 export const GenererScenarioVideoInputSchema = z.object({
   sujet: z.string().describe("Le sujet principal ou le concept de la vidéo."),
