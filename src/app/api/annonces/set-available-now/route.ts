@@ -1,3 +1,4 @@
+
 // /src/app/api/annonces/set-available-now/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -76,3 +77,5 @@ export async function POST(request: Request) {
         return NextResponse.json({ status: 'error', message: error.message || "Une erreur interne est survenue." }, { status: 500 });
     }
 }
+
+    
