@@ -11,7 +11,7 @@ import { useDoc, useFirestore } from "@/firebase";
 import { useMemo } from "react";
 import { doc } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
-import { AreaChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { AreaChart as RechartsAreaChart, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Area, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart";
 
 const chartData: MonthlyRevenue[] = [
@@ -192,13 +192,13 @@ export default function PartenaireDashboard({ user }: { user: User }) {
                             <ChartContainer config={chartConfig}>
                             <ResponsiveContainer width="100%" height={250}>
                                 {statsLoading ? <Skeleton className="w-full h-full" /> : 
-                                <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                <RechartsAreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                 <CartesianGrid vertical={false} />
                                 <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
                                 <YAxis tickLine={false} axisLine={false} />
                                 <Tooltip content={<ChartTooltipContent indicator="dot" />} />
                                 <Area type="monotone" dataKey="revenue" stroke="var(--color-revenue)" fill="var(--color-revenue)" fillOpacity={0.3} />
-                                </AreaChart>}
+                                </RechartsAreaChart>}
                             </ResponsiveContainer>
                             </ChartContainer>
                         </CardContent>
@@ -211,13 +211,13 @@ export default function PartenaireDashboard({ user }: { user: User }) {
                             <ChartContainer config={chartConfig}>
                                 <ResponsiveContainer width="100%" height={250}>
                                 {statsLoading ? <Skeleton className="w-full h-full" /> : 
-                                <BarChart data={salesData}>
+                                <RechartsBarChart data={salesData}>
                                     <CartesianGrid vertical={false} />
                                     <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
                                     <YAxis tickLine={false} axisLine={false} />
                                     <Tooltip content={<ChartTooltipContent indicator='line'/>} />
                                     <Bar dataKey="sales" fill="var(--color-sales)" radius={4} />
-                                </BarChart>}
+                                </RechartsBarChart>}
                                 </ResponsiveContainer>
                             </ChartContainer>
                         </CardContent>
