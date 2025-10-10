@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import type { User } from "@/lib/types";
 import PageHeader from "../shared/page-header";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { Building, ShoppingBag, Newspaper, DollarSign, PenSquare } from "lucide-react";
+import { Building, ShoppingBag, Newspaper, DollarSign, PenSquare, UserCircle } from "lucide-react";
 
 export default function PartenaireDashboard({ user }: { user: User }) {
   const isProducer = user.partnerType === 'producer';
@@ -17,8 +16,8 @@ export default function PartenaireDashboard({ user }: { user: User }) {
     { 
         title: "Gérer le Profil Partenaire", 
         description: "Modifiez les informations, la galerie et les détails de votre profil.", 
-        href: "/gestion/etablissement", 
-        icon: isProducer ? PenSquare : Building,
+        href: isEstablishment ? "/gestion/etablissement" : "/profil",
+        icon: isProducer ? UserCircle : Building,
         show: true,
     },
     {
@@ -74,5 +73,7 @@ export default function PartenaireDashboard({ user }: { user: User }) {
     </div>
   );
 }
+
+    
 
     
