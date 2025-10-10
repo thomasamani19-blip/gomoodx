@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
@@ -14,7 +13,7 @@ import { useCollection, useFirestore, useStorage } from '@/firebase';
 import { addDoc, collection, query, serverTimestamp, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Loader2, PlusCircle, Upload, Users, Percent, Trash2, UserSearch } from 'lucide-react';
 import PageHeader from '@/components/shared/page-header';
 import { uploadFile } from '@/lib/storage';
@@ -72,7 +71,7 @@ export default function CreerProduitPage() {
             productType: 'digital',
             price: 10,
             isCollaborative: false,
-            revenueShares: user ? [{ userId: user.id, displayName: 'Moi (Producteur)', percentage: 100 }] : [],
+            revenueShares: [],
         }
     });
 
@@ -80,17 +79,17 @@ export default function CreerProduitPage() {
         control: form.control,
         name: "revenueShares",
     });
-
-    const productType = form.watch('productType');
-    const isCollaborative = form.watch('isCollaborative');
-
-    // Add producer to revenue shares when user is loaded
-    useState(() => {
+    
+    // Set producer as the first revenue share participant on load
+    useEffect(() => {
         if(user && fields.length === 0) {
             append({ userId: user.id, displayName: 'Moi (Producteur)', percentage: 100 });
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    }, [user, fields.length, append]);
+
+
+    const productType = form.watch('productType');
+    const isCollaborative = form.watch('isCollaborative');
 
     const onSubmit = async (data: ProductFormValues) => {
         if (!user || !firestore || !storage) {
@@ -114,6 +113,7 @@ export default function CreerProduitPage() {
                 createdAt: serverTimestamp(),
                 isCollaborative: data.isCollaborative,
                 revenueShares: data.isCollaborative ? data.revenueShares : [],
+                moderationStatus: 'approved',
             });
 
             toast({ title: "Produit créé !", description: "Votre nouveau produit est maintenant dans votre boutique." });
@@ -207,7 +207,7 @@ export default function CreerProduitPage() {
                                     <div key={field.id} className="flex items-center gap-4 p-2 rounded-md border">
                                         <p className="font-medium flex-1">{field.displayName}</p>
                                         <div className="relative w-28">
-                                            <Input type="number" {...form.register(`revenueShares.${index}.percentage`)} className="pr-8" disabled={field.userId === user?.id} />
+                                            <Input type="number" {...form.register(`revenueShares.${index}.percentage`)} className="pr-8" />
                                             <Percent className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
                                         </div>
                                         {field.userId !== user?.id && <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive"/></Button>}

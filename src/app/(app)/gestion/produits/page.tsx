@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MoreHorizontal, PlusCircle, Trash2, Loader2, Pencil, Star } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Loader2, Pencil, Star, Users } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -29,7 +29,7 @@ import { fr } from 'date-fns/locale';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const SPONSOR_COST = 10;
 
@@ -209,7 +209,10 @@ export default function GestionProduitsPage() {
                                   height={40}
                                   className="rounded-md object-cover"
                               />
-                              <span>{produit.title}</span>
+                              <div className="flex items-center gap-2">
+                                <span>{produit.title}</span>
+                                {produit.isCollaborative && <Users className="h-4 w-4 text-muted-foreground" />}
+                              </div>
                           </div>
                       </TableCell>
                       <TableCell>{produit.price.toFixed(2)} €</TableCell>

@@ -81,7 +81,7 @@ export async function POST(request: Request) {
             // 3. Distribuer le reste des revenus
             const netRevenue = product.price - commissionAmount;
 
-            if (product.revenueShares && product.revenueShares.length > 0) {
+            if (product.isCollaborative && product.revenueShares && product.revenueShares.length > 0) {
                 // Contenu collaboratif avec partage de revenus
                 for (const share of product.revenueShares) {
                     const participantAmount = netRevenue * (share.percentage / 100);
