@@ -7,7 +7,7 @@ import type { Annonce } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -39,7 +39,7 @@ const StarRating = ({ rating, ratingCount, className }: { rating: number, rating
 
 export default function AnnoncesPage() {
   const firestore = useFirestore();
-  const annoncesQuery = useMemo(() => firestore ? query(collection(firestore, 'services')) : null, [firestore]);
+  const annoncesQuery = useMemo(() => firestore ? query(collection(firestore, 'services'), orderBy('createdAt', 'desc')) : null, [firestore]);
   const { data: annonces, loading } = useCollection<Annonce>(annoncesQuery);
 
   const sortedAnnonces = useMemo(() => {
@@ -82,7 +82,9 @@ export default function AnnoncesPage() {
 
       {!loading && sortedAnnonces && sortedAnnonces.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {sortedAnnonces.map((annonce) => (
+          {sortedAnnonces.map((annonce) => {
+             const isAvailableNow = annonce.availableNowUntil && annonce.availableNowUntil.toDate() > new Date();
+             return (
             <Card key={annonce.id} className="overflow-hidden group">
               <CardContent className="p-0">
                 <Link href={`/annonces/${annonce.id}`}>
@@ -98,7 +100,7 @@ export default function AnnoncesPage() {
                      {annonce.isSponsored && (
                         <Badge variant="secondary" className="absolute top-2 right-2">À la une</Badge>
                      )}
-                     {annonce.availableNowUntil && annonce.availableNowUntil.toDate() > new Date() && (
+                     {isAvailableNow && (
                         <Badge className="absolute top-2 left-2 bg-green-500 hover:bg-green-600 animate-pulse">Disponible maintenant</Badge>
                      )}
                   </div>
@@ -118,7 +120,7 @@ export default function AnnoncesPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+          )})}
         </div>
       )}
 
