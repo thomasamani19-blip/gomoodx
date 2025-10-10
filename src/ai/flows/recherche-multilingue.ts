@@ -11,6 +11,23 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { initializeApp, getApps, App, applicationDefault } from 'firebase-admin/app';
+import { getFirestore, Query } from 'firebase-admin/firestore';
+import type { User, Annonce, Product } from '@/lib/types';
+
+
+// Initialize Firebase Admin SDK if not already done
+let adminApp: App;
+if (!getApps().length) {
+    adminApp = initializeApp({
+        credential: applicationDefault(),
+    });
+} else {
+    adminApp = getApps()[0];
+}
+
+const db = getFirestore(adminApp);
+
 
 const LanguesSupporteesSchema = z.enum(['fr', 'en', 'es', 'it', 'ar']);
 
@@ -32,10 +49,11 @@ const ResultatRechercheSchema = z.object({
 export const RechercheMultilingueOutputSchema = z.array(ResultatRechercheSchema).describe("Un tableau de résultats de recherche traduits dans la langue cible.");
 export type RechercheMultilingueOutput = z.infer<typeof RechercheMultilingueOutputSchema>;
 
+
 const rechercherProfilsEtContenu = ai.defineTool(
   {
     name: 'rechercherProfilsEtContenu',
-    description: "Recherche des profils d'escortes et du contenu basé sur un terme de recherche dans une langue spécifique et avec des filtres.",
+    description: "Recherche des profils d'escortes et de partenaires, ainsi que des annonces et des produits, en fonction d'un terme de recherche dans une langue spécifique et avec des filtres.",
     inputSchema: z.object({
       query: z.string().describe("Le terme de recherche."),
       langue: LanguesSupporteesSchema.describe("La langue de la recherche."),
@@ -44,31 +62,63 @@ const rechercherProfilsEtContenu = ai.defineTool(
     outputSchema: z.array(ResultatRechercheSchema).describe("Un tableau de résultats de recherche."),
   },
   async input => {
-    // TODO: Implémenter la logique de recherche ici (simulée pour le prototype)
-    // Remplacez ceci par une recherche réelle dans votre base de données en utilisant les filtres.
     console.log(`Recherche pour: ${input.query} en langue: ${input.langue} avec filtres: ${JSON.stringify(input.filtres)}`);
-    const resultatsSimules: z.infer<typeof RechercheMultilingueOutputSchema> = [
-      {
-        type: 'profil',
-        titre: 'Profil de Luxe - Paris',
-        description: 'Découvrez des expériences exclusives à Paris.',
-        url: '/creators/1',
-      },
-      {
-        type: 'contenu',
-        titre: 'Vidéo exclusive: "Nuit à Paris"',
-        description: 'Une vidéo artistique explorant la beauté de la nuit parisienne.',
-        url: '/shop/1',
-      },
-      {
-        type: 'profil',
-        titre: 'Companion for Events - NYC',
-        description: 'High-class companion for your events in New York City.',
-        url: '/creators/2',
-      },
-    ];
+    const searchTerm = input.query.toLowerCase();
+    const results: z.infer<typeof RechercheMultilingueOutputSchema> = [];
 
-    return resultatsSimules.filter(r => r.titre.toLowerCase().includes(input.query.toLowerCase()) || r.description.toLowerCase().includes(input.query.toLowerCase()));
+    // NOTE: Firestore's native search capabilities are limited. For a production app,
+    // a dedicated search service like Algolia or Elasticsearch would be necessary for full-text search.
+    // Here, we simulate a simple search using array contains and string matching.
+
+    // 1. Search Users (Creators and Partners)
+    const usersSnapshot = await db.collection('users').get();
+    usersSnapshot.forEach(doc => {
+      const user = doc.data() as User;
+      const userContent = [user.displayName, user.bio, user.location, user.city, user.country, user.role].join(' ').toLowerCase();
+      if (userContent.includes(searchTerm) && (user.role === 'escorte' || user.role === 'partenaire')) {
+        results.push({
+          type: 'profil',
+          titre: user.displayName,
+          description: user.bio || `Profil de ${user.displayName}.`,
+          url: `/profil/${doc.id}`,
+        });
+      }
+    });
+
+    // 2. Search Services (Annonces)
+    const servicesSnapshot = await db.collection('services').get();
+    servicesSnapshot.forEach(doc => {
+      const annonce = doc.data() as Annonce;
+      const annonceContent = [annonce.title, annonce.description, annonce.category, annonce.location].join(' ').toLowerCase();
+      if (annonceContent.includes(searchTerm)) {
+        results.push({
+          type: 'contenu',
+          titre: annonce.title,
+          description: annonce.description,
+          url: `/annonces/${doc.id}`,
+        });
+      }
+    });
+    
+    // 3. Search Products
+    const productsSnapshot = await db.collection('products').get();
+    productsSnapshot.forEach(doc => {
+      const product = doc.data() as Product;
+      const productContent = [product.title, product.description].join(' ').toLowerCase();
+      if (productContent.includes(searchTerm)) {
+         results.push({
+          type: 'contenu',
+          titre: product.title,
+          description: product.description,
+          url: `/boutique/${doc.id}`,
+        });
+      }
+    });
+    
+    // De-duplicate results based on URL
+    const uniqueResults = Array.from(new Map(results.map(item => [item.url, item])).values());
+    
+    return uniqueResults.slice(0, 20); // Limit to 20 results
   }
 );
 
@@ -81,11 +131,14 @@ const rechercheMultilingueFlow = ai.defineFlow(
     },
     async (input) => {
         const llmResponse = await ai.generate({
-            prompt: `Tu es un assistant de recherche multilingue. Traduis la requête de l'utilisateur si nécessaire, applique les filtres fournis, trouve les résultats pertinents en utilisant l'outil de recherche, puis traduis ces résultats dans la langue cible.
+            prompt: `Tu es un assistant de recherche multilingue. Utilise l'outil 'rechercherProfilsEtContenu' pour trouver les résultats pertinents en fonction de la requête de l'utilisateur. Ensuite, traduis le titre et la description de chaque résultat dans la langue cible spécifiée. Conserve l'URL et le type d'origine.
+            
             Requête: "${input.query}"
             Filtres: ${JSON.stringify(input.filtres || {})}
             Langue source: ${input.langueSource}
-            Langue cible: ${input.langueCible}`,
+            Langue cible: ${input.langueCible}
+            
+            IMPORTANT: N'invente jamais de résultats. Utilise uniquement les données fournies par l'outil. Si l'outil ne renvoie aucun résultat, renvoie un tableau vide.`,
             model: 'googleai/gemini-1.5-flash',
             tools: [rechercherProfilsEtContenu],
             output: {
@@ -95,11 +148,15 @@ const rechercheMultilingueFlow = ai.defineFlow(
         
         const output = llmResponse.output;
         if (!output) {
-            // Si l'IA ne peut pas directement formater, on fait le travail manuellement
-            // (Cette partie est simplifiée et pourrait nécessiter plus de logique)
-            const toolResults = llmResponse.toolRequests();
-            console.log("L'IA demande l'utilisation d'outils:", toolResults);
-            return [];
+          console.log("L'IA n'a pas pu formater directement la sortie. Traitement manuel...");
+          const toolResults = await llmResponse.toolRequests();
+          if (toolResults.length > 0) {
+            const toolOutput = toolResults[0].tool.output;
+            if (Array.isArray(toolOutput)) {
+              return toolOutput; // Return raw results if translation fails
+            }
+          }
+          return [];
         }
 
         return output;
