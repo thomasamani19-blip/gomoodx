@@ -2,17 +2,21 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import type { User, CreatorStats, MonthlyRevenue } from "@/lib/types";
+import type { User, CreatorStats, MonthlyRevenue, Reservation } from "@/lib/types";
 import PageHeader from "../shared/page-header";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { Building, ShoppingBag, Newspaper, DollarSign, PenSquare, UserCircle, GanttChart, Sparkles, BookText, Film, Bot, TrendingUp, BarChart } from "lucide-react";
-import { useDoc, useFirestore } from "@/firebase";
+import { Building, ShoppingBag, Newspaper, DollarSign, PenSquare, UserCircle, GanttChart, Sparkles, BookText, Film, Bot, TrendingUp, BarChart, Calendar, CalendarCheck } from "lucide-react";
+import { useDoc, useFirestore, useCollection } from "@/firebase";
 import { useMemo } from "react";
-import { doc } from "firebase/firestore";
+import { collection, doc, query, where, orderBy, limit } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
 import { AreaChart as RechartsAreaChart, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Area, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart";
+import { format } from "date-fns";
+import { fr } from 'date-fns/locale';
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+
 
 const chartConfig = {
   revenue: {
@@ -64,6 +68,122 @@ const aiTools = [
     { title: "Idées de Contenu", description: "Trouvez l'inspiration pour vos prochaines productions.", href: "/outils-ia/idees-contenu", icon: Bot },
 ];
 
+function EstablishmentDashboard({ user }: { user: User }) {
+    const firestore = useFirestore();
+    
+    const statsRef = useMemo(() => firestore ? doc(firestore, `/creators/${user.id}/stats/main`) : null, [firestore, user.id]);
+    const { data: stats, loading: statsLoading } = useDoc<CreatorStats>(statsRef);
+    
+    const reservationsQuery = useMemo(() => firestore ? query(collection(firestore, 'reservations'), where('creatorId', '==', user.id), where('status', '==', 'confirmed'), orderBy('reservationDate', 'asc'), limit(5)) : null, [firestore, user.id]);
+    const { data: upcomingReservations, loading: reservationsLoading } = useCollection<Reservation>(reservationsQuery);
+    
+    const annoncesQuery = useMemo(() => firestore ? query(collection(firestore, 'services'), where('createdBy', '==', user.id)) : null, [firestore, user.id]);
+    const { data: annonces, loading: annoncesLoading } = useCollection(annoncesQuery);
+
+    const loading = statsLoading || reservationsLoading || annoncesLoading;
+
+    return (
+        <div className="space-y-8">
+            <PageHeader
+                title={`Tableau de bord de ${user?.displayName || 'Partenaire'}`}
+                description="Gérez les informations et les services de votre établissement."
+            />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <StatCard
+                    title="Revenus (30j)"
+                    value={stats?.monthlyRevenue?.value ? `${stats.monthlyRevenue.value.toLocaleString('fr-FR')} €` : '0 €'}
+                    change={stats?.monthlyRevenue?.change ? `${stats.monthlyRevenue.change > 0 ? '+' : ''}${stats.monthlyRevenue.change.toFixed(1)}%` : '-'}
+                    icon={TrendingUp}
+                    loading={loading}
+                />
+                 <StatCard
+                    title="Réservations (30j)"
+                    value={stats?.contentSales?.value ? `${stats.contentSales.value}` : '0'}
+                    change={stats?.contentSales?.change ? `${stats.contentSales.change > 0 ? '+' : ''}${stats.contentSales.change} depuis hier` : '-'}
+                    icon={Calendar}
+                    loading={loading}
+                />
+                <StatCard
+                    title="Annonces Actives"
+                    value={`${annonces?.length || 0}`}
+                    change=""
+                    icon={Newspaper}
+                    loading={loading}
+                />
+                 <StatCard
+                    title="Vues de Profil (7j)"
+                    value={stats?.profileViews?.value ? stats.profileViews.value.toLocaleString('fr-FR') : '0'}
+                    change={stats?.profileViews?.change ? `${stats?.profileViews?.change > 0 ? '+' : ''}${stats.profileViews.change.toFixed(1)}%` : '-'}
+                    icon={UserCircle}
+                    loading={loading}
+                />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Prochaines Réservations</CardTitle>
+                        <CardDescription>Aperçu de vos prochaines réservations confirmées.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {reservationsLoading ? <Skeleton className="h-40" /> : (
+                            upcomingReservations && upcomingReservations.length > 0 ? (
+                                <div className="space-y-4">
+                                    {upcomingReservations.map(res => (
+                                        <div key={res.id} className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                 <Avatar className="h-10 w-10 border">
+                                                    {/* You would fetch member image here */}
+                                                    <AvatarFallback>{res.memberId.charAt(0)}</AvatarFallback>
+                                                 </Avatar>
+                                                <div>
+                                                    <p className="font-semibold">{res.annonceTitle}</p>
+                                                    <p className="text-sm text-muted-foreground">{format(res.reservationDate.toDate(), "d MMM yyyy 'à' HH:mm", { locale: fr })}</p>
+                                                </div>
+                                            </div>
+                                             <Button asChild size="sm" variant="ghost">
+                                                <Link href={`/reservations/${res.id}`}>Voir</Link>
+                                             </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : <p className="text-sm text-muted-foreground text-center py-10">Aucune réservation à venir.</p>
+                        )}
+                    </CardContent>
+                </Card>
+
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Actions Rapides</CardTitle>
+                        <CardDescription>Accès rapide aux fonctionnalités clés.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 gap-4">
+                         <Button asChild size="lg" className="h-full">
+                            <Link href="/gestion/annonces/creer" className="flex-col gap-2">
+                                <Newspaper className="h-6 w-6"/>
+                                <span>Créer une Annonce</span>
+                            </Link>
+                        </Button>
+                         <Button asChild size="lg" className="h-full" variant="secondary">
+                            <Link href="/gestion/tarifs" className="flex-col gap-2">
+                                <DollarSign className="h-6 w-6"/>
+                                <span>Gérer mes Tarifs</span>
+                            </Link>
+                        </Button>
+                         <Button asChild size="lg" className="h-full col-span-2" variant="outline">
+                            <Link href="/gestion/etablissement" className="flex-col gap-2">
+                                <Building className="h-6 w-6"/>
+                                <span>Modifier le Profil</span>
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    );
+}
+
+
 export default function PartenaireDashboard({ user }: { user: User }) {
   const isProducer = user.partnerType === 'producer';
   const isEstablishment = user.partnerType === 'establishment';
@@ -72,55 +192,8 @@ export default function PartenaireDashboard({ user }: { user: User }) {
     const statsRef = useMemo(() => user && firestore ? doc(firestore, `/creators/${user.id}/stats/main`) : null, [user, firestore]);
     const { data: stats, loading: statsLoading } = useDoc<CreatorStats>(statsRef);
 
-  const establishmentTools = [
-    { 
-        title: "Gérer le Profil Partenaire", 
-        description: "Modifiez les informations, la galerie et les détails de votre profil.", 
-        href: "/gestion/etablissement",
-        icon: Building,
-    },
-    {
-        title: "Gérer mes Tarifs",
-        description: "Définissez les prix de vos chambres et services.",
-        href: "/gestion/tarifs",
-        icon: DollarSign,
-    },
-    {
-        title: "Gérer mes Annonces/Services",
-        description: "Créez et gérez les services que votre établissement propose.",
-        href: "/gestion/annonces",
-        icon: Newspaper,
-    }
-];
-
   if(isEstablishment) {
-    return (
-        <div>
-            <PageHeader
-                title={`Tableau de bord de ${user?.displayName || 'Partenaire'}`}
-                description="Gérez les informations et les services de votre établissement."
-            />
-            <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline">Gestion de votre Établissement</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-6">
-                    {establishmentTools.map((tool) => (
-                        <Link key={tool.title} href={tool.href} className="flex items-center justify-between space-x-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                            <div className="flex-1 space-y-1">
-                                <p className="text-sm font-medium leading-none flex items-center">
-                                {tool.icon && <tool.icon className="mr-2 h-4 w-4 text-primary" />}
-                                {tool.title}
-                                </p>
-                                <p className="text-sm text-muted-foreground">{tool.description}</p>
-                            </div>
-                            <Button variant="secondary">Gérer</Button>
-                        </Link>
-                    ))}
-                </CardContent>
-            </Card>
-        </div>
-    )
+    return <EstablishmentDashboard user={user} />
   }
 
   if(isProducer) {
@@ -263,5 +336,3 @@ export default function PartenaireDashboard({ user }: { user: User }) {
     </div>
   )
 }
-
-    
