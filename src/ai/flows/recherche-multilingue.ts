@@ -149,9 +149,9 @@ const rechercheMultilingueFlow = ai.defineFlow(
         const output = llmResponse.output;
         if (!output) {
           console.log("L'IA n'a pas pu formater directement la sortie. Traitement manuel...");
-          const toolResults = await llmResponse.toolRequests();
-          if (toolResults.length > 0) {
-            const toolOutput = toolResults[0].tool.output;
+          const toolRequests = llmResponse.toolRequests;
+          if (toolRequests.length > 0) {
+            const toolOutput = (await toolRequests[0].tool.fn(toolRequests[0].input as any)).output;
             if (Array.isArray(toolOutput)) {
               return toolOutput; // Return raw results if translation fails
             }
