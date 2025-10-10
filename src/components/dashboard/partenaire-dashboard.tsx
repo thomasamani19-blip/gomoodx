@@ -14,15 +14,6 @@ import { Skeleton } from "../ui/skeleton";
 import { AreaChart as RechartsAreaChart, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Area, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart";
 
-const chartData: MonthlyRevenue[] = [
-  { month: 'Jan', revenue: 860 },
-  { month: 'Fev', revenue: 1250 },
-  { month: 'Mar', revenue: 970 },
-  { month: 'Avr', revenue: 1530 },
-  { month: 'Mai', revenue: 1890 },
-  { month: 'Juin', revenue: 2540 },
-];
-
 const chartConfig = {
   revenue: {
     label: 'Revenus',
@@ -33,17 +24,6 @@ const chartConfig = {
       color: 'hsl(var(--primary))'
   }
 };
-
-const salesData = [
-    { date: '01/06', sales: 12 },
-    { date: '02/06', sales: 18 },
-    { date: '03/06', sales: 15 },
-    { date: '04/06', sales: 21 },
-    { date: '05/06', sales: 19 },
-    { date: '06/06', sales: 25 },
-    { date: '07/06', sales: 22 },
-];
-
 
 const StatCard = ({ title, value, change, icon: Icon, loading }: { title: string, value: string, change: string, icon: React.ElementType, loading: boolean}) => {
     if (loading) {
@@ -160,8 +140,8 @@ export default function PartenaireDashboard({ user }: { user: User }) {
                     />
                     <StatCard
                         title="Ventes de Contenu"
-                        value={stats?.newSubscribers?.value ? `${stats.newSubscribers.value}` : '0'}
-                        change={stats?.newSubscribers?.change ? `${stats.newSubscribers.change > 0 ? '+' : ''}${stats.newSubscribers.change} depuis hier` : '-'}
+                        value={stats?.contentSales?.value ? `${stats.contentSales.value}` : '0'}
+                        change={stats?.contentSales?.change ? `${stats.contentSales.change > 0 ? '+' : ''}${stats.contentSales.change} depuis hier` : '-'}
                         icon={ShoppingBag}
                         loading={statsLoading}
                     />
@@ -192,7 +172,7 @@ export default function PartenaireDashboard({ user }: { user: User }) {
                             <ChartContainer config={chartConfig}>
                             <ResponsiveContainer width="100%" height={250}>
                                 {statsLoading ? <Skeleton className="w-full h-full" /> : 
-                                <RechartsAreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                <RechartsAreaChart data={stats?.revenueHistory || []} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                 <CartesianGrid vertical={false} />
                                 <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
                                 <YAxis tickLine={false} axisLine={false} />
@@ -211,7 +191,7 @@ export default function PartenaireDashboard({ user }: { user: User }) {
                             <ChartContainer config={chartConfig}>
                                 <ResponsiveContainer width="100%" height={250}>
                                 {statsLoading ? <Skeleton className="w-full h-full" /> : 
-                                <RechartsBarChart data={salesData}>
+                                <RechartsBarChart data={stats?.salesHistory || []}>
                                     <CartesianGrid vertical={false} />
                                     <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
                                     <YAxis tickLine={false} axisLine={false} />

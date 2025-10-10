@@ -463,6 +463,9 @@ export type CreatorStats = {
     profileViews?: { value: number; change: number };
     engagementRate?: { value: number; change: number };
     rewardPoints?: { value: number; change: number };
+    contentSales?: { value: number; change: number };
+    revenueHistory?: { month: string; revenue: number }[];
+    salesHistory?: { date: string; sales: number }[];
 }
 
 export type MonthlyRevenue = {
