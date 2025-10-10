@@ -280,7 +280,7 @@ export default function PartenaireDashboard({ user }: { user: User }) {
                 <Card>
                     <CardHeader>
                         <CardTitle className="font-headline">Gestion de Contenu</CardTitle>
-                        <CardDescription>Gérez l'ensemble de vos productions collaboratives et produits de la boutique.</CardDescription>
+                        <CardDescription>Accès rapide à la gestion de vos produits et de votre profil.</CardDescription>
                     </CardHeader>
                     <CardContent className="grid md:grid-cols-2 gap-4">
                         <Button asChild size="lg">
