@@ -4,23 +4,23 @@
 
 @layer base {
   :root {
-    --background: 240 10% 97%; /* Gris très clair */
+    --background: 240 5% 96%; /* Ajusté pour un gris légèrement plus visible */
     --foreground: 240 10% 3.9%;
 
-    --card: 240 10% 100%;
+    --card: 240 4.8% 98.9%; /* Cartes légèrement plus claires que le fond */
     --card-foreground: 240 10% 3.9%;
  
-    --popover: 240 10% 100%;
+    --popover: 240 4.8% 98.9%;
     --popover-foreground: 240 10% 3.9%;
  
     --primary: 0 84.2% 35.1%; /* Rouge Bordeaux (#900D0D) */
     --primary-foreground: 0 0% 98%;
  
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 210 40% 9.8%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
  
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 210 8.9% 64.9%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
  
     --accent: 43 74% 49%; /* Or (#D4AF37) */
     --accent-foreground: 43 100% 10%;
@@ -28,8 +28,8 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
     --ring: 0 84.2% 45.1%;
  
     --radius: 0.5rem;
