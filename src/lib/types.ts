@@ -432,6 +432,12 @@ export interface Product {
     sponsorshipExpiresAt?: Timestamp;
     moderationStatus: ModerationStatus;
     moderationReason?: string;
+    isCollaborative?: boolean;
+    revenueShares?: {
+        userId: string;
+        displayName: string;
+        percentage: number;
+    }[];
 }
 
 export interface BlogArticle {
@@ -486,5 +492,3 @@ export interface PartnerRequest {
 
 // API Payloads
 export type ContentType = 'service' | 'product';
-
-    

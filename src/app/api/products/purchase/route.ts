@@ -1,4 +1,3 @@
-
 // /src/app/api/products/purchase/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -36,14 +35,10 @@ export async function POST(request: Request) {
             if (!memberWalletDoc.exists) throw new Error("Portefeuille du membre introuvable.");
             const memberWallet = memberWalletDoc.data() as Wallet;
             
-            const sellerWalletRef = db.collection('wallets').doc(product.createdBy);
-            const sellerWalletDoc = await t.get(sellerWalletRef);
-            if (!sellerWalletDoc.exists) throw new Error("Portefeuille du vendeur introuvable.");
-
             const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
 
             const settingsDoc = await t.get(settingsRef);
-            const commissionRate = (settingsDoc.data() as Settings)?.platformCommissionRate || 0;
+            const commissionRate = (settingsDoc.data() as Settings)?.platformCommissionRate || 0.20;
             
             if (memberWallet.balance < product.price) throw new Error("Solde insuffisant pour effectuer cet achat.");
             if (product.createdBy === memberId) throw new Error("Vous ne pouvez pas acheter votre propre produit.");
@@ -63,39 +58,60 @@ export async function POST(request: Request) {
             };
             t.set(purchaseRef, newPurchase);
 
+            // 1. Débiter le portefeuille de l'acheteur
             t.update(memberWalletRef, {
                 balance: FieldValue.increment(-product.price),
                 totalSpent: FieldValue.increment(product.price)
             });
-
             const debitTxRef = memberWalletRef.collection('transactions').doc();
             t.set(debitTxRef, {
                 amount: product.price, type: 'purchase', createdAt: Timestamp.now(),
                 description: `Achat: ${product.title}`, status: 'success', reference: purchaseId
             } as Omit<Transaction, 'id'>);
 
-            // Commission logic
+            // 2. Calculer la commission de la plateforme
             const commissionAmount = product.price * commissionRate;
-            const sellerAmount = product.price - commissionAmount;
-
-            // Credit seller
-            t.update(sellerWalletRef, {
-                balance: FieldValue.increment(sellerAmount),
-                totalEarned: FieldValue.increment(sellerAmount)
-            });
-            const creditTxRef = sellerWalletRef.collection('transactions').doc();
-            t.set(creditTxRef, {
-                amount: sellerAmount, type: 'credit', createdAt: Timestamp.now(),
-                description: `Vente: ${product.title}`, status: 'success', reference: purchaseId
-            } as Omit<Transaction, 'id'>);
-
-            // Credit platform
             t.update(platformWalletRef, { balance: FieldValue.increment(commissionAmount), totalEarned: FieldValue.increment(commissionAmount) });
             const platformTxRef = platformWalletRef.collection('transactions').doc();
             t.set(platformTxRef, {
                 amount: commissionAmount, type: 'commission', createdAt: Timestamp.now(),
                 description: `Commission sur vente: ${product.title}`, status: 'success', reference: purchaseId
             } as Omit<Transaction, 'id'>);
+            
+            // 3. Distribuer le reste des revenus
+            const netRevenue = product.price - commissionAmount;
+
+            if (product.revenueShares && product.revenueShares.length > 0) {
+                // Contenu collaboratif avec partage de revenus
+                for (const share of product.revenueShares) {
+                    const participantAmount = netRevenue * (share.percentage / 100);
+                    const participantWalletRef = db.collection('wallets').doc(share.userId);
+                    
+                    t.update(participantWalletRef, {
+                        balance: FieldValue.increment(participantAmount),
+                        totalEarned: FieldValue.increment(participantAmount)
+                    });
+
+                    const creditTxRef = participantWalletRef.collection('transactions').doc();
+                    t.set(creditTxRef, {
+                        amount: participantAmount, type: 'credit', createdAt: Timestamp.now(),
+                        description: `Revenu collaboratif: ${product.title}`, status: 'success', reference: purchaseId
+                    } as Omit<Transaction, 'id'>);
+                }
+
+            } else {
+                // Vente simple, 100% du revenu net au vendeur principal
+                const sellerWalletRef = db.collection('wallets').doc(product.createdBy);
+                t.update(sellerWalletRef, {
+                    balance: FieldValue.increment(netRevenue),
+                    totalEarned: FieldValue.increment(netRevenue)
+                });
+                const creditTxRef = sellerWalletRef.collection('transactions').doc();
+                t.set(creditTxRef, {
+                    amount: netRevenue, type: 'credit', createdAt: Timestamp.now(),
+                    description: `Vente: ${product.title}`, status: 'success', reference: purchaseId
+                } as Omit<Transaction, 'id'>);
+            }
             
             return { purchaseId: purchaseId, message: "Achat effectué avec succès." };
         });
