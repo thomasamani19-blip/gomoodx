@@ -235,7 +235,7 @@ export default function PortefeuillePage() {
                                     <TableRow key={tx.id}>
                                         <TableCell>{getTransactionIcon(tx.type)}</TableCell>
                                         <TableCell className="font-medium capitalize">{tx.description || tx.reference || tx.type}</TableCell>
-                                        <TableCell className={`text-right font-semibold ${['deposit', 'credit'].includes(tx.type) ? 'text-green-600' : 'text-red-600'}`}>
+                                        <TableCell className={`text-right font-semibold ${['deposit', 'credit'].includes(tx.type) ? 'text-green-600' : 'text-destructive'}`}>
                                             {['deposit', 'credit'].includes(tx.type) ? '+' : '-'} {tx.amount.toFixed(2)} €
                                         </TableCell>
                                         <TableCell className="text-right text-muted-foreground text-xs">
@@ -252,7 +252,7 @@ export default function PortefeuillePage() {
                 </CardContent>
             </Card>
 
-            <CallHistory />
+            {(user?.role === 'client' || user?.role === 'escorte') && <CallHistory />}
         </div>
       </div>
     </div>
