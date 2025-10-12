@@ -13,7 +13,7 @@ export function GoMoodXLogo({ className }: { className?: string }) {
       )}
     >
       <Sparkles className="h-6 w-6 text-primary" />
-      <span className="text-foreground">Élixir Sensuel</span>
+      <span className="text-foreground">GoMoodX</span>
     </Link>
   );
 }

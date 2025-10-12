@@ -21,7 +21,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: 'Élixir Sensuel',
+  title: 'GoMoodX',
   description: 'Votre destination pour des contenus et des expériences exclusives.',
 };
 

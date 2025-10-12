@@ -114,7 +114,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
           <div className="relative z-10 flex flex-col items-center justify-center text-center text-white p-4">
             <h1 className="font-headline text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary-foreground drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
-              Élixir Sensuel
+              GoMoodX
             </h1>
             <p className="mt-4 max-w-2xl text-lg md:text-xl text-foreground/80 drop-shadow-md">
               La destination privilégiée pour des rencontres et des contenus uniques.
@@ -190,7 +190,7 @@ export default function Home() {
             </div>
             <div className="grid md:grid-cols-2 gap-8">
                 <TestimonialCard 
-                    quote="Élixir Sensuel a transformé ma façon de créer du contenu. La plateforme est intuitive et les outils IA sont incroyables."
+                    quote="GoMoodX a transformé ma façon de créer du contenu. La plateforme est intuitive et les outils IA sont incroyables."
                     author="Eva"
                     role="Créatrice"
                 />
