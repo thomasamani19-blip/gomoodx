@@ -29,72 +29,75 @@ export async function searchFirestore(searchQuery: string): Promise<RechercheMul
     const results: RechercheMultilingueOutput = [];
     const searchLimit = 10; // Limit per collection
 
-    // 1. Search Users (Creators and Partners)
-    const usersQuery = query(
-        collection(db, 'users'),
-        or(
-            where('displayName', '>=', searchTerm),
-            where('displayName', '<=', searchTerm + '\uf8ff')
-        ),
-        limit(searchLimit)
-    );
-    const usersSnapshot = await getDocs(usersQuery);
-    usersSnapshot.forEach(doc => {
-      const user = doc.data() as User;
-       if ((user.role === 'escorte' || user.role === 'partenaire') && (user.displayName.toLowerCase().includes(searchTerm) || user.city?.toLowerCase().includes(searchTerm))) {
-        results.push({
-          type: 'profil',
-          titre: user.displayName,
-          description: user.bio || `Profil de ${user.displayName}.`,
-          url: `/profil/${doc.id}`,
+    try {
+        // 1. Search Users (Creators and Partners) by displayName and city
+        const usersQuery = query(
+            collection(db, 'users'),
+            or(
+                where('displayName', '>=', searchTerm),
+                where('displayName', '<=', searchTerm + '\uf8ff'),
+                where('city', '==', searchTerm)
+            ),
+            limit(searchLimit)
+        );
+        const usersSnapshot = await getDocs(usersQuery);
+        usersSnapshot.forEach(doc => {
+            const user = doc.data() as User;
+            if ((user.role === 'escorte' || user.role === 'partenaire')) {
+                results.push({
+                    type: 'profil',
+                    titre: user.displayName,
+                    description: user.bio || `Profil de ${user.displayName}.`,
+                    url: `/profil/${doc.id}`,
+                });
+            }
         });
-      }
-    });
 
-    // 2. Search Services (Annonces)
-    const servicesQuery = query(
-        collection(db, 'services'),
-         or(
-            where('title', '>=', searchTerm),
-            where('title', '<=', searchTerm + '\uf8ff'),
-            where('category', '==', searchTerm)
-        ),
-        limit(searchLimit)
-    );
-    const servicesSnapshot = await getDocs(servicesQuery);
-    servicesSnapshot.forEach(doc => {
-      const annonce = doc.data() as Annonce;
-       if (annonce.title.toLowerCase().includes(searchTerm) || annonce.category.toLowerCase().includes(searchTerm) || annonce.location.toLowerCase().includes(searchTerm)) {
+        // 2. Search Services (Annonces) by title, category, and location
+        const servicesQuery = query(
+            collection(db, 'services'),
+            or(
+                where('title', '>=', searchTerm),
+                where('title', '<=', searchTerm + '\uf8ff'),
+                where('category', '==', searchTerm),
+                where('location', '==', searchTerm)
+            ),
+            limit(searchLimit)
+        );
+        const servicesSnapshot = await getDocs(servicesQuery);
+        servicesSnapshot.forEach(doc => {
+            const annonce = doc.data() as Annonce;
             results.push({
                 type: 'contenu',
                 titre: annonce.title,
                 description: annonce.description,
                 url: `/annonces/${doc.id}`,
             });
-       }
-    });
-    
-    // 3. Search Products
-    const productsQuery = query(
-        collection(db, 'products'),
-        or(
-            where('title', '>=', searchTerm),
-            where('title', '<=', searchTerm + '\uf8ff')
-        ),
-        limit(searchLimit)
-    );
-    const productsSnapshot = await getDocs(productsQuery);
-    productsSnapshot.forEach(doc => {
-      const product = doc.data() as Product;
-      if (product.title.toLowerCase().includes(searchTerm)) {
-         results.push({
-          type: 'contenu',
-          titre: product.title,
-          description: product.description,
-          url: `/boutique/${doc.id}`,
         });
-      }
-    });
+        
+        // 3. Search Products by title
+        const productsQuery = query(
+            collection(db, 'products'),
+            where('title', '>=', searchTerm),
+            where('title', '<=', searchTerm + '\uf8ff'),
+            limit(searchLimit)
+        );
+        const productsSnapshot = await getDocs(productsQuery);
+        productsSnapshot.forEach(doc => {
+            const product = doc.data() as Product;
+            results.push({
+                type: 'contenu',
+                titre: product.title,
+                description: product.description,
+                url: `/boutique/${doc.id}`,
+            });
+        });
+
+    } catch (error) {
+        console.error("Error searching Firestore:", error);
+        // En cas d'erreur (ex: index manquant), retourner un tableau vide pour ne pas planter l'app.
+        return [];
+    }
     
     // De-duplicate results based on URL and limit total results
     const uniqueResults = Array.from(new Map(results.map(item => [item.url, item])).values());

@@ -44,7 +44,7 @@ const rechercherProfilsEtContenuTool = ai.defineTool(
     outputSchema: RechercheMultilingueOutputSchema,
   },
   async ({ query }) => {
-    console.log(`Recherche pour: ${query}`);
+    console.log(`Recherche Firestore pour: ${query}`);
     return await searchFirestore(query);
   }
 );
@@ -58,10 +58,12 @@ const rechercheMultilingueFlow = ai.defineFlow(
     },
     async (input) => {
         // Si la langue source et cible sont les mêmes, pas besoin de traduction par l'IA.
+        // On effectue une recherche directe.
         if (input.langueSource === input.langueCible) {
             return await searchFirestore(input.query);
         }
 
+        // Si les langues sont différentes, on utilise le flow avec l'IA pour la traduction.
         const llmResponse = await ai.generate({
             prompt: `Tu es un assistant de recherche multilingue. Utilise l'outil 'rechercherProfilsEtContenu' pour trouver les résultats pertinents en fonction de la requête de l'utilisateur. Ensuite, traduis le titre et la description de chaque résultat dans la langue cible spécifiée. Conserve l'URL et le type d'origine.
             
@@ -82,14 +84,17 @@ const rechercheMultilingueFlow = ai.defineFlow(
           return output;
         }
 
-        // Fallback en cas d'échec de la traduction ou du formatage par l'IA
-        console.warn("L'IA n'a pas pu formater la sortie. Tentative de récupération des données brutes.");
+        // Fallback en cas d'échec de la traduction ou du formatage par l'IA.
+        // On essaie de récupérer les données brutes de l'outil.
+        console.warn("L'IA n'a pas pu formater la sortie. Tentative de récupération des données brutes de l'outil.");
+        
+        // On examine si l'IA a tenté d'appeler l'outil.
         const toolRequests = llmResponse.toolRequests;
-        if (toolRequests && toolRequests.length > 0) {
-          const toolResponse = await toolRequests[0].tool.fn(toolRequests[0].input as any);
-          if (toolResponse.output && Array.isArray(toolResponse.output)) {
-            return toolResponse.output;
-          }
+        if (toolRequests && toolRequests.length > 0 && toolRequests[0].tool.name === 'rechercherProfilsEtContenu') {
+          // On exécute l'outil nous-mêmes et on retourne les résultats non traduits.
+          const toolInput = toolRequests[0].input as { query: string };
+          const fallbackResults = await searchFirestore(toolInput.query);
+          return fallbackResults;
         }
         
         // Si tout échoue, renvoyer un tableau vide.
