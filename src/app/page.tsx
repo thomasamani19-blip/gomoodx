@@ -21,6 +21,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import AgeGate from '@/components/features/auth/age-gate';
+import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
+import Autoplay from "embla-carousel-autoplay";
+import { useEffect, useState } from 'react';
 
 const TestimonialCard = ({ quote, author, role }: { quote: string, author: string, role: string }) => (
     <Card className="bg-card/50 border-primary/20 flex flex-col justify-between">
@@ -80,8 +83,13 @@ function LatestBlogPosts() {
 
 
 export default function Home() {
-  const heroImage = PlaceHolderImages.find(img => img.id === 'hero-main');
+  const [isMounted, setIsMounted] = useState(false);
+  const heroImages = PlaceHolderImages.filter(img => img.id.startsWith('hero-'));
   const router = useRouter();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -95,23 +103,37 @@ export default function Home() {
     router.push(`/recherche?${searchParams.toString()}`);
   };
 
+  if (!isMounted) {
+    return null;
+  }
+
   return (
     <>
     <AgeGate />
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-black via-black/80 to-background">
+    <div className="flex min-h-screen flex-col">
       <main className="flex-1">
         <section className="relative h-[90vh] w-full flex items-center justify-center overflow-hidden">
-          {heroImage && (
-            <Image
-              src={heroImage.imageUrl}
-              alt={heroImage.description}
-              fill
-              className="object-cover object-center"
-              data-ai-hint={heroImage.imageHint}
-              priority
-            />
-          )}
-          <div className="absolute inset-0 bg-black/40" />
+           <Carousel
+              className="absolute inset-0 w-full h-full"
+              plugins={[Autoplay({ delay: 5000, stopOnInteraction: false })]}
+              opts={{ loop: true }}
+            >
+              <CarouselContent className="h-full">
+                {heroImages.map((image, index) => (
+                  <CarouselItem key={index} className="h-full">
+                    <Image
+                      src={image.imageUrl}
+                      alt={image.description}
+                      fill
+                      className="object-cover object-center"
+                      data-ai-hint={image.imageHint}
+                      priority={index === 0}
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+          <div className="absolute inset-0 bg-black/60" />
           <div className="relative z-10 flex flex-col items-center justify-center text-center text-white p-4">
             <h1 className="font-headline text-6xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary-foreground via-white to-primary-foreground/70 drop-shadow-[0_3px_3px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-top-4 duration-1000">
               GoMoodX
@@ -139,7 +161,7 @@ export default function Home() {
           </div>
         </section>
 
-        <div className="space-y-24 md:space-y-32 py-16 md:py-24 bg-transparent">
+        <div className="space-y-24 md:space-y-32 py-16 md:py-24 bg-background">
         
           <section className="container mx-auto px-4">
             <div className="text-center mb-12">

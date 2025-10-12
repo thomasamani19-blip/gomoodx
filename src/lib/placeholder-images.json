@@ -1,10 +1,34 @@
 {
   "placeholderImages": [
     {
-      "id": "hero-main",
+      "id": "hero-1",
       "description": "Élégance et séduction",
-      "imageUrl": "https://images.unsplash.com/photo-1644083589147-55edf02a5b09?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Ym91ZG9pciUyMHNlbnN1YWx8ZW58MHx8fHwxNzU5NjAxODMzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1644083589147-55edf02a5b09?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Ym91ZG9pciUyMHNlbnN1YWx8ZW58MHx8fHwxNzU5NjAxODMzfDA&ixlib=rb-4.1.0&q=80&w=1920",
       "imageHint": "boudoir sensual"
+    },
+    {
+      "id": "hero-2",
+      "description": "Femme en lingerie sur un lit",
+      "imageUrl": "https://images.unsplash.com/photo-1617933189324-73d611740924?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxzZW5zdWFsJTIwbGluZ2VyaWV8ZW58MHx8fHwxNzU5ODU1MjA3fDA&ixlib=rb-4.1.0&q=80&w=1920",
+      "imageHint": "sensual lingerie"
+    },
+    {
+      "id": "hero-3",
+      "description": "Détail de dentelle sur la peau",
+      "imageUrl": "https://images.unsplash.com/photo-1594911854497-5993721329a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxsYWNlJTIwc2tpbnxlbnwwfHx8fDE3NTk4NTUyNDh8MA&ixlib=rb-4.1.0&q=80&w=1920",
+      "imageHint": "lace skin"
+    },
+    {
+      "id": "hero-4",
+      "description": "Ambiance tamisée avec des néons",
+      "imageUrl": "https://images.unsplash.com/photo-1549392542-a2f0a1b52a1c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxNHx8bmVvbiUyMGJvdWRvaXJ8ZW58MHx8fHwxNzU5ODU1MjkxfDA&ixlib=rb-4.1.0&q=80&w=1920",
+      "imageHint": "neon boudoir"
+    },
+    {
+      "id": "hero-5",
+      "description": "Femme élégante dans une robe de soirée",
+      "imageUrl": "https://images.unsplash.com/photo-1590299849585-587243399b1a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxlbGVnYW50JTIwZXZlbmluZyUyMGRyZXNzfGVufDB8fHx8MTc1OTg1NTM2N3ww&ixlib=rb-4.1.0&q=80&w=1920",
+      "imageHint": "elegant dress"
     }
   ]
 }
