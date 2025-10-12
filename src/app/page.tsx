@@ -98,7 +98,7 @@ export default function Home() {
   return (
     <>
     <AgeGate />
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-black via-black/80 to-background">
       <main className="flex-1">
         <section className="relative h-[90vh] w-full flex items-center justify-center overflow-hidden">
           {heroImage && (
@@ -111,7 +111,7 @@ export default function Home() {
               priority
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-black/60 to-black/30" />
+          <div className="absolute inset-0 bg-black/40" />
           <div className="relative z-10 flex flex-col items-center justify-center text-center text-white p-4">
             <h1 className="font-headline text-6xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary-foreground via-white to-primary-foreground/70 drop-shadow-[0_3px_3px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-top-4 duration-1000">
               GoMoodX
@@ -139,7 +139,7 @@ export default function Home() {
           </div>
         </section>
 
-        <div className="space-y-24 md:space-y-32 py-16 md:py-24 bg-background">
+        <div className="space-y-24 md:space-y-32 py-16 md:py-24 bg-transparent">
         
           <section className="container mx-auto px-4">
             <div className="text-center mb-12">
@@ -227,5 +227,3 @@ export default function Home() {
     </>
   );
 }
-
-    
