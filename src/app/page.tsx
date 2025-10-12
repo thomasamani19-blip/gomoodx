@@ -111,7 +111,7 @@ export default function Home() {
               priority
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-black/50 to-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-black/60 to-black/30" />
           <div className="relative z-10 flex flex-col items-center justify-center text-center text-white p-4">
             <h1 className="font-headline text-6xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary-foreground via-white to-primary-foreground/70 drop-shadow-[0_3px_3px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-top-4 duration-1000">
               GoMoodX
