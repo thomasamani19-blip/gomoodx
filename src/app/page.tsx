@@ -98,7 +98,7 @@ export default function Home() {
   return (
     <>
     <AgeGate />
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col">
       <main className="flex-1">
         <section className="relative h-[90vh] w-full flex items-center justify-center overflow-hidden">
           {heroImage && (
@@ -227,3 +227,5 @@ export default function Home() {
     </>
   );
 }
+
+    
