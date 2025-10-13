@@ -130,4 +130,16 @@ Pour que l'application puisse accéder à la base de données Firestore pendant 
 firebase deploy --only firestore:rules
 ```
 
+## 8. Déploiement
+
+Pour déployer l'application, vous devez d'abord la "builder". Cette commande compile et optimise votre code pour la production.
+
+```bash
+npm run build
+```
+Ensuite, pour déployer sur Firebase :
+```bash
+firebase deploy
+```
+
 Vous êtes maintenant prêt à développer GoMoodX sur Termux !

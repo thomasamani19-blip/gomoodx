@@ -78,7 +78,7 @@ Suivez ces étapes pour lancer le projet en local.
 
 ### 4. Déploiement
 
-Pour déployer votre application sur Firebase Hosting (pour le frontend) et Cloud Functions (pour le backend), suivez les instructions de la documentation Firebase.
+Pour déployer votre application sur Firebase Hosting (pour le frontend) et Cloud Functions (pour le backend), vous devez d'abord "builder" votre application. Cette étape compile et optimise le code pour la production.
 
 1.  **Build de l'application Next.js** :
     ```bash
