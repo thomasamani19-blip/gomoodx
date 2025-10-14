@@ -133,7 +133,7 @@ const CreatorProducts = ({ creatorId, name }: { creatorId: string, name: string 
                             <div className="p-3">
                                 <h4 className="font-semibold truncate">{product.title}</h4>
                                 <div className="flex items-center justify-between mt-2">
-                                    <span className="font-bold text-primary">{product.price} €</span>
+                                    <span className="font-bold text-primary">{product.price > 0 ? `${product.price} €` : 'Gratuit'}</span>
                                 </div>
                             </div>
                         </Link>
@@ -225,6 +225,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
     const { toast } = useToast();
     const isFavorite = currentUser?.favorites?.includes(user.id);
     const isAdmin = currentUser?.role === 'founder' || currentUser?.role === 'administrateur';
+    const isProducer = user.role === 'partenaire' && user.partnerType === 'producer';
     
     const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null, isFree?: boolean, price?: number }>({ show: false, type: null, isFree: false, price: 0 });
     const [showContactPassDialog, setShowContactPassDialog] = useState(false);
@@ -271,7 +272,6 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         let isFree = false;
 
         if (type === 'voice') {
-            // Check for active confirmed reservation first
             const reservationsQuery = query(
                 collection(firestore, 'reservations'),
                 where('status', '==', 'confirmed'),
@@ -288,7 +288,6 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
             if (hasActiveReservation) {
                 isFree = true;
             } else {
-                // If no active reservation, check daily quota
                 const FREE_QUOTA_MINUTES = 60;
                 const lastReset = currentUser.dailyVoiceCallQuota?.lastReset.toDate();
                 const now = new Date();
@@ -344,7 +343,6 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
             router.push('/connexion');
             return;
         }
-        // Logic for free contact
         router.push(`/messagerie?contact=${user.id}`);
     };
 
@@ -446,7 +444,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                             <MessageCircle className="mr-2 h-4 w-4" />
                             Message
                         </Button>
-                         {(user.role === 'escorte' || user.partnerType === 'producer') && (
+                         {(user.role === 'escorte') && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline">
@@ -475,7 +473,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                     {isAdmin && !isOwnProfile && <AdminInfoCard userId={user.id} />}
 
                     <Card>
-                        <CardHeader><CardTitle>À propos de moi</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>À propos</CardTitle></CardHeader>
                         <CardContent><p className="text-muted-foreground whitespace-pre-wrap">{user.bio || "Aucune biographie."}</p></CardContent>
                     </Card>
 
@@ -493,9 +491,9 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                         </Card>
                     )}
 
-                    <CreatorAnnonces creatorId={user.id} name={user.displayName} />
+                    {user.role === 'escorte' && <CreatorAnnonces creatorId={user.id} name={user.displayName} />}
 
-                    <CreatorProducts creatorId={user.id} name={user.displayName} />
+                    {(user.role === 'escorte' || isProducer) && <CreatorProducts creatorId={user.id} name={user.displayName} />}
                     
                     <Card>
                         <CardHeader><CardTitle>Galerie</CardTitle></CardHeader>
@@ -515,7 +513,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                             )}
                         </CardContent>
                     </Card>
-                    <SuggestedProfiles currentUserId={user.id} />
+                    {user.role === 'escorte' && <SuggestedProfiles currentUserId={user.id} />}
                </div>
             </div>
         </div>
@@ -644,7 +642,6 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
     return <PageHeader title="Profil non trouvé" description="Cet utilisateur n'existe pas." />;
   }
 
-  // Handle partners redirecting to their specific profile page
   if (user.role === 'partenaire' && user.partnerType === 'establishment') {
       router.replace(`/partenaire/${user.id}`);
       return (
@@ -664,6 +661,5 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
     return <MemberProfile user={user} isOwnProfile={isOwnProfile} />;
   }
   
-  // Default to creator/producer profile view
   return <CreatorProfile user={user} isOwnProfile={isOwnProfile} />;
 }
