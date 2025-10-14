@@ -1,4 +1,3 @@
-
 import type { Timestamp } from 'firebase/firestore';
 
 // Main User Roles
@@ -435,7 +434,7 @@ export interface Settings {
       referralBonus: number;
     };
     platformPlans?: {
-        [key in Exclude<PlatformSubscriptionType, 'gratuit'>]: Omit<PlatformPlan, 'id'>
+        [key in Exclude<PlatformSubscriptionType, 'gratuit'>]: Omit<PlatformPlan, 'id' | 'features'>
     }
 }
 

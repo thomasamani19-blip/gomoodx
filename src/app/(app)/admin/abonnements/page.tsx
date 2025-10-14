@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
@@ -19,12 +18,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { doc } from 'firebase/firestore';
 import type { Settings } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 
 const planSchema = z.object({
     name: z.string().min(1, "Le nom est requis."),
     price: z.coerce.number().min(0, "Le prix doit être positif."),
     description: z.string().min(1, "La description est requise."),
     features: z.array(z.string()).optional(),
+    isPopular: z.boolean().default(false),
 });
 
 const settingsSchema = z.object({
@@ -52,10 +53,10 @@ export default function AdminAbonnementsPage() {
         resolver: zodResolver(settingsSchema),
         defaultValues: {
             platformPlans: {
-                essential: { name: 'Essentiel', price: 9.99, description: '', features: [] },
-                advanced: { name: 'Avancé', price: 24.99, description: '', features: [] },
-                premium: { name: 'Premium', price: 49.99, description: '', features: [] },
-                elite: { name: 'Élite', price: 99.99, description: '', features: [] },
+                essential: { name: 'Essentiel', price: 9.99, description: '', features: [], isPopular: false },
+                advanced: { name: 'Avancé', price: 24.99, description: '', features: [], isPopular: true },
+                premium: { name: 'Premium', price: 49.99, description: '', features: [], isPopular: false },
+                elite: { name: 'Élite', price: 99.99, description: '', features: [], isPopular: false },
             }
         },
     });
@@ -139,6 +140,15 @@ export default function AdminAbonnementsPage() {
                                 <div className="space-y-2">
                                     <Label>Description</Label>
                                     <Textarea {...form.register(`platformPlans.${planId}.description`)} rows={2} />
+                                </div>
+                                 <div className="flex items-center space-x-2">
+                                    <Switch
+                                        id={`popular-${planId}`}
+                                        {...form.register(`platformPlans.${planId}.isPopular`)}
+                                        checked={form.watch(`platformPlans.${planId}.isPopular`)}
+                                        onCheckedChange={(checked) => form.setValue(`platformPlans.${planId}.isPopular`, checked)}
+                                    />
+                                    <Label htmlFor={`popular-${planId}`}>Marquer comme "Populaire"</Label>
                                 </div>
                             </CardContent>
                         </Card>
