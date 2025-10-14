@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, FieldValue, doc } from 'firebase-admin/firestore';
 import Kkiapay from 'kkiapay';
-import type { User, Settings } from '@/lib/types';
+import type { User, Settings, Transaction } from '@/lib/types';
 
 // Initialize Firebase Admin SDK
 try {
@@ -97,6 +97,9 @@ export async function POST(request: Request) {
                 currency: 'EUR',
                 createdAt: FieldValue.serverTimestamp(),
                 updatedAt: FieldValue.serverTimestamp(),
+                totalEarned: 0,
+                totalSpent: 0,
+                status: 'active'
             });
         } else {
             t.update(walletRef, {
@@ -110,10 +113,14 @@ export async function POST(request: Request) {
             // Handle referral reward
             if (userData.referredBy) {
                 const referrerRef = db.collection('users').doc(userData.referredBy);
-                const referrerWalletRef = db.collection('wallets').doc(userData.referredBy);
-
-                t.update(referrerRef, { rewardPoints: FieldValue.increment(REFERRAL_BONUS_POINTS), referralsCount: FieldValue.increment(1) });
                 
+                t.update(referrerRef, { 
+                    rewardPoints: FieldValue.increment(REFERRAL_BONUS_POINTS), 
+                    referralsCount: FieldValue.increment(1) 
+                });
+
+                // Add a transaction to the referrer's wallet history for clarity
+                const referrerWalletRef = db.collection('wallets').doc(userData.referredBy);
                 const rewardTxRef = referrerWalletRef.collection('transactions').doc();
                 t.set(rewardTxRef, {
                   amount: REFERRAL_BONUS_POINTS,
@@ -121,8 +128,8 @@ export async function POST(request: Request) {
                   description: `Récompense de parrainage: ${userData.displayName}`,
                   status: 'success',
                   createdAt: FieldValue.serverTimestamp(),
-                  reference: userId,
-                });
+                  reference: userId, // Reference to the user who made the deposit
+                } as Omit<Transaction, 'id' | 'path'>);
             }
         }
         
