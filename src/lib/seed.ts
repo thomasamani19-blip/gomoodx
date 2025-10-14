@@ -164,7 +164,7 @@ async function seedDatabase() {
                     status: 'active',
                     createdAt: Timestamp.now(),
                     updatedAt: Timestamp.now(),
-                    rewardPoints: 0, // Set to 0 to avoid confusion
+                    rewardPoints: 0,
                     referralsCount: 0,
                     isVerified: true,
                     onlineStatus: 'offline',
