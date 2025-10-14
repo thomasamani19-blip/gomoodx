@@ -73,8 +73,8 @@ export async function POST(request: Request) {
             const commissionRate = (settingsDoc.data() as Settings)?.platformCommissionRate || 0;
             
             // Logique de commission
-            if (callData.type === 'video' && receiverUser.role === 'escorte' && callData.callerName !== 'Partenaire Producteur') { // Condition
-                // Appel vidéo d'un client à une escorte: commission partagée
+            if (callData.type === 'video' && receiverUser.role === 'escorte') {
+                // Appel vidéo à une escorte: commission pour la plateforme
                 const commissionAmount = totalCost * commissionRate;
                 const creatorAmount = totalCost - commissionAmount;
 
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
                 } as Omit<Transaction, 'id'>);
 
             } else {
-                 // Autres cas (appel vocal payant, appel entre escorte et producteur, etc.): 100% pour la plateforme
+                 // Autres cas (appel vocal payant, appel vidéo à un producteur, etc.): 100% pour la plateforme
                  const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
                  t.update(platformWalletRef, { balance: FieldValue.increment(totalCost), totalEarned: FieldValue.increment(totalCost) });
                  const platformTxRef = platformWalletRef.collection('transactions').doc();

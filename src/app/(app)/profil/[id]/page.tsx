@@ -277,7 +277,8 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                                    (currentUser.role === 'escorte' && user.role === 'partenaire' && user.partnerType === 'producer');
 
         if (isCollaborationCall) {
-            price = globalSettings?.callRates?.videoToProducerPerMinute || 8; // Default to a specific rate for these calls.
+            // Collaboration calls are not free
+            price = globalSettings?.callRates?.videoToProducerPerMinute || 8; 
         } else if (type === 'voice') {
              const reservationsQuery = query(
                 collection(firestore, 'reservations'),
@@ -397,9 +398,9 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         let totalPrice = tier.price * subscriptionDuration;
         let discount = 0;
         
-        if (d.duration === 3 && tier.discounts?.quarterly) discount = tier.discounts.quarterly;
-        else if (d.duration === 6 && tier.discounts?.semiAnnual) discount = tier.discounts.semiAnnual;
-        else if (d.duration === 12 && tier.discounts?.annual) discount = tier.discounts.annual;
+        if (subscriptionDuration === 3 && tier.discounts?.quarterly) discount = tier.discounts.quarterly;
+        else if (subscriptionDuration === 6 && tier.discounts?.semiAnnual) discount = tier.discounts.semiAnnual;
+        else if (subscriptionDuration === 12 && tier.discounts?.annual) discount = tier.discounts.annual;
         
         if (discount > 0) {
             totalPrice = totalPrice * (1 - discount / 100);
