@@ -72,8 +72,9 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     
     const isCurrentUserTheMember = currentUser?.id === reservation?.memberId;
     const isCurrentUserTheCreator = currentUser?.id === reservation?.creatorId;
+    const isCurrentUserAnInvitedEscort = reservation?.escorts?.some(e => e.id === currentUser?.id) || false;
     
-    const isUserAllowedToView = isCurrentUserTheMember || isCurrentUserTheCreator;
+    const isUserAllowedToView = isCurrentUserTheMember || isCurrentUserTheCreator || isCurrentUserAnInvitedEscort;
 
     const handleStatusUpdate = async (newStatus: ConfirmationStatus | ReservationStatus) => {
         if (!currentUser || !reservation) return;
@@ -114,6 +115,26 @@ export default function ReservationDetailPage({ params }: { params: { id: string
             setIsUpdatingStatus(false);
         }
     };
+    
+    const handleEscortInvitationResponse = async (status: 'confirmed' | 'declined') => {
+        if (!currentUser || !reservation) return;
+        setIsUpdatingStatus(true);
+        try {
+             const response = await fetch('/api/reservations/update-escort-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reservationId: reservation.id, escortId: currentUser.id, status })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message);
+
+            toast({ title: "Réponse envoyée", description: result.message });
+        } catch (error: any) {
+             toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsUpdatingStatus(false);
+        }
+    }
 
 
     if (loading) {
@@ -162,16 +183,12 @@ export default function ReservationDetailPage({ params }: { params: { id: string
             }
         }
         
-        if (reservation.status === 'confirmed') {
-            // ... Presence confirmation logic will go here
-        }
-
         return null;
     }
 
     const memberHasConfirmed = reservation.memberPresenceConfirmed;
-    const creatorHasConfirmed = reservation.escortConfirmations[reservation.creatorId]?.presenceConfirmed;
-    const currentUserHasConfirmed = isCurrentUserTheMember ? memberHasConfirmed : creatorHasConfirmed;
+    const creatorHasConfirmed = reservation.establishmentPresenceConfirmed;
+    const currentUserHasConfirmed = isCurrentUserTheMember ? memberHasConfirmed : isCurrentUserTheCreator ? creatorHasConfirmed : false;
 
     return (
     <TooltipProvider>
@@ -222,6 +239,15 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                     <p className="text-sm text-muted-foreground">{reservation.amount.toFixed(2)} € (incl. {reservation.fee}€ de frais)</p>
                                 </div>
                             </div>
+                            {reservation.roomType && (
+                                <div className="flex items-start gap-3">
+                                <BedDouble className="h-5 w-5 text-muted-foreground mt-1" />
+                                <div>
+                                    <h4 className="font-medium">Type de chambre</h4>
+                                    <p className="text-sm text-muted-foreground capitalize">{reservation.roomType}</p>
+                                </div>
+                            </div>
+                            )}
                             {reservation.notes && (
                                 <div className="flex items-start gap-3 sm:col-span-2">
                                     <HelpCircle className="h-5 w-5 text-muted-foreground mt-1" />
@@ -250,18 +276,18 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                      <span className="font-semibold">{isCurrentUserTheCreator ? 'Votre présence' : `Présence de ${otherParty.displayName}`}</span>
                                     {creatorHasConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
                                 </div>
+                                {reservation.escorts?.map(escort => {
+                                    const hasConfirmed = reservation.escortConfirmations[escort.id]?.presenceConfirmed;
+                                    return (
+                                         <div key={escort.id} className={cn("flex items-center justify-between p-3 rounded-lg", hasConfirmed ? "bg-green-500/10 text-green-700" : "bg-muted")}>
+                                            <span className="font-semibold">Présence de {escort.name}</span>
+                                            {hasConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
+                                        </div>
+                                    )
+                                })}
                             </CardContent>
                              <CardFooter className="flex-col items-start gap-4">
-                                {memberHasConfirmed !== creatorHasConfirmed && (
-                                    <Alert>
-                                        <Info className="h-4 w-4" />
-                                        <AlertTitle>En attente de l'autre participant</AlertTitle>
-                                        <AlertDescription>
-                                            N'oubliez pas de demander à <strong>{otherParty.displayName}</strong> de confirmer sa présence également pour finaliser le rendez-vous.
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
-                               <p className="text-xs text-muted-foreground">Lorsque les deux participants auront confirmé leur présence, les fonds seront transférés au créateur.</p>
+                                <p className="text-xs text-muted-foreground">Lorsque tous les participants auront confirmé leur présence, la réservation sera finalisée.</p>
                                <Button onClick={handlePresenceConfirm} disabled={isUpdatingStatus || currentUserHasConfirmed}>
                                  {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4" />}
                                  {currentUserHasConfirmed ? 'Votre présence est confirmée' : 'Confirmer ma présence sur les lieux'}
@@ -275,16 +301,49 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                     <Card>
                          <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                Participant
+                                Participants
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                             <Link href={`/profil/${otherParty.id}`} className="flex items-center gap-4 p-2 rounded-md hover:bg-accent">
-                                <Avatar className="h-12 w-12"><AvatarImage src={otherParty.profileImage} /><AvatarFallback>{otherParty.displayName.charAt(0)}</AvatarFallback></Avatar>
-                                <div><p className="font-bold">{otherParty.displayName}</p><p className="text-xs text-muted-foreground capitalize">{otherParty.role}</p></div>
+                        <CardContent className="space-y-4">
+                             <Link href={`/profil/${reservation.memberId}`} className="flex items-center gap-4 p-2 rounded-md hover:bg-accent">
+                                <Avatar className="h-12 w-12"><AvatarFallback>Client</AvatarFallback></Avatar>
+                                <div><p className="font-bold">{isCurrentUserTheMember ? 'Vous (Client)' : `Client`}</p></div>
+                            </Link>
+                             <Link href={`/profil/${reservation.creatorId}`} className="flex items-center gap-4 p-2 rounded-md hover:bg-accent">
+                                <Avatar className="h-12 w-12"><AvatarImage src={isCurrentUserTheCreator ? currentUser?.profileImage : otherParty.profileImage} /><AvatarFallback>{otherParty.displayName.charAt(0)}</AvatarFallback></Avatar>
+                                <div><p className="font-bold">{isCurrentUserTheCreator ? 'Vous (Établissement)' : otherParty.displayName}</p></div>
                             </Link>
                         </CardContent>
                     </Card>
+
+                    {reservation.escorts && reservation.escorts.length > 0 && (
+                        <Card>
+                            <CardHeader><CardTitle>Escortes Invitées</CardTitle></CardHeader>
+                            <CardContent className="space-y-3">
+                                {reservation.escorts.map(escort => {
+                                    const status = reservation.escortConfirmations[escort.id]?.status || 'pending';
+                                    const isSelf = currentUser?.id === escort.id;
+
+                                    return (
+                                        <div key={escort.id} className="flex items-center justify-between">
+                                            <Link href={`/profil/${escort.id}`} className="flex items-center gap-2 hover:underline">
+                                                <Avatar className="h-8 w-8"><AvatarImage src={escort.profileImage} /><AvatarFallback>{escort.name.charAt(0)}</AvatarFallback></Avatar>
+                                                <span className="text-sm font-medium">{escort.name} {isSelf && '(Vous)'}</span>
+                                            </Link>
+                                            <Badge variant={confirmationStatusVariantMap[status]}>{confirmationStatusTextMap[status]}</Badge>
+                                        </div>
+                                    )
+                                })}
+                                {isCurrentUserAnInvitedEscort && reservation.escortConfirmations[currentUser.id].status === 'pending' && (
+                                     <div className="flex gap-2 pt-4 border-t">
+                                        <Button size="sm" onClick={() => handleEscortInvitationResponse('confirmed')} disabled={isUpdatingStatus}>Accepter</Button>
+                                        <Button size="sm" variant="destructive" onClick={() => handleEscortInvitationResponse('declined')} disabled={isUpdatingStatus}>Refuser</Button>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
+
                      <Card>
                         <CardHeader><CardTitle>Actions</CardTitle></CardHeader>
                         <CardContent className="flex flex-col gap-2">

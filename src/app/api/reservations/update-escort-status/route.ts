@@ -45,6 +45,8 @@ export async function POST(request: Request) {
                 [updatePath]: status,
                 [confirmationTimePath]: Timestamp.now()
             });
+
+            // TODO: In a real app, if all escorts decline, the reservation might be automatically cancelled and refunded.
         });
         
         return NextResponse.json({ status: 'success', message: `Invitation ${status === 'confirmed' ? 'acceptée' : 'refusée'}.` });

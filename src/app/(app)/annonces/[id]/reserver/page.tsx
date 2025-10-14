@@ -108,7 +108,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
         reservationDateTime.setHours(parseInt(hours), parseInt(minutes));
 
         try {
-            const response = await fetch('/api/reservations/create', {
+            const response = await fetch('/api/reservations/create-establishment', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
