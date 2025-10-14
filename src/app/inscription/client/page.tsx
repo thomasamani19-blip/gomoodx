@@ -121,8 +121,8 @@ export default function InscriptionClientPage() {
                     </div>
                 </div>
                  <div className="grid gap-2">
-                    <Label htmlFor="referralCode">Code de parrainage (Optionnel)</Label>
-                    <Input id="referralCode" name="referredBy" placeholder="Code d'un ami" />
+                    <Label htmlFor="referredBy">Code de parrainage (Optionnel)</Label>
+                    <Input id="referredBy" name="referredBy" placeholder="Code d'un ami" />
                 </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">

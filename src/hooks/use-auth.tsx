@@ -171,7 +171,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login, 
       signup,
       logout, 
-    }), [user, firebaseUser, loading, login, signup, logout]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }), [user, firebaseUser, loading]);
 
   return (
     <AuthContext.Provider value={value}>
