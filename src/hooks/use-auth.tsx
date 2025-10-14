@@ -79,14 +79,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (formData: Record<string, any>) => {
     const { email, password, role, ...profileData } = formData;
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const { user: fbUser } = userCredential;
     
-    const batch = writeBatch(firestore);
-
+    // For partner requests, we don't create an auth user immediately.
     if (role === 'partenaire') {
         const partnerRequestRef = doc(collection(firestore, 'partnerRequests'));
-        batch.set(partnerRequestRef, {
+        await setDoc(partnerRequestRef, {
             type: profileData.partnerType as PartnerType,
             companyName: profileData.companyName,
             registerNumber: profileData.registerNumber || '',
@@ -102,12 +99,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             status: 'pending',
             createdAt: serverTimestamp(),
         });
-        // Partners don't get a user doc immediately.
-        // We sign them out after creating the request.
-        await signOut(auth);
-        await batch.commit();
         return; // End here for partners
     }
+    
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const { user: fbUser } = userCredential;
+    
+    const batch = writeBatch(firestore);
 
     // Create user document for non-partners
     const userDocRef = doc(firestore, 'users', fbUser.uid);

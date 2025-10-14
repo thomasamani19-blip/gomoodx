@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button"
@@ -121,7 +122,7 @@ export default function InscriptionClientPage() {
                 </div>
                  <div className="grid gap-2">
                     <Label htmlFor="referralCode">Code de parrainage (Optionnel)</Label>
-                    <Input id="referralCode" name="referralCode" placeholder="Code d'un ami" />
+                    <Input id="referralCode" name="referredBy" placeholder="Code d'un ami" />
                 </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">

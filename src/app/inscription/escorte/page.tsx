@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "@/components/ui/button"
@@ -130,7 +131,7 @@ export default function InscriptionEscortePage() {
                 </div>
                  <div className="grid gap-2">
                     <Label htmlFor="referralCode">Code de parrainage (Optionnel)</Label>
-                    <Input id="referralCode" name="referralCode" placeholder="Code d'un ami" />
+                    <Input id="referralCode" name="referredBy" placeholder="Code d'un ami" />
                 </div>
                 <CardDescription className="text-xs">
                     Votre nom complet n'est utilisé que pour la vérification et ne sera jamais public. Une vérification d'identité sera requise.
