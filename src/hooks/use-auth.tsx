@@ -1,91 +1,170 @@
 
 'use client';
 
-import { createContext, useContext, ReactNode, useMemo } from 'react';
-import type { User, UserRole, PlatformSubscriptionType } from '@/lib/types';
+import { createContext, useContext, ReactNode, useMemo, useEffect, useState } from 'react';
+import type { User, PartnerType, UserRole } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { Timestamp } from 'firebase/firestore';
-
-// Mocked Founder User for unrestricted development access
-const MOCKED_USER: User = {
-  id: 'dev_founder_id',
-  displayName: 'Founder (Dev)',
-  email: 'founder@gomoodx.com',
-  role: 'founder',
-  status: 'active',
-  isVerified: true,
-  createdAt: Timestamp.now(),
-  updatedAt: Timestamp.now(),
-  rewardPoints: 9999,
-  referralCode: 'DEVMODE',
-  referralsCount: 42,
-  onlineStatus: 'online',
-  profileImage: 'https://picsum.photos/seed/founder/400/400',
-  bannerImage: 'https://picsum.photos/seed/founder-banner/1200/400',
-  bio: 'Accès développeur avec tous les droits.',
-  hasMadeFirstDeposit: true,
-  subscription: {
-    type: 'elite',
-    status: 'active',
-    startDate: Timestamp.now(),
-    endDate: Timestamp.fromMillis(Date.now() + 365 * 24 * 60 * 60 * 1000),
-  },
-  subscriptionSettings: {
-    enabled: true,
-    tiers: {
-      tier1: { id: 'tier1', name: 'Bronze', price: 10, description: 'Accès de base', isActive: true },
-      tier2: { id: 'tier2', name: 'Argent', price: 25, description: 'Accès exclusif', isActive: true },
-      tier3: { id: 'tier3', name: 'Or', price: 50, description: 'Accès VIP', isActive: true },
-    }
-  },
-  rates: {
-    escortPerHour: 200,
-    escortOvernight: 1200,
-    videoCallPerMinute: 10,
-  }
-};
-
+import { 
+    getAuth, 
+    onAuthStateChanged, 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, 
+    signOut,
+    type User as FirebaseUser
+} from 'firebase/auth';
+import { 
+    getFirestore, 
+    doc, 
+    setDoc, 
+    serverTimestamp,
+    onSnapshot,
+    writeBatch
+} from 'firebase/firestore';
+import { initializeFirebase } from '@/firebase';
 
 interface AuthContextType {
   user: User | null;
-  firebaseUser: any | null; // Mocking FirebaseUser as well
+  firebaseUser: FirebaseUser | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
-  signup: (formData: any) => Promise<any>;
+  signup: (formData: Record<string, any>) => Promise<any>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  const { auth, firestore } = initializeFirebase();
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (fbUser) => {
+        setFirebaseUser(fbUser);
+        if (fbUser) {
+            const userDocRef = doc(firestore, 'users', fbUser.uid);
+            const unsubscribeFirestore = onSnapshot(userDocRef, (doc) => {
+                if (doc.exists()) {
+                    setUser({ id: doc.id, ...doc.data() } as User);
+                } else {
+                    setUser(null);
+                }
+                setLoading(false);
+            }, (error) => {
+                console.error("Error fetching user document:", error);
+                setUser(null);
+                setLoading(false);
+            });
+            return () => unsubscribeFirestore();
+        } else {
+            setUser(null);
+            setLoading(false);
+        }
+    });
+
+    return () => unsubscribeAuth();
+  }, [auth, firestore]);
+
+
   const login = async (email: string, pass: string) => {
-    console.log('Login attempt (dev mode, no action):', email);
-    // In dev mode, we just stay on the dashboard
-    router.push('/dashboard');
+    await signInWithEmailAndPassword(auth, email, pass);
+    // onAuthStateChanged will handle the rest
   };
 
-  const signup = async (formData: any) => {
-    console.log('Signup attempt (dev mode, no action):', formData);
-    // In dev mode, we just stay on the dashboard
-    router.push('/dashboard');
-    return MOCKED_USER;
+  const signup = async (formData: Record<string, any>) => {
+    const { email, password, role, ...profileData } = formData;
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const { user: fbUser } = userCredential;
+    
+    const batch = writeBatch(firestore);
+
+    // Create user document
+    const userDocRef = doc(firestore, 'users', fbUser.uid);
+    const newUser: Partial<User> = {
+      displayName: profileData.displayName,
+      email: fbUser.email,
+      role: role as UserRole,
+      status: role === 'escorte' || role === 'partenaire' ? 'pending' : 'active',
+      verificationStatus: role === 'escorte' ? 'pending' : undefined,
+      createdAt: serverTimestamp() as any,
+      updatedAt: serverTimestamp() as any,
+      isVerified: false,
+      onlineStatus: 'offline',
+      rewardPoints: 0,
+      referralsCount: 0,
+      referralCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
+      profileImage: `https://picsum.photos/seed/${fbUser.uid}/400/400`,
+      ...profileData,
+    };
+    
+    if (role === 'partenaire') {
+        const partnerRequestRef = doc(collection(firestore, 'partnerRequests'));
+        batch.set(partnerRequestRef, {
+            type: profileData.partnerType as PartnerType,
+            companyName: profileData.companyName,
+            registerNumber: profileData.registerNumber,
+            country: profileData.country,
+            city: profileData.city,
+            address: profileData.address,
+            companyEmail: profileData.companyEmail,
+            phone: profileData.phone,
+            website: profileData.website,
+            description: profileData.description,
+            managerName: profileData.managerName,
+            managerEmail: profileData.managerEmail,
+            status: 'pending',
+            createdAt: serverTimestamp(),
+        });
+        // Partners don't get a user doc immediately, just the request.
+        // We'll sign them out after creating the request.
+        await signOut(auth);
+        await batch.commit();
+        return; // End here for partners
+    }
+
+    if (profileData.referralCode) {
+        // Find user with this referral code
+        // This is a simplified search. For production, use a more robust method like a dedicated collection.
+        // const q = query(collection(firestore, 'users'), where('referralCode', '==', profileData.referralCode), limit(1));
+        // const querySnapshot = await getDocs(q);
+        // if (!querySnapshot.empty) {
+        //     newUser.referredBy = querySnapshot.docs[0].id;
+        // }
+    }
+    
+    batch.set(userDocRef, newUser, { merge: true });
+
+    // Create wallet for the new user
+    const walletRef = doc(firestore, 'wallets', fbUser.uid);
+    batch.set(walletRef, {
+      balance: 0,
+      currency: 'EUR',
+      totalEarned: 0,
+      totalSpent: 0,
+      status: 'active',
+      createdAt: serverTimestamp(),
+    });
+    
+    await batch.commit();
+    // onAuthStateChanged will handle setting the user state.
   };
   
-  const logout = () => {
-    console.log('Logout attempt (dev mode, no action)');
-    // In dev mode, logout does nothing to keep the session
+  const logout = async () => {
+    await signOut(auth);
+    router.push('/');
   };
 
   const value = useMemo(() => ({ 
-      user: MOCKED_USER, 
-      firebaseUser: { uid: MOCKED_USER.id, email: MOCKED_USER.email }, // Mock firebase user
-      loading: false, // Never in loading state in dev mode
+      user, 
+      firebaseUser,
+      loading,
       login, 
       signup,
       logout, 
-    }), [router]);
+    }), [user, firebaseUser, loading, router]);
 
   return (
     <AuthContext.Provider value={value}>
