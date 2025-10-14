@@ -1,5 +1,3 @@
-
-
 // /src/app/api/calls/billing/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -70,7 +68,8 @@ export async function POST(request: Request) {
             const receiverUser = receiverUserDoc.data() as User;
             
             const settingsDoc = await t.get(settingsRef);
-            const commissionRate = (settingsDoc.data() as Settings)?.platformCommissionRate || 0;
+            const settings = (settingsDoc.data() as Settings);
+            const commissionRate = settings?.platformCommissionRate || 0.20;
             
             // Logique de commission
             if (callData.type === 'video' && receiverUser.role === 'escorte') {
@@ -97,7 +96,7 @@ export async function POST(request: Request) {
                 } as Omit<Transaction, 'id'>);
 
             } else {
-                 // Autres cas (appel vocal payant, appel vidéo à un producteur, etc.): 100% pour la plateforme
+                 // Autres cas (appel vocal payant, appel vidéo à un producteur): 100% pour la plateforme
                  const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
                  t.update(platformWalletRef, { balance: FieldValue.increment(totalCost), totalEarned: FieldValue.increment(totalCost) });
                  const platformTxRef = platformWalletRef.collection('transactions').doc();

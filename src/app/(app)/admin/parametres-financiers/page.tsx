@@ -28,7 +28,10 @@ const settingsSchema = z.object({
   callRates: z.object({
     voicePerMinute: z.coerce.number().min(0),
     videoToProducerPerMinute: z.coerce.number().min(0),
-  })
+  }),
+  passContact: z.object({
+      price: z.coerce.number().min(0),
+  }),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -55,6 +58,9 @@ export default function AdminFinancialSettingsPage() {
             callRates: {
                 voicePerMinute: 1.5,
                 videoToProducerPerMinute: 8,
+            },
+            passContact: {
+                price: 5
             }
         },
     });
@@ -76,7 +82,8 @@ export default function AdminFinancialSettingsPage() {
                 welcomeBonusAmount: settings.welcomeBonusAmount || 5,
                 withdrawalMinAmount: settings.withdrawalMinAmount || 50,
                 withdrawalMaxAmount: settings.withdrawalMaxAmount || 5000,
-                callRates: settings.callRates || { voicePerMinute: 1.5, videoToProducerPerMinute: 8 }
+                callRates: settings.callRates || { voicePerMinute: 1.5, videoToProducerPerMinute: 8 },
+                passContact: settings.passContact || { price: 5 }
             });
         }
     }, [settings, form]);
@@ -147,6 +154,14 @@ export default function AdminFinancialSettingsPage() {
                                     <Input id="platformFee" type="number" className="pl-8" {...form.register('platformFee')} />
                                 </div>
                                 {form.formState.errors.platformFee && <p className="text-sm text-destructive">{form.formState.errors.platformFee.message}</p>}
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="passContactPrice">Prix du Pass Contact (€)</Label>
+                                <div className="relative">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input id="passContactPrice" type="number" className="pl-8" {...form.register('passContact.price')} />
+                                </div>
+                                {form.formState.errors.passContact?.price && <p className="text-sm text-destructive">{form.formState.errors.passContact.price.message}</p>}
                             </div>
                              <Alert>
                                 <Info className="h-4 w-4" />

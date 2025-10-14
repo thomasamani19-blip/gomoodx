@@ -58,6 +58,12 @@ export async function POST(request: Request) {
                 }
             }
         }
+        
+        if (newSettings.passContact) {
+            if(typeof newSettings.passContact.price === 'number' && newSettings.passContact.price >= 0) {
+                updateData['passContact.price'] = newSettings.passContact.price;
+            }
+        }
 
         if (typeof newSettings.platformCommissionRate === 'number') {
             updateData.platformCommissionRate = newSettings.platformCommissionRate;
@@ -73,6 +79,9 @@ export async function POST(request: Request) {
         }
          if (typeof newSettings.withdrawalMaxAmount === 'number') {
             updateData.withdrawalMaxAmount = newSettings.withdrawalMaxAmount;
+        }
+         if (newSettings.platformPlans) {
+            updateData.platformPlans = newSettings.platformPlans;
         }
 
         if(Object.keys(updateData).length === 0) {

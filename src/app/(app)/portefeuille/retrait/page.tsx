@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -139,7 +138,7 @@ export default function RetraitPage() {
                     <Info className="h-4 w-4" />
                     <AlertTitle>Information de Paiement</AlertTitle>
                     <AlertDescription>
-                        Les fonds seront envoyés sur le dernier moyen de paiement que vous avez utilisé pour un dépôt (Flutterwave, KkiaPay, etc.). Les délais de traitement peuvent varier.
+                        Les fonds seront envoyés sur le moyen de paiement que vous avez configuré dans votre profil. Les délais de traitement peuvent varier.
                     </AlertDescription>
                 </Alert>
             </CardContent>
