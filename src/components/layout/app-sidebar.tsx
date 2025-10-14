@@ -164,7 +164,6 @@ export function AppSidebar() {
       case 'partenaire':
         return renderNavItems(partenaireNav);
       case 'founder':
-        return renderNavItems(adminNav);
       case 'administrateur':
         return renderNavItems(adminNav);
       case 'moderator':

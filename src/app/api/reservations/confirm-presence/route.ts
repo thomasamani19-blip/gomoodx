@@ -34,29 +34,46 @@ export async function POST(request: Request) {
 
             const isMember = reservation.memberId === userId;
             const isCreator = reservation.creatorId === userId;
+            const isInvitedEscort = reservation.escorts?.some(e => e.id === userId);
 
-            if (!isMember && !isCreator) {
+
+            if (!isMember && !isCreator && !isInvitedEscort) {
                 throw new Error("Action non autorisée.");
             }
+            
+            let allParticipantsConfirmed = false;
 
             // Update presence status
-            let memberConfirmed = reservation.memberPresenceConfirmed;
-            let creatorConfirmed = reservation.escortConfirmations[reservation.creatorId]?.presenceConfirmed;
-
             if (isMember) {
                 if (reservation.memberPresenceConfirmed) throw new Error("Vous avez déjà confirmé votre présence.");
                 t.update(reservationRef, { memberPresenceConfirmed: true });
-                memberConfirmed = true;
             }
 
             if (isCreator) {
-                if (reservation.escortConfirmations[reservation.creatorId]?.presenceConfirmed) throw new Error("Vous avez déjà confirmé votre présence.");
-                t.update(reservationRef, { [`escortConfirmations.${userId}.presenceConfirmed`]: true });
-                creatorConfirmed = true;
+                if (reservation.establishmentPresenceConfirmed) throw new Error("Vous avez déjà confirmé votre présence.");
+                t.update(reservationRef, { establishmentPresenceConfirmed: true });
+            }
+            
+            if (isInvitedEscort) {
+                 if (reservation.escortConfirmations[userId]?.presenceConfirmed) throw new Error("Vous avez déjà confirmé votre présence.");
+                 const updatePath = `escortConfirmations.${userId}.presenceConfirmed`;
+                 t.update(reservationRef, { [updatePath]: true });
             }
 
-            // If both parties have now confirmed, complete the transaction
-            if (memberConfirmed && creatorConfirmed) {
+            // Check if all participants have now confirmed
+            const updatedReservationDoc = await t.get(reservationRef); // Re-fetch to get updated data within transaction
+            const updatedReservation = updatedReservationDoc.data() as Reservation;
+
+            const allEscortsConfirmed = updatedReservation.escorts?.every(e => updatedReservation.escortConfirmations[e.id]?.presenceConfirmed) ?? true;
+            
+            if (updatedReservation.creatorId) { // For establishment booking
+                 allParticipantsConfirmed = updatedReservation.memberPresenceConfirmed && updatedReservation.establishmentPresenceConfirmed && allEscortsConfirmed;
+            } else { // For direct escort booking
+                 allParticipantsConfirmed = updatedReservation.memberPresenceConfirmed && allEscortsConfirmed; // Assuming creator is also an escort here
+            }
+
+            // If all parties have now confirmed, complete the transaction
+            if (allParticipantsConfirmed) {
                 t.update(reservationRef, { status: 'completed' });
                 
                 const settingsRef = db.collection('settings').doc('global');
@@ -65,39 +82,57 @@ export async function POST(request: Request) {
                 const commissionRate = settings.platformCommissionRate || 0.20;
 
                 const totalAmount = reservation.amount;
-                const serviceFee = reservation.fee || settings.platformFee || 0;
-                const creatorBookingAmount = totalAmount - serviceFee;
-                
-                const commissionAmount = creatorBookingAmount * commissionRate;
-                const creatorAmount = creatorBookingAmount - commissionAmount;
+                const serviceFee = reservation.fee || 0;
+                const netRevenue = totalAmount - serviceFee;
 
-                // Credit Creator's wallet
+                // Credit Platform's wallet with service fee
+                 const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
+                 if (serviceFee > 0) {
+                    t.update(platformWalletRef, { balance: FieldValue.increment(serviceFee), totalEarned: FieldValue.increment(serviceFee) });
+                     const platformFeeTxRef = platformWalletRef.collection('transactions').doc();
+                    t.set(platformFeeTxRef, {
+                        amount: serviceFee, type: 'commission', createdAt: Timestamp.now(),
+                        description: `Frais de service RDV: ${reservation.annonceTitle}`, status: 'success', reference: reservation.id
+                    } as Omit<Transaction, 'id'>);
+                 }
+
+                // Distribute revenue between creator (establishment) and escorts
+                const establishmentShare = reservation.escorts ? (netRevenue - (reservation.escorts.reduce((sum, e) => sum + (e.rate * (reservation.durationHours || 1)), 0))) : netRevenue;
+                const commissionOnEstablishment = establishmentShare * commissionRate;
+                const establishmentAmount = establishmentShare - commissionOnEstablishment;
+                
+                t.update(platformWalletRef, { balance: FieldValue.increment(commissionOnEstablishment), totalEarned: FieldValue.increment(commissionOnEstablishment) });
+                 const platformCommTxRef = platformWalletRef.collection('transactions').doc();
+                 t.set(platformCommTxRef, {
+                    amount: commissionOnEstablishment, type: 'commission', createdAt: Timestamp.now(),
+                    description: `Commission RDV: ${reservation.annonceTitle}`, status: 'success', reference: reservation.id
+                } as Omit<Transaction, 'id'>);
+                
                 const creatorWalletRef = db.collection('wallets').doc(reservation.creatorId);
-                t.update(creatorWalletRef, {
-                    balance: FieldValue.increment(creatorAmount),
-                    totalEarned: FieldValue.increment(creatorAmount)
-                });
-                const creditTxRef = creatorWalletRef.collection('transactions').doc();
-                t.set(creditTxRef, {
-                    amount: creatorAmount, type: 'credit', createdAt: Timestamp.now(),
+                t.update(creatorWalletRef, { balance: FieldValue.increment(establishmentAmount), totalEarned: FieldValue.increment(establishmentAmount) });
+                 const creatorCreditTxRef = creatorWalletRef.collection('transactions').doc();
+                 t.set(creatorCreditTxRef, {
+                    amount: establishmentAmount, type: 'credit', createdAt: Timestamp.now(),
                     description: `Revenu RDV: ${reservation.annonceTitle}`, status: 'success', reference: reservation.id
                 } as Omit<Transaction, 'id'>);
 
+                if (reservation.escorts) {
+                    for(const escort of reservation.escorts) {
+                        const escortTotal = escort.rate * (reservation.durationHours || 1);
+                        const commissionOnEscort = escortTotal * commissionRate;
+                        const escortAmount = escortTotal - commissionOnEscort;
 
-                // Credit Platform's wallet with commission + service fee
-                const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
-                const platformTotal = commissionAmount + serviceFee;
-                t.update(platformWalletRef, { balance: FieldValue.increment(platformTotal), totalEarned: FieldValue.increment(platformTotal) });
-                const platformTxRef = platformWalletRef.collection('transactions').doc();
-                t.set(platformTxRef, {
-                    amount: platformTotal, type: 'commission', createdAt: Timestamp.now(),
-                    description: `Commission & Frais RDV: ${reservation.annonceTitle}`, status: 'success', reference: reservation.id
-                } as Omit<Transaction, 'id'>);
+                        t.update(platformWalletRef, { balance: FieldValue.increment(commissionOnEscort), totalEarned: FieldValue.increment(commissionOnEscort) });
+                        
+                        const escortWalletRef = db.collection('wallets').doc(escort.id);
+                        t.update(escortWalletRef, { balance: FieldValue.increment(escortAmount), totalEarned: FieldValue.increment(escortAmount) });
+                    }
+                }
                 
                 return { message: "Présence confirmée. La réservation est terminée et les fonds ont été transférés." };
             }
             
-            return { message: "Présence confirmée. En attente de l'autre participant." };
+            return { message: "Présence confirmée. En attente des autres participants." };
         });
         
         return NextResponse.json({ status: 'success', ...transactionResult });

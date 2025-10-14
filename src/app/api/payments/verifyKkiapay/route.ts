@@ -71,6 +71,7 @@ export async function POST(request: Request) {
         const userData = userDoc.data() as User;
         const settingsData = settingsDoc.data() as Settings;
         const referralBonus = settingsData?.rewards?.referralBonus || 0;
+        const welcomeBonusAmount = settingsData?.welcomeBonusAmount || 0;
 
         // Find closest pack to determine bonus
         const pack = creditPacksEUR.reduce((prev, curr) => 
@@ -86,9 +87,9 @@ export async function POST(request: Request) {
         let transactionDescription = `Rechargement KkiaPay (${amountXOF} XOF ~ ${amountEUR.toFixed(2)}€ ${bonusEUR > 0 ? `+ ${bonusEUR}€ bonus` : ''})`;
         
         const isFirstDeposit = !userData.hasMadeFirstDeposit;
-        if (isFirstDeposit && settingsData.welcomeBonusAmount && settingsData.welcomeBonusAmount > 0) {
-            creditedAmount += settingsData.welcomeBonusAmount;
-            transactionDescription += ` + ${settingsData.welcomeBonusAmount}€ bonus de bienvenue`;
+        if (isFirstDeposit && welcomeBonusAmount > 0) {
+            creditedAmount += welcomeBonusAmount;
+            transactionDescription += ` + ${welcomeBonusAmount}€ bonus de bienvenue`;
         }
         
         if (!walletDoc.exists) {

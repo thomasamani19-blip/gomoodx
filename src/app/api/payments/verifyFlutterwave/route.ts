@@ -90,6 +90,7 @@ export async function POST(request: Request) {
         const userData = userDoc.data() as User;
         const settingsData = settingsDoc.data() as Settings;
         const referralBonus = settingsData?.rewards?.referralBonus || 0;
+        const welcomeBonusAmount = settingsData?.welcomeBonusAmount || 0;
 
         // Check for a matching pack to add a bonus based on EUR amount
         const pack = creditPacksEUR.find(p => p.price === amountEUR);
@@ -98,9 +99,9 @@ export async function POST(request: Request) {
         
         // Check for first deposit bonus
         const isFirstDeposit = !userData.hasMadeFirstDeposit;
-        if (isFirstDeposit && settingsData.welcomeBonusAmount && settingsData.welcomeBonusAmount > 0) {
-            creditedAmount += settingsData.welcomeBonusAmount;
-            transactionDescription += ` + ${settingsData.welcomeBonusAmount}€ bonus de bienvenue`;
+        if (isFirstDeposit && welcomeBonusAmount > 0) {
+            creditedAmount += welcomeBonusAmount;
+            transactionDescription += ` + ${welcomeBonusAmount}€ bonus de bienvenue`;
         }
         
         if (!walletDoc.exists) {

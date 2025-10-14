@@ -162,12 +162,12 @@ export default function AdminFinancialSettingsPage() {
                         <CardContent className="space-y-6">
                            <div className="space-y-2">
                                 <Label htmlFor="voicePerMinute">Appel vocal par minute (€)</Label>
-                                <Input id="voicePerMinute" type="number" {...form.register('callRates.voicePerMinute')} />
+                                <Input id="voicePerMinute" type="number" step="0.1" {...form.register('callRates.voicePerMinute')} />
                                 {form.formState.errors.callRates?.voicePerMinute && <p className="text-sm text-destructive">{form.formState.errors.callRates.voicePerMinute.message}</p>}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="videoToProducerPerMinute">Appel vidéo (Escorte vers Producteur) par minute (€)</Label>
-                                <Input id="videoToProducerPerMinute" type="number" {...form.register('callRates.videoToProducerPerMinute')} />
+                                <Input id="videoToProducerPerMinute" type="number" step="0.1" {...form.register('callRates.videoToProducerPerMinute')} />
                                 {form.formState.errors.callRates?.videoToProducerPerMinute && <p className="text-sm text-destructive">{form.formState.errors.callRates.videoToProducerPerMinute.message}</p>}
                             </div>
                         </CardContent>
