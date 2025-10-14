@@ -164,7 +164,7 @@ async function seedDatabase() {
                     status: 'active',
                     createdAt: Timestamp.now(),
                     updatedAt: Timestamp.now(),
-                    rewardPoints: Math.floor(Math.random() * 5000), // Give some random points
+                    rewardPoints: 0, // Set to 0 to avoid confusion
                     referralsCount: 0,
                     isVerified: true,
                     onlineStatus: 'offline',
