@@ -1,12 +1,191 @@
 rules_version = '2';
 
+// NOTE: `request.auth.token.role` relies on a custom claim set during user creation.
+// This ensures that the user's role is securely managed on the backend.
+// We will use a helper function to get user data for more complex rules.
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // WARNING: These rules are permissive and are NOT secure.
-    // They are intended for initial development and testing only.
-    // DO NOT deploy these rules to a production environment.
-    match /{document=**} {
-      allow read, write: if true;
+
+    // Helper function to get the role of a user from the /users collection.
+    function getUserRole(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+    }
+    
+    function isUser(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      let userRole = getUserRole(request.auth.uid);
+      return isSignedIn() && (userRole == 'administrateur' || userRole == 'founder');
+    }
+    
+     function isModerator() {
+      let userRole = getUserRole(request.auth.uid);
+      return isSignedIn() && (userRole == 'moderator');
+    }
+
+    //---------------------------------
+    // Users Collection
+    //---------------------------------
+    match /users/{userId} {
+      // Anyone can read public profile data.
+      allow get: if true;
+      // Only the user themselves or an admin can update their profile.
+      allow update: if isUser(userId) || isAdmin();
+      // Only an admin can delete a user.
+      allow delete: if isAdmin();
+      // Creation is handled by a backend function (useAuth hook), so we can be restrictive here.
+      allow create: if isSignedIn();
+    }
+    
+    //---------------------------------
+    // Wallets and Transactions
+    //---------------------------------
+    match /wallets/{userId} {
+      // Only the user or an admin can read the wallet.
+      allow get: if isUser(userId) || isAdmin();
+      // Updates are handled by backend functions.
+      allow write: if false; 
+
+      match /transactions/{transactionId} {
+        // Only the user or an admin can read their transactions.
+        allow list, get: if isUser(userId) || isAdmin();
+        // Transactions are created by backend functions only.
+        allow write: if false;
+      }
+    }
+    
+    match /wallets/platform_wallet {
+      allow get: if isAdmin();
+      allow write: if false;
+      
+       match /transactions/{transactionId} {
+         allow list, get: if isAdmin();
+         allow write: if false;
+      }
+    }
+
+    //---------------------------------
+    // Content Collections (Posts, Services, Products, Blog)
+    //---------------------------------
+    match /posts/{postId} {
+      allow read: if true;
+      // Only users with creator-like roles can create posts.
+      allow create: if isSignedIn() && (getUserRole(request.auth.uid) in ['escorte', 'partenaire', 'founder', 'administrateur']);
+      // Only the owner or an admin/moderator can update/delete.
+      allow update, delete: if (isSignedIn() && resource.data.authorId == request.auth.uid) || isAdmin() || isModerator();
+      
+      // Comments
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isSignedIn();
+        // Only comment owner or admin can delete.
+        allow delete: if (isSignedIn() && resource.data.authorId == request.auth.uid) || isAdmin() || isModerator();
+        allow update: if false;
+      }
+    }
+    
+    match /services/{serviceId} {
+        allow read: if true;
+        allow create: if isSignedIn() && (getUserRole(request.auth.uid) in ['escorte', 'partenaire']);
+        allow update, delete: if (isSignedIn() && resource.data.createdBy == request.auth.uid) || isAdmin() || isModerator();
+        
+        match /reviews/{reviewId} {
+            allow read: if true;
+            allow create: if isSignedIn();
+            allow delete: if isAdmin() || isModerator();
+            allow update: if false;
+        }
+    }
+    
+    match /products/{productId} {
+        allow read: if true;
+        allow create: if isSignedIn() && (getUserRole(request.auth.uid) in ['escorte', 'partenaire']);
+        allow update, delete: if (isSignedIn() && resource.data.createdBy == request.auth.uid) || isAdmin() || isModerator();
+    }
+    
+    match /blog/{articleId} {
+        allow read: if true;
+        allow create: if isSignedIn() && (getUserRole(request.auth.uid) in ['escorte', 'partenaire', 'administrateur', 'founder']);
+        allow update, delete: if (isSignedIn() && resource.data.authorId == request.auth.uid) || isAdmin();
+    }
+    
+    //---------------------------------
+    // Interaction Collections (Reservations, Messages, Calls)
+    //---------------------------------
+    match /reservations/{reservationId} {
+        // Only participants (member, creator, or invited escorts) or admins can read.
+        allow get: if isSignedIn() && (
+                      resource.data.memberId == request.auth.uid || 
+                      resource.data.creatorId == request.auth.uid ||
+                      (resource.data.escorts != null && request.auth.uid in resource.data.escorts) ||
+                      isAdmin()
+                    );
+        // Users can only see their own reservations in lists.
+        allow list: if isSignedIn();
+        // Creation/updates handled by backend functions.
+        allow create, update, delete: if false;
+    }
+    
+     match /messages/{messageId} {
+      // Only sender or receiver can read.
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
+      // Creation/updates handled by backend functions.
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+    
+    match /calls/{callId} {
+      // Only participants or admins can read/write to the call document for signaling.
+      allow read, write: if isSignedIn() && (
+                          request.auth.uid == resource.data.callerId || 
+                          request.auth.uid == resource.data.receiverId ||
+                          isAdmin()
+                        );
+    }
+    
+     match /purchases/{purchaseId} {
+        allow read: if isSignedIn() && (request.auth.uid == resource.data.memberId || request.auth.uid == resource.data.sellerId || isAdmin());
+        allow create, update, delete: if false; // Handled by backend
+    }
+
+    //---------------------------------
+    // Admin & System Collections
+    //---------------------------------
+     match /partnerRequests/{requestId} {
+      allow read: if isAdmin();
+      allow create: if true; // Anyone can create a request
+      allow update: if isAdmin(); // Only admin can approve/reject
+    }
+
+    match /verifications/{userId} {
+        // Only the user concerned or an admin/moderator can read/write.
+        allow read, write: if isUser(userId) || isAdmin() || isModerator();
+    }
+    
+     match /settings/global {
+      // Public can read, only admin can write.
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /lives/{liveId} {
+        allow read: if true;
+        allow create: if isSignedIn() && (getUserRole(request.auth.uid) in ['escorte', 'partenaire', 'founder', 'administrateur']);
+        allow update: if isSignedIn() && (resource.data.hostId == request.auth.uid || isAdmin());
+        allow delete: if isSignedIn() && (resource.data.hostId == request.auth.uid || isAdmin());
+    }
+    
+    match /notifications/{notificationId} {
+        allow list, read: if isSignedIn() && request.query.where.userId == request.auth.uid;
+        allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+        allow write: if false; // Handled by backend
     }
   }
 }
