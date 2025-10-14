@@ -284,7 +284,7 @@ function MessagerieContent() {
         setIsSendingMessage(true);
 
         try {
-            await fetch('/api/messages/create', {
+            const response = await fetch('/api/messages/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -293,6 +293,11 @@ function MessagerieContent() {
                     message: newMessage,
                 }),
             });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'L\'envoi du message a échoué.');
+            }
             setNewMessage('');
         } catch (error) {
             console.error("Erreur lors de l'envoi du message:", error);

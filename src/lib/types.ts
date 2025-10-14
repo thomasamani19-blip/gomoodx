@@ -350,6 +350,19 @@ export interface LiveSession {
     moderationReason?: string;
 }
 
+// Notification
+export type NotificationType = 'new_message' | 'new_subscriber' | 'new_sale' | 'new_reservation' | 'reservation_update' | 'new_mention';
+export interface Notification {
+    id: string;
+    userId: string; // The user who receives the notification
+    type: NotificationType;
+    message: string;
+    link: string;
+    isRead: boolean;
+    createdAt: Timestamp;
+}
+
+
 // Reward
 export type RewardType = 'goal' | 'referral' | 'sale';
 
