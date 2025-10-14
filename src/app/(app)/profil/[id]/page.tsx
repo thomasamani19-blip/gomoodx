@@ -277,7 +277,6 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                                    (currentUser.role === 'escorte' && user.role === 'partenaire' && user.partnerType === 'producer');
 
         if (isCollaborationCall) {
-            // Collaboration calls are not free
             price = globalSettings?.callRates?.videoToProducerPerMinute || 8; 
         } else if (type === 'voice') {
              const reservationsQuery = query(
@@ -668,10 +667,19 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
         </div>
       )
   }
-
+  
+  // Producers and escorts use CreatorProfile
+  if (user.role === 'escorte' || (user.role === 'partenaire' && user.partnerType === 'producer')) {
+    return <CreatorProfile user={user} isOwnProfile={isOwnProfile} />;
+  }
+  
+  // Clients use MemberProfile
   if (user.role === 'client') {
     return <MemberProfile user={user} isOwnProfile={isOwnProfile} />;
   }
   
-  return <CreatorProfile user={user} isOwnProfile={isOwnProfile} />;
+  // Fallback for admin/founder/moderator
+  return <MemberProfile user={user} isOwnProfile={isOwnProfile} />;
 }
+
+    

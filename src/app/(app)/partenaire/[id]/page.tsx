@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useDoc, useFirestore, useCollection } from '@/firebase';
@@ -115,10 +116,10 @@ export default function PartnerProfilePage({ params }: { params: { id: string } 
     );
   }
 
-  if (!user || user.role !== 'partenaire') {
+  if (!user || user.role !== 'partenaire' || user.partnerType !== 'establishment') {
     return (
         <div>
-            <PageHeader title="Profil non trouvé" description="Ce partenaire n'existe pas ou plus." />
+            <PageHeader title="Profil non trouvé" description="Ce partenaire n'existe pas ou n'est pas un établissement." />
         </div>
     );
   }
@@ -214,5 +215,7 @@ export default function PartnerProfilePage({ params }: { params: { id: string } 
     </div>
   );
 }
+
+    
 
     
