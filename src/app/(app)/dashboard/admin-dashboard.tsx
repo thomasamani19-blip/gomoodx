@@ -4,9 +4,9 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { User, Wallet, PartnerRequest } from "@/lib/types";
 import PageHeader from "@/components/shared/page-header";
-import { useCollection, useDoc, useFirestore } from "@/firebase";
-import { collection, query, where, doc } from "firebase/firestore";
-import { DollarSign, Users, ShieldCheck, Handshake, Bot } from "lucide-react";
+import { useCollection, useCollectionGroup, useDoc, useFirestore } from "@/firebase";
+import { collection, query, where, doc, collectionGroup } from "firebase/firestore";
+import { DollarSign, Users, ShieldCheck, Handshake, Bot, AlertTriangle, Banknote } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo, useEffect, useState } from "react";
@@ -77,8 +77,22 @@ export default function AdminDashboard({ user }: { user: User }) {
 
   const partnersQuery = useMemo(() => firestore ? query(collection(firestore, 'partnerRequests'), where('status', '==', 'pending')) : null, [firestore]);
   const { data: pendingPartners, loading: partnersLoading } = useCollection<PartnerRequest>(partnersQuery);
+  
+  const pendingPostsQuery = useMemo(() => firestore ? query(collection(firestore, 'posts'), where('moderationStatus', '==', 'pending_review')) : null, [firestore]);
+  const { data: pendingPosts, loading: postsModLoading } = useCollection(pendingPostsQuery);
+  
+  const pendingProductsQuery = useMemo(() => firestore ? query(collection(firestore, 'products'), where('moderationStatus', '==', 'pending_review')) : null, [firestore]);
+  const { data: pendingProducts, loading: productsModLoading } = useCollection(pendingProductsQuery);
 
-  const loading = walletLoading || usersLoading || verificationsLoading || partnersLoading;
+  const pendingServicesQuery = useMemo(() => firestore ? query(collection(firestore, 'services'), where('moderationStatus', '==', 'pending_review')) : null, [firestore]);
+  const { data: pendingServices, loading: servicesModLoading } = useCollection(pendingServicesQuery);
+
+  const pendingWithdrawalsQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'transactions'), where('type', '==', 'withdrawal'), where('status', '==', 'pending')) : null, [firestore]);
+  const { data: pendingWithdrawals, loading: withdrawalsLoading } = useCollectionGroup(pendingWithdrawalsQuery);
+
+  const totalContentToModerate = (pendingPosts?.length || 0) + (pendingProducts?.length || 0) + (pendingServices?.length || 0);
+
+  const loading = walletLoading || usersLoading || verificationsLoading || partnersLoading || postsModLoading || productsModLoading || servicesModLoading || withdrawalsLoading;
 
   return (
     <div className="space-y-8">
@@ -89,7 +103,7 @@ export default function AdminDashboard({ user }: { user: User }) {
       
       <AdminAISummary />
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <StatCard 
             title="Revenus Plateforme"
             value={platformWallet ? `${platformWallet.balance.toFixed(2)} €` : '0.00 €'}
@@ -102,6 +116,20 @@ export default function AdminDashboard({ user }: { user: User }) {
             value={users?.length || 0}
             icon={Users}
             href="/admin/users"
+            loading={loading}
+        />
+         <StatCard 
+            title="Retraits en attente"
+            value={pendingWithdrawals?.length || 0}
+            icon={Banknote}
+            href="/admin/retraits"
+            loading={loading}
+        />
+        <StatCard 
+            title="Contenu à modérer"
+            value={totalContentToModerate}
+            icon={AlertTriangle}
+            href="/admin/moderation"
             loading={loading}
         />
         <StatCard 
