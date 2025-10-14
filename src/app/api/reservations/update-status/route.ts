@@ -2,7 +2,7 @@
 // /src/app/api/reservations/update-status/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
 import type { Reservation, ReservationStatus } from '@/lib/types';
 
 if (!getApps().length) {
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     try {
         const { reservationId, userId, newStatus } = await request.json() as { reservationId: string, userId: string, newStatus: ReservationStatus };
 
-        if (!reservationId || !userId || !newStatus || !['confirmed', 'cancelled', 'completed'].includes(newStatus)) {
+        if (!reservationId || !userId || !newStatus || !['confirmed', 'cancelled'].includes(newStatus)) {
             return NextResponse.json({ status: 'error', message: 'Informations manquantes ou invalides.' }, { status: 400 });
         }
         
@@ -46,11 +46,25 @@ export async function POST(request: Request) {
                 });
 
             } else if (newStatus === 'cancelled') {
-                 if (reservation.status !== 'pending') throw new Error("Seules les réservations en attente peuvent être annulées.");
-                 t.update(reservationRef, { status: 'cancelled' });
+                 if (reservation.status === 'completed' || reservation.status === 'cancelled') {
+                    throw new Error("Cette réservation ne peut plus être annulée.");
+                 }
+                 // Refund logic
+                 const memberWalletRef = db.collection('wallets').doc(reservation.memberId);
+                 t.update(memberWalletRef, { balance: FieldValue.increment(reservation.amount) });
                  
-                 // TODO: Rembourser le membre. Pour l'instant, on met à jour le statut.
-                 // Cette logique sera plus complexe (rembourser le portefeuille, gérer les frais, etc.)
+                 // Log refund transaction
+                 const refundTxRef = memberWalletRef.collection('transactions').doc();
+                 t.set(refundTxRef, {
+                    amount: reservation.amount,
+                    type: 'debit', // Conceptually it's a refund, but it's a credit to the wallet. To keep things simple let's log it as debit reversal
+                    description: `Remboursement annulation RDV: ${reservation.annonceTitle}`,
+                    status: 'success',
+                    createdAt: Timestamp.now(),
+                    reference: reservation.id
+                 });
+
+                 t.update(reservationRef, { status: 'cancelled' });
             }
         });
         

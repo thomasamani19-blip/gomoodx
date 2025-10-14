@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -86,7 +85,7 @@ export default function CreerReservationPage({ params }: { params: { creatorId: 
         reservationDateTime.setHours(parseInt(hours), parseInt(minutes));
 
         try {
-            const response = await fetch('/api/reservations/create', {
+            const response = await fetch('/api/reservations/create-escort', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
