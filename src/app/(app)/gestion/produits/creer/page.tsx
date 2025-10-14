@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
@@ -9,23 +10,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from '@/hooks/use-auth';
-import { useCollection, useFirestore, useStorage } from '@/firebase';
-import { addDoc, collection, query, serverTimestamp, where } from 'firebase/firestore';
+import { useCollection, useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState, useMemo, useEffect } from 'react';
 import { Loader2, PlusCircle, Upload, Users, Percent, Trash2, UserSearch } from 'lucide-react';
 import PageHeader from '@/components/shared/page-header';
-import { uploadFile } from '@/lib/storage';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import type { ProductType, User } from '@/lib/types';
+import type { User } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { collection, query, where } from 'firebase/firestore';
 
 const revenueShareSchema = z.object({
   userId: z.string(),
@@ -56,7 +56,6 @@ type ProductFormValues = z.infer<typeof productSchema>;
 export default function CreerProduitPage() {
     const { user, loading: authLoading } = useAuth();
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
@@ -92,33 +91,35 @@ export default function CreerProduitPage() {
     const isCollaborative = form.watch('isCollaborative');
 
     const onSubmit = async (data: ProductFormValues) => {
-        if (!user || !firestore || !storage) {
-            toast({ title: "Erreur", description: "Impossible de créer le produit.", variant: "destructive" });
-            return;
+        if (!user) return;
+        setIsLoading(true);
+
+        const formData = new FormData();
+        formData.append('title', data.title);
+        formData.append('description', data.description);
+        formData.append('price', data.price.toString());
+        formData.append('productType', data.productType);
+        formData.append('image', data.image);
+        formData.append('authorId', user.id);
+        formData.append('isCollaborative', String(data.isCollaborative));
+        if (data.isCollaborative && data.revenueShares) {
+             formData.append('revenueShares', JSON.stringify(data.revenueShares));
         }
 
-        setIsLoading(true);
         try {
-            const imageFile = data.image as File;
-            const imagePath = `products/${user.id}/${Date.now()}_${imageFile.name}`;
-            const imageUrl = await uploadFile(storage, imagePath, imageFile);
-
-            await addDoc(collection(firestore, 'products'), {
-                title: data.title,
-                description: data.description,
-                price: data.productType === 'physique' ? 0 : data.price,
-                productType: data.productType as ProductType,
-                imageUrl: imageUrl,
-                createdBy: user.id,
-                createdAt: serverTimestamp(),
-                isCollaborative: data.isCollaborative,
-                revenueShares: data.isCollaborative ? data.revenueShares : [],
-                moderationStatus: 'approved',
+            const response = await fetch('/api/products/create', {
+                method: 'POST',
+                body: formData,
             });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'La création du produit a échoué.');
+            }
 
             toast({ title: "Produit créé !", description: "Votre nouveau produit est maintenant dans votre boutique." });
             router.push('/gestion/produits');
-        } catch (error) {
+        } catch (error: any) {
             console.error("Erreur:", error);
             toast({ title: "Erreur", description: "Une erreur est survenue.", variant: "destructive" });
         } finally {

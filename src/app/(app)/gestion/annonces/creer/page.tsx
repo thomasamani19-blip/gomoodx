@@ -10,14 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from '@/hooks/use-auth';
-import { useFirestore, useStorage } from '@/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Loader2, PlusCircle, Upload } from 'lucide-react';
 import PageHeader from '@/components/shared/page-header';
-import { uploadFile } from '@/lib/storage';
 import Image from 'next/image';
 
 const annonceSchema = z.object({
@@ -33,8 +30,6 @@ type AnnonceFormValues = z.infer<typeof annonceSchema>;
 
 export default function CreerAnnoncePage() {
     const { user, loading: authLoading } = useAuth();
-    const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
@@ -45,41 +40,37 @@ export default function CreerAnnoncePage() {
     });
 
     const onSubmit = async (data: AnnonceFormValues) => {
-        if (!user || !firestore || !storage) {
+        if (!user) {
             toast({ title: "Erreur", description: "Impossible de créer l'annonce. Veuillez vous reconnecter.", variant: "destructive" });
             return;
         }
 
         setIsLoading(true);
+        
+        const formData = new FormData();
+        formData.append('title', data.title);
+        formData.append('description', data.description);
+        formData.append('price', data.price.toString());
+        formData.append('category', data.category);
+        formData.append('location', data.location);
+        formData.append('image', data.image);
+        formData.append('authorId', user.id);
 
         try {
-            // 1. Upload image to Firebase Storage
-            const imageFile = data.image as File;
-            const imagePath = `services/${user.id}/${Date.now()}_${imageFile.name}`;
-            const imageUrl = await uploadFile(storage, imagePath, imageFile);
-
-            // 2. Create document in Firestore
-            await addDoc(collection(firestore, 'services'), {
-                title: data.title,
-                description: data.description,
-                price: data.price,
-                category: data.category,
-                location: data.location,
-                imageUrl: imageUrl,
-                createdBy: user.id,
-                status: 'active',
-                rating: 0,
-                ratingCount: 0,
-                views: 0,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                isSponsored: false,
+            const response = await fetch('/api/annonces/create', {
+                method: 'POST',
+                body: formData,
             });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "La création de l'annonce a échoué.");
+            }
 
             toast({ title: "Annonce créée !", description: "Votre nouvelle annonce est maintenant en ligne." });
             router.push('/gestion/annonces');
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Erreur lors de la création de l'annonce :", error);
             toast({ title: "Erreur", description: "Une erreur est survenue.", variant: "destructive" });
         } finally {
