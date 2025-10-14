@@ -9,6 +9,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, setDoc, Timestamp, writeBatch } from 'firebase/firestore';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import type { PartnerType } from './types';
+import 'dotenv/config';
 
 // IMPORTANT: Replace with your Firebase config from the Firebase console
 const firebaseConfig = {
@@ -122,6 +123,12 @@ async function seedDatabase() {
             withdrawalMinAmount: 50,
             withdrawalMaxAmount: 5000,
             welcomeBonusAmount: 5,
+            rewards: {
+              firstContentBonus: 250,
+              firstSaleBonus: 1000,
+              profileCompletionBonus: 500,
+              referralBonus: 500,
+            }
         });
         console.log('Global settings seeded.');
 
@@ -181,6 +188,8 @@ async function seedDatabase() {
                     },
                     hasMadeFirstDeposit: false,
                     hasMadeFirstSale: false,
+                    hasPostedFirstContent: false,
+                    hasCompletedProfile: false,
                 };
 
                 if (user.data.role === 'partenaire') {
