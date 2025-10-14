@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
-import type { Reservation, ReservationStatus } from '@/lib/types';
+import type { Reservation, ReservationStatus, Settings, Product, User } from '@/lib/types';
 
 if (!getApps().length) {
     initializeApp({
@@ -11,12 +11,13 @@ if (!getApps().length) {
     });
 }
 const db = getFirestore();
+const PLATFORM_WALLET_ID = 'platform_wallet';
 
 export async function POST(request: Request) {
     try {
         const { reservationId, userId, newStatus } = await request.json() as { reservationId: string, userId: string, newStatus: ReservationStatus };
 
-        if (!reservationId || !userId || !newStatus || !['confirmed', 'cancelled'].includes(newStatus)) {
+        if (!reservationId || !userId || !newStatus || !['confirmed', 'cancelled', 'completed'].includes(newStatus)) {
             return NextResponse.json({ status: 'error', message: 'Informations manquantes ou invalides.' }, { status: 400 });
         }
         
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
         await db.runTransaction(async (t) => {
             const reservationDoc = await t.get(reservationRef);
             if (!reservationDoc.exists) {
-                throw new Error("La réservation n'existe pas.");
+                throw new Error("La réservation/commande n'existe pas.");
             }
             const reservation = reservationDoc.data() as Reservation;
 
@@ -41,13 +42,11 @@ export async function POST(request: Request) {
                 if (!isCreator) throw new Error("Seul le créateur peut confirmer une réservation.");
                 if (reservation.status !== 'pending') throw new Error("La réservation doit être en attente pour être confirmée.");
                 
-                t.update(reservationRef, {
-                    status: 'confirmed',
-                });
+                t.update(reservationRef, { status: 'confirmed' });
 
             } else if (newStatus === 'cancelled') {
-                 if (reservation.status === 'completed' || reservation.status === 'cancelled') {
-                    throw new Error("Cette réservation ne peut plus être annulée.");
+                 if (reservation.status === 'completed') {
+                    throw new Error("Cette réservation/commande ne peut plus être annulée.");
                  }
                  // Refund logic
                  const memberWalletRef = db.collection('wallets').doc(reservation.memberId);
@@ -57,14 +56,75 @@ export async function POST(request: Request) {
                  const refundTxRef = memberWalletRef.collection('transactions').doc();
                  t.set(refundTxRef, {
                     amount: reservation.amount,
-                    type: 'debit', // Conceptually it's a refund, but it's a credit to the wallet. To keep things simple let's log it as debit reversal
-                    description: `Remboursement annulation RDV: ${reservation.annonceTitle}`,
+                    type: 'debit', 
+                    description: `Remboursement annulation: ${reservation.annonceTitle}`,
                     status: 'success',
                     createdAt: Timestamp.now(),
                     reference: reservation.id
                  });
+                 
+                 // Reclaim from escrow if applicable
+                 if(reservation.status === 'pending_delivery') {
+                     const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
+                     t.update(platformWalletRef, { escrowBalance: FieldValue.increment(-reservation.amount) });
+                 }
 
                  t.update(reservationRef, { status: 'cancelled' });
+            } else if (newStatus === 'completed') {
+                if (!isMember) throw new Error("Seul le client peut confirmer la finalisation.");
+                if (reservation.type !== 'physical_product_order') throw new Error("Cette action n'est valable que pour les commandes de produits physiques.");
+                if (reservation.status !== 'pending_delivery') throw new Error("La commande doit être en attente de livraison pour être complétée.");
+
+                t.update(reservationRef, { status: 'completed' });
+                
+                // Release funds from escrow to seller
+                const settingsDoc = await t.get(db.collection('settings').doc('global'));
+                const settings = settingsDoc.data() as Settings;
+                const commissionRate = settings?.platformCommissionRate || 0.20;
+                const firstSaleBonus = settings?.rewards?.firstSaleBonus || 0;
+                
+                const productRef = db.collection('products').doc(reservation.annonceId);
+                const productDoc = await t.get(productRef);
+                const product = productDoc.data() as Product;
+
+                const sellerRef = db.collection('users').doc(reservation.creatorId);
+                const sellerDoc = await t.get(sellerRef);
+                const seller = sellerDoc.data() as User;
+                
+                const totalAmount = reservation.amount;
+                const commissionAmount = totalAmount * commissionRate;
+                const sellerAmount = totalAmount - commissionAmount;
+
+                // Move from escrow to platform and seller
+                const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
+                t.update(platformWalletRef, { 
+                    escrowBalance: FieldValue.increment(-totalAmount),
+                    balance: FieldValue.increment(commissionAmount),
+                    totalEarned: FieldValue.increment(commissionAmount)
+                });
+                const sellerWalletRef = db.collection('wallets').doc(reservation.creatorId);
+                t.update(sellerWalletRef, {
+                    balance: FieldValue.increment(sellerAmount),
+                    totalEarned: FieldValue.increment(sellerAmount)
+                });
+                
+                // Log transactions
+                const platformTxRef = platformWalletRef.collection('transactions').doc();
+                t.set(platformTxRef, { amount: commissionAmount, type: 'commission', description: `Commission sur vente: ${product.title}`, status: 'success', createdAt: Timestamp.now(), reference: reservation.id });
+
+                const sellerTxRef = sellerWalletRef.collection('transactions').doc();
+                t.set(sellerTxRef, { amount: sellerAmount, type: 'credit', description: `Vente: ${product.title}`, status: 'success', createdAt: Timestamp.now(), reference: reservation.id });
+                
+                // First sale bonus logic
+                if (!seller.hasMadeFirstSale && firstSaleBonus > 0) {
+                    t.update(sellerRef, {
+                        rewardPoints: FieldValue.increment(firstSaleBonus),
+                        hasMadeFirstSale: true,
+                    });
+                    const rewardTxRef = sellerWalletRef.collection('transactions').doc();
+                    t.set(rewardTxRef, { amount: firstSaleBonus, type: 'reward', description: `Bonus pour votre première vente !`, status: 'success', createdAt: Timestamp.now(), reference: reservation.id });
+                }
+
             }
         });
         
