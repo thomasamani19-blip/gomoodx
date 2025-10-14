@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import PageHeader from '@/components/shared/page-header';
@@ -24,6 +24,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import type { Settings, PlatformPlan } from '@/lib/types';
+import { useDoc, useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 interface Feature {
@@ -120,13 +124,6 @@ const features: Feature[] = [
     },
 ];
 
-const plansData = [
-    { id: 'gratuit', name: 'Gratuit', price: 0, description: 'Pour démarrer' },
-    { id: 'essential', name: 'Essentiel', price: 9.99, description: 'Pour bien démarrer.' },
-    { id: 'advanced', name: 'Avancé', price: 24.99, description: 'Optimisez votre visibilité.', isPopular: true },
-    { id: 'premium', name: 'Premium', price: 49.99, description: 'Passez à la vitesse supérieure.' },
-    { id: 'elite', name: 'Élite', price: 99.99, description: 'La solution ultime.' }
-];
 
 const FeatureCheck = ({ value }: { value: boolean | string }) => {
     if (typeof value === 'boolean') {
@@ -139,12 +136,32 @@ export default function AbonnementPage() {
     const { user, loading: authLoading } = useAuth();
     const { toast } = useToast();
     const router = useRouter();
+    const firestore = useFirestore();
 
-    const [subscriptionDialog, setSubscriptionDialog] = useState<{ open: boolean, plan: typeof plansData[0] | null }>({ open: false, plan: null });
+    const [subscriptionDialog, setSubscriptionDialog] = useState<{ open: boolean, plan: PlatformPlan | null }>({ open: false, plan: null });
     const [subscriptionDuration, setSubscriptionDuration] = useState(1);
     const [isSubscribing, setIsSubscribing] = useState(false);
+    
+    const settingsRef = useMemo(() => firestore ? doc(firestore, 'settings', 'global') : null, [firestore]);
+    const { data: settings, loading: settingsLoading } = useDoc<Settings>(settingsRef);
+    
+    const loading = authLoading || settingsLoading;
 
-    const handleOpenSubscriptionDialog = (plan: typeof plansData[0]) => {
+    const plansData: PlatformPlan[] = useMemo(() => {
+        const basePlans: PlatformPlan[] = [
+            { id: 'gratuit', name: 'Gratuit', price: 0, description: 'Pour démarrer', features: [] },
+        ];
+        if (settings?.platformPlans) {
+            const dynamicPlans: PlatformPlan[] = Object.entries(settings.platformPlans).map(([id, plan]) => ({
+                id: id as any, ...plan
+            }));
+            return [...basePlans, ...dynamicPlans];
+        }
+        return basePlans;
+    }, [settings]);
+
+
+    const handleOpenSubscriptionDialog = (plan: PlatformPlan) => {
         if (!user) {
             toast({ title: 'Connexion requise', description: 'Vous devez vous connecter pour vous abonner.', variant: 'destructive'});
             router.push('/connexion');
@@ -198,6 +215,15 @@ export default function AbonnementPage() {
         
         return totalPrice.toFixed(2);
     };
+
+    if (loading) {
+        return (
+            <div>
+                <PageHeader title="Abonnements GoMoodX Premium" description="Chargement..." />
+                <Skeleton className="h-[600px] w-full" />
+            </div>
+        )
+    }
 
     return (
         <TooltipProvider>
@@ -325,5 +351,3 @@ export default function AbonnementPage() {
         </TooltipProvider>
     );
 }
-
-    

@@ -1,5 +1,4 @@
 
-
 import type { Timestamp } from 'firebase/firestore';
 
 // Main User Roles
@@ -48,6 +47,15 @@ export interface UserSubscription {
     status: "active" | "inactive" | "cancelled";
     startDate: Timestamp;
     endDate: Timestamp;
+}
+
+export interface PlatformPlan {
+  id: PlatformSubscriptionType;
+  name: string;
+  price: number;
+  description: string;
+  features: string[];
+  isPopular?: boolean;
 }
 // --------------------
 
@@ -426,6 +434,9 @@ export interface Settings {
       profileCompletionBonus: number;
       referralBonus: number;
     };
+    platformPlans?: {
+        [key in Exclude<PlatformSubscriptionType, 'gratuit'>]: Omit<PlatformPlan, 'id'>
+    }
 }
 
 // AI Assistant Log

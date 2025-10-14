@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
-import type { User, Wallet, Transaction, Settings, UserSubscription } from '@/lib/types';
+import type { User, Wallet, Transaction, Settings, UserSubscription, PlatformSubscriptionType } from '@/lib/types';
 import { add } from 'date-fns';
 
 if (!getApps().length) {
@@ -14,30 +14,27 @@ if (!getApps().length) {
 const db = getFirestore();
 const PLATFORM_WALLET_ID = 'platform_wallet';
 
-// Define platform plans on the server-side to prevent tampering
-const platformPlans = {
-    essential: { name: 'Essentiel', price: 9.99 },
-    advanced: { name: 'Avancé', price: 24.99 },
-    premium: { name: 'Premium', price: 49.99 },
-    elite: { name: 'Élite', price: 99.99 },
-};
 
 export async function POST(request: Request) {
     try {
-        const { userId, planId, durationMonths } = await request.json() as { userId: string, planId: keyof typeof platformPlans, durationMonths: number };
+        const { userId, planId, durationMonths } = await request.json() as { userId: string, planId: PlatformSubscriptionType, durationMonths: number };
 
-        if (!userId || !planId || !durationMonths) {
-            return NextResponse.json({ status: 'error', message: 'Informations manquantes pour la souscription.' }, { status: 400 });
+        if (!userId || !planId || !durationMonths || planId === 'gratuit') {
+            return NextResponse.json({ status: 'error', message: 'Informations manquantes ou invalides pour la souscription.' }, { status: 400 });
         }
 
         const userRef = db.collection('users').doc(userId);
         const walletRef = db.collection('wallets').doc(userId);
         const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
+        const settingsRef = db.collection('settings').doc('global');
         
         const subscriptionResult = await db.runTransaction(async (t) => {
-            const selectedPlan = platformPlans[planId];
+            const settingsDoc = await t.get(settingsRef);
+            const settings = settingsDoc.data() as Settings;
+            const selectedPlan = settings?.platformPlans?.[planId];
+
             if (!selectedPlan) {
-                throw new Error("Ce plan d'abonnement n'est pas valide.");
+                throw new Error("Ce plan d'abonnement n'est pas valide ou non configuré.");
             }
 
             const userWalletDoc = await t.get(walletRef);
