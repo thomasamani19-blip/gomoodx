@@ -1,0 +1,118 @@
+
+// /src/app/api/calls/billing/route.ts
+import { NextResponse } from 'next/server';
+import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
+import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
+import type { Call, Wallet, Transaction, User, Settings } from '@/lib/types';
+
+if (!getApps().length) {
+    initializeApp({
+        credential: applicationDefault()
+    });
+}
+const db = getFirestore();
+
+const PLATFORM_WALLET_ID = 'platform_wallet';
+
+export async function POST(request: Request) {
+    try {
+        const { callId, duration } = await request.json() as { callId: string, duration: number };
+
+        if (!callId || duration === undefined || duration <= 0) {
+            return NextResponse.json({ status: 'error', message: 'ID d\'appel ou durée invalide.' }, { status: 400 });
+        }
+        
+        const callRef = db.collection('calls').doc(callId);
+        const settingsRef = db.collection('settings').doc('global');
+
+        const transactionResult = await db.runTransaction(async (t) => {
+            const callDoc = await t.get(callRef);
+            if (!callDoc.exists) throw new Error("L'appel n'existe pas.");
+            
+            const callData = callDoc.data() as Call;
+
+            // Update billed duration on the call doc first
+            t.update(callRef, { billedDuration: duration });
+
+            if (callData.isFreeCall || !callData.pricePerMinute || callData.pricePerMinute <= 0) {
+                return { message: "Aucune facturation requise pour cet appel.", totalCost: 0 };
+            }
+
+            const minutesBilled = Math.ceil(duration / 60);
+            const totalCost = minutesBilled * callData.pricePerMinute;
+
+            const callerWalletRef = db.collection('wallets').doc(callData.callerId);
+            const callerWalletDoc = await t.get(callerWalletRef);
+            if (!callerWalletDoc.exists) throw new Error("Portefeuille de l'appelant introuvable.");
+            const callerWallet = callerWalletDoc.data() as Wallet;
+            if (callerWallet.balance < totalCost) {
+                throw new Error("Solde insuffisant pour la durée de l'appel.");
+            }
+
+            // Débiter l'appelant
+            t.update(callerWalletRef, {
+                balance: FieldValue.increment(-totalCost),
+                totalSpent: FieldValue.increment(totalCost),
+            });
+
+            // Créer la transaction de débit pour l'appelant
+            const debitTxRef = callerWalletRef.collection('transactions').doc();
+            const debitTx: Omit<Transaction, 'id'> = {
+                amount: totalCost, type: 'call_fee', createdAt: Timestamp.now(),
+                description: `Appel ${callData.type} (${minutesBilled} min)`, status: 'success', reference: callId,
+            };
+            t.set(debitTxRef, debitTx);
+
+            const receiverUserRef = db.collection('users').doc(callData.receiverId);
+            const receiverUserDoc = await t.get(receiverUserRef);
+            if (!receiverUserDoc.exists) throw new Error("Le destinataire de l'appel est introuvable.");
+            const receiverUser = receiverUserDoc.data() as User;
+            
+            const settingsDoc = await t.get(settingsRef);
+            const commissionRate = (settingsDoc.data() as Settings)?.platformCommissionRate || 0;
+            
+            // Logique de commission
+            if (callData.type === 'video' && receiverUser.role === 'escorte') {
+                // Appel vidéo à une escorte: commission pour la plateforme
+                const commissionAmount = totalCost * commissionRate;
+                const creatorAmount = totalCost - commissionAmount;
+
+                // Créditer le créateur
+                const creatorWalletRef = db.collection('wallets').doc(callData.receiverId);
+                t.update(creatorWalletRef, { balance: FieldValue.increment(creatorAmount), totalEarned: FieldValue.increment(creatorAmount) });
+                const creditTxRef = creatorWalletRef.collection('transactions').doc();
+                t.set(creditTxRef, {
+                    amount: creatorAmount, type: 'credit', createdAt: Timestamp.now(),
+                    description: `Revenu appel ${callData.type} de ${callData.callerName}`, status: 'success', reference: callId
+                } as Omit<Transaction, 'id'>);
+
+                // Créditer la plateforme
+                const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
+                t.update(platformWalletRef, { balance: FieldValue.increment(commissionAmount), totalEarned: FieldValue.increment(commissionAmount) });
+                const platformTxRef = platformWalletRef.collection('transactions').doc();
+                t.set(platformTxRef, {
+                    amount: commissionAmount, type: 'commission', createdAt: Timestamp.now(),
+                    description: `Commission sur appel de ${callData.callerName}`, status: 'success', reference: callId
+                } as Omit<Transaction, 'id'>);
+
+            } else {
+                 // Autres cas (appel vocal payant, appel vidéo à un producteur): 100% pour la plateforme
+                 const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
+                 t.update(platformWalletRef, { balance: FieldValue.increment(totalCost), totalEarned: FieldValue.increment(totalCost) });
+                 const platformTxRef = platformWalletRef.collection('transactions').doc();
+                 t.set(platformTxRef, {
+                    amount: totalCost, type: 'credit', createdAt: Timestamp.now(),
+                    description: `Revenu Appel ${callData.type} de ${callData.callerName} vers ${receiverUser.displayName}`, status: 'success', reference: callId
+                 } as Omit<Transaction, 'id'>);
+            }
+            
+            return { message: "Facturation de l'appel réussie.", totalCost };
+        });
+        
+        return NextResponse.json({ status: 'success', ...transactionResult });
+
+    } catch (error: any) {
+        console.error('Erreur lors de la facturation de l\'appel:', error);
+        return NextResponse.json({ status: 'error', message: error.message || "Une erreur interne est survenue." }, { status: 500 });
+    }
+}

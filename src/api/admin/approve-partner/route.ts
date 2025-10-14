@@ -2,7 +2,7 @@
 // /src/app/api/admin/approve-partner/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, App, applicationDefault } from 'firebase-admin/app';
-import { getFirestore, FieldValue, WriteBatch } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue, WriteBatch, Timestamp } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import type { PartnerRequest, User } from '@/lib/types';
 import { randomBytes } from 'crypto';
@@ -57,8 +57,15 @@ export async function POST(request: Request) {
       disabled: false,
     });
     
-    console.log(`Mot de passe temporaire pour ${partnerRequest.companyName}: ${password}`); // Log password for admin
     // In a real app, you would email this password to the user.
+    // For development, we log it, but in production, this should be an email service.
+    if (process.env.NODE_ENV === 'production') {
+        // TODO: Implement email service to send temporary password
+        console.log(`Production: Should email temporary password to ${partnerRequest.companyEmail}`);
+    } else {
+        console.log(`Mot de passe temporaire pour ${partnerRequest.companyName}: ${password}`);
+    }
+
 
     const batch: WriteBatch = db.batch();
 
@@ -84,7 +91,7 @@ export async function POST(request: Request) {
       referralsCount: 0,
       rewardPoints: 0,
     };
-    batch.set(userRef, newUser);
+    batch.set(userRef, newUser, { merge: true });
 
     // 3. Create wallet for the new user
     const walletRef = db.collection('wallets').doc(userRecord.uid);
