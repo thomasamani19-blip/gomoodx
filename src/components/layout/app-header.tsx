@@ -21,6 +21,7 @@ import Link from 'next/link';
 import { ThemeSwitcher } from '../theme-switcher';
 import { Badge } from '../ui/badge';
 import type { PlatformSubscriptionType } from '@/lib/types';
+import { NotificationsPopover } from '@/components/features/notifications/notifications-popover';
 
 
 const planNames: Record<PlatformSubscriptionType, string> = {
@@ -46,6 +47,7 @@ export function AppHeader() {
           {/* Espace réservé si besoin d'autres actions */}
         </div>
         <ThemeSwitcher />
+        <NotificationsPopover />
         <Button variant="ghost" size="icon" asChild>
           <Link href="/portefeuille">
               <Wallet className="h-5 w-5" />
@@ -56,7 +58,7 @@ export function AppHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
-                {user?.profileImage && <AvatarImage src={user.profileImage} alt={user.displayName} />}
+                {user?.profileImage && <AvatarImage src={user.profileImage} alt={user?.displayName || ''} />}
                 <AvatarFallback>{user?.displayName?.charAt(0)?.toUpperCase() ?? 'U'}</AvatarFallback>
               </Avatar>
             </Button>
@@ -66,7 +68,7 @@ export function AppHeader() {
               <div className="flex flex-col space-y-1">
                 <div className="flex items-center gap-2">
                     <p className="text-sm font-medium leading-none">{user?.displayName}</p>
-                    {isCreatorPremium && user.subscription?.type && (
+                    {isCreatorPremium && user?.subscription?.type && (
                         <Badge variant="secondary" className="h-5 capitalize">
                             <Star className="h-3 w-3 mr-1"/>
                             {planNames[user.subscription.type] || user.subscription.type}

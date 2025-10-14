@@ -7,7 +7,8 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/hooks/use-auth';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
-import { AppShell } from '@/components/layout/app-shell';
+import CallListener from '@/components/layout/call-listener';
+
 
 const ptSans = PT_Sans({ 
   subsets: ['latin'], 
@@ -41,8 +42,9 @@ export default function RootLayout({
         >
           <FirebaseClientProvider>
             <AuthProvider>
-                <AppShell>{children}</AppShell>
+                {children}
                 <Toaster />
+                <CallListener />
             </AuthProvider>
           </FirebaseClientProvider>
         </ThemeProvider>
