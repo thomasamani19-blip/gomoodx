@@ -6,7 +6,7 @@ import type { Product, User, Settings } from '@/lib/types';
 import { doc, collection, query, where, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import { MessageCircle, Heart, Loader2, Package, Film, Download, CheckCircle } from 'lucide-react';
+import { MessageCircle, Heart, Loader2, Package, Film, Download, CheckCircle, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -83,6 +83,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const { toast } = useToast();
   
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   const productRef = useMemo(() => firestore ? doc(firestore, 'products', params.id) : null, [firestore, params.id]);
   const { data: product, loading: productLoading } = useDoc<Product>(productRef);
@@ -144,14 +145,26 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     }
   };
   
-  const handlePhysicalProductPurchase = () => {
-    if (!user || !creator) {
-        toast({ title: 'Connexion requise', variant: 'destructive' });
-        router.push('/connexion');
-        return;
+  const handleAddToCart = async () => {
+    if (!user || !product) return;
+    setIsAddingToCart(true);
+    try {
+        const response = await fetch('/api/cart/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id, productId: product.id, quantity: 1 })
+        });
+        const result = await response.json();
+        if (response.ok) {
+            toast({ title: 'Produit ajouté', description: `"${product.title}" a été ajouté à votre panier.` });
+        } else {
+            throw new Error(result.message || "Une erreur est survenue.");
+        }
+    } catch (error: any) {
+        toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } finally {
+        setIsAddingToCart(false);
     }
-    // Redirect to messaging with product context
-    router.push(`/messagerie?contact=${creator.id}&product=${params.id}`);
   }
 
 
@@ -227,13 +240,22 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                         <p className="text-4xl font-bold text-primary">
                             {isPhysical ? 'Sur demande' : (isFreeDigital ? 'Gratuit' : `${product.price} €`)}
                         </p>
-                         {isPhysical && <p className="text-xs text-muted-foreground">Paiement à organiser avec le vendeur.</p>}
+                         {isPhysical && <p className="text-xs text-muted-foreground">Contactez le vendeur pour finaliser l'achat.</p>}
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
                         {isPhysical ? (
-                            <Button size="lg" onClick={handlePhysicalProductPurchase}>
-                               <ShoppingBag className="mr-2 h-4 w-4" /> Acheter
-                            </Button>
+                            <>
+                                <Button size="lg" disabled>Acheter maintenant</Button>
+                                <Button size="lg" variant="secondary" onClick={handleAddToCart} disabled={isAddingToCart}>
+                                    {isAddingToCart ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ShoppingBag className="mr-2 h-4 w-4" />}
+                                    Ajouter au panier
+                                </Button>
+                                <Button size="lg" variant="outline" asChild>
+                                    <Link href={`/messagerie?contact=${creator?.id}&product=${params.id}`}>
+                                        <MessageCircle className="mr-2 h-4 w-4" /> Discuter avec le vendeur
+                                    </Link>
+                                </Button>
+                            </>
                         ) : isPaidDigital ? (
                              <Button size="lg" onClick={handlePurchase} disabled={isPurchasing}>
                                  {isPurchasing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -244,9 +266,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                                 <Download className="mr-2 h-4 w-4" /> Télécharger (Bientôt)
                              </Button>
                         ) : null}
-                         <Button size="lg" variant="outline">
-                            <Heart className="mr-2 h-4 w-4" /> Ajouter aux favoris
-                         </Button>
                     </CardContent>
                  </Card>
                  {creator && (
@@ -275,3 +294,4 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     </>
   );
 }
+
