@@ -13,6 +13,7 @@ if (!getApps().length) {
 }
 const db = getFirestore();
 const PLATFORM_WALLET_ID = 'platform_wallet';
+const FIRST_SALE_BONUS = 1000; // 1000 points = 10 EUR
 
 export async function POST(request: Request) {
     try {
@@ -74,12 +75,26 @@ export async function POST(request: Request) {
 
             t.update(creatorWalletRef, { balance: FieldValue.increment(creatorAmount), totalEarned: FieldValue.increment(creatorAmount) });
             const creditTxRef = creatorWalletRef.collection('transactions').doc();
+            const creditTxId = creditTxRef.id;
             t.set(creditTxRef, {
                 amount: creatorAmount, type: 'credit', createdAt: Timestamp.now(),
                 description: `Revenu abonnement de ${memberId.substring(0,6)}...`, status: 'success'
             } as Omit<Transaction, 'id'>);
             
             t.update(platformWalletRef, { balance: FieldValue.increment(commissionAmount), totalEarned: FieldValue.increment(commissionAmount) });
+
+            // First sale bonus logic
+            if (!creator.hasMadeFirstSale) {
+                t.update(creatorRef, {
+                    rewardPoints: FieldValue.increment(FIRST_SALE_BONUS),
+                    hasMadeFirstSale: true,
+                });
+                const rewardTxRef = creatorWalletRef.collection('transactions').doc();
+                t.set(rewardTxRef, {
+                    amount: FIRST_SALE_BONUS, type: 'reward', createdAt: Timestamp.now(),
+                    description: `Bonus pour votre première vente !`, status: 'success', reference: creditTxId
+                } as Omit<Transaction, 'id'|'path'>);
+            }
 
             // 3. Mettre à jour le statut d'abonnement du membre (envers ce créateur)
             const startDate = new Date();

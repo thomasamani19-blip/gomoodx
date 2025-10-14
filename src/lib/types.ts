@@ -160,6 +160,7 @@ export interface User {
     }
   };
   hasMadeFirstDeposit?: boolean;
+  hasMadeFirstSale?: boolean;
   bankDetails?: BankDetails;
 }
 

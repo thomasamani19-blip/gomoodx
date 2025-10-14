@@ -1,8 +1,9 @@
+
 // /src/app/api/products/purchase/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
-import type { Product, Wallet, Purchase, Transaction, Settings } from '@/lib/types';
+import type { Product, Wallet, Purchase, Transaction, Settings, User } from '@/lib/types';
 
 // Assurer l'initialisation de Firebase Admin
 if (!getApps().length) {
@@ -13,6 +14,7 @@ if (!getApps().length) {
 
 const db = getFirestore();
 const PLATFORM_WALLET_ID = 'platform_wallet';
+const FIRST_SALE_BONUS = 1000; // 1000 points = 10 EUR
 
 export async function POST(request: Request) {
     try {
@@ -35,6 +37,11 @@ export async function POST(request: Request) {
             if (!memberWalletDoc.exists) throw new Error("Portefeuille du membre introuvable.");
             const memberWallet = memberWalletDoc.data() as Wallet;
             
+            const sellerRef = db.collection('users').doc(product.createdBy);
+            const sellerDoc = await t.get(sellerRef);
+            if (!sellerDoc.exists) throw new Error("Vendeur introuvable.");
+            const seller = sellerDoc.data() as User;
+
             const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
 
             const settingsDoc = await t.get(settingsRef);
@@ -113,6 +120,21 @@ export async function POST(request: Request) {
                 } as Omit<Transaction, 'id'>);
             }
             
+            // First sale bonus logic
+            if (!seller.hasMadeFirstSale) {
+                t.update(sellerRef, {
+                    rewardPoints: FieldValue.increment(FIRST_SALE_BONUS),
+                    hasMadeFirstSale: true,
+                });
+                // We'll add the reward to the main seller's wallet
+                const sellerWalletRef = db.collection('wallets').doc(product.createdBy);
+                const rewardTxRef = sellerWalletRef.collection('transactions').doc();
+                t.set(rewardTxRef, {
+                    amount: FIRST_SALE_BONUS, type: 'reward', createdAt: Timestamp.now(),
+                    description: `Bonus pour votre première vente !`, status: 'success', reference: purchaseId
+                } as Omit<Transaction, 'id'|'path'>);
+            }
+
             return { purchaseId: purchaseId, message: "Achat effectué avec succès." };
         });
         

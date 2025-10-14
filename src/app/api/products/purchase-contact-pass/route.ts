@@ -13,6 +13,7 @@ if (!getApps().length) {
 const db = getFirestore();
 
 const PLATFORM_WALLET_ID = 'platform_wallet';
+const FIRST_SALE_BONUS = 1000; // 1000 points = 10 EUR
 
 export async function POST(request: Request) {
     try {
@@ -23,6 +24,7 @@ export async function POST(request: Request) {
         }
 
         const userRef = db.collection('users').doc(userId);
+        const sellerRef = db.collection('users').doc(sellerId);
         const walletRef = db.collection('wallets').doc(userId);
         const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
         const settingsRef = db.collection('settings').doc('global');
@@ -38,6 +40,10 @@ export async function POST(request: Request) {
             const userDoc = await t.get(userRef);
             if (!userDoc.exists) throw new Error("Utilisateur acheteur introuvable.");
             const user = userDoc.data() as User;
+
+            const sellerDoc = await t.get(sellerRef);
+            if (!sellerDoc.exists) throw new Error("Vendeur introuvable.");
+            const seller = sellerDoc.data() as User;
 
             if (user.unlockedContacts?.includes(sellerId)) {
                 return { message: "Contact déjà débloqué.", status: 'already_unlocked' };
@@ -70,7 +76,7 @@ export async function POST(request: Request) {
                 amount: passPrice,
                 type: 'contact_pass',
                 createdAt: Timestamp.now(),
-                description: `Achat Pass Contact pour vendeur ${sellerId.substring(0,6)}...`,
+                description: `Achat Pass Contact pour ${seller.displayName}`,
                 status: 'success',
                 reference: txId,
             };
@@ -80,6 +86,21 @@ export async function POST(request: Request) {
             t.update(userRef, {
                 unlockedContacts: FieldValue.arrayUnion(sellerId)
             });
+            
+            // First sale bonus logic for the seller
+            if (!seller.hasMadeFirstSale) {
+                t.update(sellerRef, {
+                    rewardPoints: FieldValue.increment(FIRST_SALE_BONUS),
+                    hasMadeFirstSale: true,
+                });
+                const sellerWalletRef = db.collection('wallets').doc(sellerId);
+                const rewardTxRef = sellerWalletRef.collection('transactions').doc();
+                t.set(rewardTxRef, {
+                    amount: FIRST_SALE_BONUS, type: 'reward', createdAt: Timestamp.now(),
+                    description: `Bonus pour votre première vente !`, status: 'success', reference: txId
+                } as Omit<Transaction, 'id'|'path'>);
+            }
+
 
             return {
                 message: "Pass Contact acheté avec succès. Vous pouvez maintenant contacter le vendeur.",
