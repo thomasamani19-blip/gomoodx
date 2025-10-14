@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Phone, ShieldQuestion, Calendar, Tag, CreditCard, User as UserIcon, Users, Timer, BedDouble, Clock, HelpCircle, Check, X, Building, MapPin, Loader2, Info } from 'lucide-react';
+import { MessageSquare, Phone, ShieldQuestion, Calendar, Tag, CreditCard, User as UserIcon, Users, Timer, BedDouble, Clock, HelpCircle, Check, X, Building, MapPin, Loader2, Info, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -24,6 +24,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const statusVariantMap = {
     pending: 'outline',
+    pending_delivery: 'outline',
     confirmed: 'default',
     cancelled: 'destructive',
     completed: 'secondary',
@@ -31,6 +32,7 @@ const statusVariantMap = {
 
 const statusTextMap = {
     pending: 'En attente',
+    pending_delivery: 'En attente de livraison',
     confirmed: 'Confirmée',
     cancelled: 'Annulée',
     completed: 'Terminée',
@@ -161,6 +163,8 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     if (!reservation || !otherParty) {
         return <PageHeader title="Réservation introuvable" description="Cette réservation n'existe pas." />;
     }
+
+    const isPhysicalProductOrder = reservation.type === 'physical_product_order';
     
     const mainActionButtons = () => {
         if (reservation.status === 'pending') {
@@ -182,6 +186,14 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                 );
             }
         }
+
+        if (isPhysicalProductOrder && reservation.status === 'pending_delivery' && isCurrentUserTheMember) {
+            return (
+                <Button onClick={() => handleStatusUpdate('completed')} disabled={isUpdatingStatus}>
+                    {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check />} Confirmer la réception
+                </Button>
+            )
+        }
         
         return null;
     }
@@ -193,16 +205,16 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     return (
     <TooltipProvider>
         <div>
-            <PageHeader title="Détails de la réservation" />
+            <PageHeader title={isPhysicalProductOrder ? 'Détails de la commande' : 'Détails de la réservation'} />
 
             <div className="grid md:grid-cols-3 gap-6 items-start">
                 <div className="md:col-span-2 space-y-6">
-                    {/* Main Reservation Card */}
+                    {/* Main Reservation/Order Card */}
                     <Card>
                         <CardHeader>
                             <CardTitle>{reservation.annonceTitle}</CardTitle>
                             <div className="flex items-center gap-2 pt-2">
-                                <p className="text-sm">Réservation n° {reservation.id.substring(0, 8)}</p>
+                                <p className="text-sm">Commande n° {reservation.id.substring(0, 8)}</p>
                                 <Badge variant={statusVariantMap[reservation.status] || 'default'}>
                                     {statusTextMap[reservation.status]}
                                 </Badge>
@@ -212,56 +224,61 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                              <div className="flex items-start gap-3">
                                 <Calendar className="h-5 w-5 text-muted-foreground mt-1" />
                                 <div>
-                                    <h4 className="font-medium">Date & Heure</h4>
+                                    <h4 className="font-medium">Date de la commande</h4>
                                     <p className="text-sm text-muted-foreground">
-                                        {format(reservation.reservationDate.toDate(), 'EEEE d MMMM yyyy \'à\' HH:mm', { locale: fr })}
+                                        {format(reservation.createdAt.toDate(), 'EEEE d MMMM yyyy \'à\' HH:mm', { locale: fr })}
                                     </p>
-                                </div>
-                            </div>
-                             <div className="flex items-start gap-3">
-                                <Timer className="h-5 w-5 text-muted-foreground mt-1" />
-                                <div>
-                                    <h4 className="font-medium">Durée</h4>
-                                    <p className="text-sm text-muted-foreground">{reservation.durationHours ? `${reservation.durationHours} heure(s)` : 'Non spécifiée'}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3">
-                                <MapPin className="h-5 w-5 text-muted-foreground mt-1" />
-                                <div>
-                                    <h4 className="font-medium">Lieu</h4>
-                                    <p className="text-sm text-muted-foreground">{reservation.location || 'Non spécifié'}</p>
                                 </div>
                             </div>
                              <div className="flex items-start gap-3">
                                 <CreditCard className="h-5 w-5 text-muted-foreground mt-1" />
                                 <div>
                                     <h4 className="font-medium">Montant total</h4>
-                                    <p className="text-sm text-muted-foreground">{reservation.amount.toFixed(2)} € (incl. {reservation.fee}€ de frais)</p>
+                                    <p className="text-sm text-muted-foreground">{reservation.amount.toFixed(2)} € {isPhysicalProductOrder ? '' : `(incl. ${reservation.fee}€ de frais)`}</p>
                                 </div>
                             </div>
-                            {reservation.roomType && (
-                                <div className="flex items-start gap-3">
-                                <BedDouble className="h-5 w-5 text-muted-foreground mt-1" />
-                                <div>
-                                    <h4 className="font-medium">Type de chambre</h4>
-                                    <p className="text-sm text-muted-foreground capitalize">{reservation.roomType}</p>
-                                </div>
-                            </div>
-                            )}
-                            {reservation.notes && (
-                                <div className="flex items-start gap-3 sm:col-span-2">
-                                    <HelpCircle className="h-5 w-5 text-muted-foreground mt-1" />
-                                    <div>
-                                        <h4 className="font-medium">Notes</h4>
-                                        <p className="text-sm text-muted-foreground">{reservation.notes}</p>
+                            
+                            {!isPhysicalProductOrder && (
+                                <>
+                                    <div className="flex items-start gap-3">
+                                        <Timer className="h-5 w-5 text-muted-foreground mt-1" />
+                                        <div>
+                                            <h4 className="font-medium">Durée</h4>
+                                            <p className="text-sm text-muted-foreground">{reservation.durationHours ? `${reservation.durationHours} heure(s)` : 'Non spécifiée'}</p>
+                                        </div>
                                     </div>
-                                </div>
+                                    <div className="flex items-start gap-3">
+                                        <MapPin className="h-5 w-5 text-muted-foreground mt-1" />
+                                        <div>
+                                            <h4 className="font-medium">Lieu</h4>
+                                            <p className="text-sm text-muted-foreground">{reservation.location || 'Non spécifié'}</p>
+                                        </div>
+                                    </div>
+                                     {reservation.roomType && (
+                                        <div className="flex items-start gap-3">
+                                        <BedDouble className="h-5 w-5 text-muted-foreground mt-1" />
+                                        <div>
+                                            <h4 className="font-medium">Type de chambre</h4>
+                                            <p className="text-sm text-muted-foreground capitalize">{reservation.roomType}</p>
+                                        </div>
+                                    </div>
+                                    )}
+                                    {reservation.notes && (
+                                        <div className="flex items-start gap-3 sm:col-span-2">
+                                            <HelpCircle className="h-5 w-5 text-muted-foreground mt-1" />
+                                            <div>
+                                                <h4 className="font-medium">Notes</h4>
+                                                <p className="text-sm text-muted-foreground">{reservation.notes}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </CardContent>
                     </Card>
                     
-                     {/* On-site Presence Card */}
-                     {reservation.status === 'confirmed' && (
+                     {/* On-site Presence Card for service reservations */}
+                     {reservation.status === 'confirmed' && !isPhysicalProductOrder && (
                          <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5" /> Confirmation sur Site</CardTitle>
@@ -295,6 +312,18 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                              </CardFooter>
                          </Card>
                      )}
+
+                     {isPhysicalProductOrder && (
+                        <Alert>
+                            <Package className="h-4 w-4" />
+                            <AlertTitle>Commande de Produit Physique</AlertTitle>
+                            <AlertDescription>
+                                {reservation.status === 'pending_delivery' && 'Le vendeur a été notifié et prépare votre commande. Vous serez informé une fois le produit expédié.'}
+                                {reservation.status === 'completed' && 'Vous avez confirmé la réception de ce produit.'}
+                                {reservation.status === 'cancelled' && 'Cette commande a été annulée.'}
+                            </AlertDescription>
+                        </Alert>
+                     )}
                 </div>
                 
                 <div className="space-y-6">
@@ -306,12 +335,12 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                         </CardHeader>
                         <CardContent className="space-y-4">
                              <Link href={`/profil/${reservation.memberId}`} className="flex items-center gap-4 p-2 rounded-md hover:bg-accent">
-                                <Avatar className="h-12 w-12"><AvatarFallback>Client</AvatarFallback></Avatar>
+                                <Avatar className="h-12 w-12"><AvatarFallback>{isCurrentUserTheMember ? 'Vous' : 'Client'}</AvatarFallback></Avatar>
                                 <div><p className="font-bold">{isCurrentUserTheMember ? 'Vous (Client)' : `Client`}</p></div>
                             </Link>
                              <Link href={`/profil/${reservation.creatorId}`} className="flex items-center gap-4 p-2 rounded-md hover:bg-accent">
                                 <Avatar className="h-12 w-12"><AvatarImage src={isCurrentUserTheCreator ? currentUser?.profileImage : otherParty.profileImage} /><AvatarFallback>{otherParty.displayName.charAt(0)}</AvatarFallback></Avatar>
-                                <div><p className="font-bold">{isCurrentUserTheCreator ? 'Vous (Établissement)' : otherParty.displayName}</p></div>
+                                <div><p className="font-bold">{isCurrentUserTheCreator ? 'Vous' : otherParty.displayName}</p><p className="text-sm text-muted-foreground">Vendeur</p></div>
                             </Link>
                         </CardContent>
                     </Card>

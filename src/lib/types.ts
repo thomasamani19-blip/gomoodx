@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 // Main User Roles
@@ -189,7 +190,7 @@ export interface Wallet {
 // Transaction (subcollection of Wallet)
 export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'call_fee' | 'platform_fee' | 'commission' | 'points_conversion' | 'subscription_fee' | 'contact_pass' | 'article_purchase' | 'live_ticket';
 
-export type TransactionStatus = 'pending' | 'success' | 'failed';
+export type TransactionStatus = 'pending' | 'pending_escrow' | 'success' | 'failed';
 
 export interface Transaction {
   id: string;
@@ -241,7 +242,8 @@ export interface Review {
 }
 
 // Reservation
-export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
+export type ReservationType = 'service' | 'establishment' | 'physical_product_order';
+export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'pending_delivery';
 export type ConfirmationStatus = 'pending' | 'confirmed' | 'declined';
 
 export interface EscortConfirmation {
@@ -260,6 +262,7 @@ export interface Reservation {
     amount: number;
     fee?: number;
     status: ReservationStatus;
+    type?: ReservationType;
     createdAt: Timestamp;
     reservationDate: Timestamp; // The date for which the service is booked
     durationHours?: number | null; // Duration of the stay/service in hours
@@ -270,6 +273,7 @@ export interface Reservation {
     escorts?: { id: string; name: string, profileImage?: string, rate: number }[];
     establishmentConfirmed?: boolean;
     establishmentConfirmedAt?: Timestamp;
+    roomType?: string;
 
     escortConfirmations: {
       [escortId: string]: EscortConfirmation;
