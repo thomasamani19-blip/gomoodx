@@ -98,7 +98,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const loading = productLoading || creatorLoading || authLoading || settingsLoading;
   
   const handlePurchase = async () => {
-    if (!user) {
+    if (!user || !product) {
         toast({ title: 'Connexion requise', description: 'Vous devez être connecté pour acheter.', variant: 'destructive'});
         router.push('/connexion');
         return;
@@ -110,15 +110,24 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     }
 
     setIsPurchasing(true);
+    
+    let apiEndpoint = '';
+    let payload = {};
+
+    if (product.productType === 'physique') {
+        apiEndpoint = '/api/reservations/create-physical-product-order';
+        payload = { memberId: user.id, productId: params.id };
+    } else { // digital
+        apiEndpoint = '/api/products/purchase';
+        payload = { memberId: user.id, productId: params.id };
+    }
+
 
     try {
-        const response = await fetch('/api/products/purchase', {
+        const response = await fetch(apiEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                memberId: user.id,
-                productId: params.id,
-            }),
+            body: JSON.stringify(payload),
         });
 
         const result = await response.json();
@@ -128,8 +137,9 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                 title: 'Achat réussi !',
                 description: `Vous avez acheté "${product?.title}".`,
             });
-            // Optional: redirect to a "My Purchases" page
-            // router.push('/mes-achats');
+            if(product.productType === 'physique') {
+                router.push(`/reservations/${result.reservationId}`);
+            }
         } else {
             throw new Error(result.message || 'Une erreur est survenue.');
         }
@@ -238,14 +248,16 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                  <Card>
                     <CardHeader className="text-center">
                         <p className="text-4xl font-bold text-primary">
-                            {isPhysical ? 'Sur demande' : (isFreeDigital ? 'Gratuit' : `${product.price} €`)}
+                            {isFreeDigital ? 'Gratuit' : `${product.price} €`}
                         </p>
-                         {isPhysical && <p className="text-xs text-muted-foreground">Contactez le vendeur pour finaliser l'achat.</p>}
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
                         {isPhysical ? (
                             <>
-                                <Button size="lg" disabled>Acheter maintenant</Button>
+                                <Button size="lg" onClick={handlePurchase} disabled={isPurchasing}>
+                                     {isPurchasing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                     Acheter maintenant
+                                </Button>
                                 <Button size="lg" variant="secondary" onClick={handleAddToCart} disabled={isAddingToCart}>
                                     {isAddingToCart ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ShoppingBag className="mr-2 h-4 w-4" />}
                                     Ajouter au panier

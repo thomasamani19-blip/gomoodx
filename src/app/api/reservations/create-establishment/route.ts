@@ -46,11 +46,18 @@ export async function POST(request: Request) {
             t.set(debitTxRef, {
                 amount,
                 type: 'debit',
-                createdAt: Timestamp.now(),
                 description: `Paiement réservation: ${annonceData.title}`,
-                status: 'success',
+                status: 'pending_escrow',
+                createdAt: Timestamp.now(),
                 reference: debitTxRef.id
             } as Omit<Transaction, 'id' | 'path'>);
+            
+            // Placer les fonds dans un compte de séquestre virtuel (logique future)
+            const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
+            t.update(platformWalletRef, {
+                escrowBalance: FieldValue.increment(amount)
+            });
+
 
             // Créer la réservation
             const reservationRef = db.collection('reservations').doc();
@@ -70,6 +77,7 @@ export async function POST(request: Request) {
                 amount,
                 fee: platformFee,
                 status: 'pending',
+                type: 'establishment',
                 createdAt: Timestamp.now(),
                 reservationDate: Timestamp.fromDate(new Date(reservationDate)),
                 durationHours,
