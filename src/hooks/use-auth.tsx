@@ -19,7 +19,13 @@ import {
     serverTimestamp,
     onSnapshot,
     writeBatch,
-    collection
+    collection,
+    query,
+    where,
+    getDocs,
+    limit,
+    updateDoc,
+    increment
 } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 
@@ -51,8 +57,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 if (doc.exists()) {
                     setUser({ id: doc.id, ...doc.data() } as User);
                 } else {
-                    // This can happen if the user record is created in Auth but not in Firestore yet,
-                    // or for a partner request where the user is signed out.
                     setUser(null);
                 }
                 setLoading(false);
@@ -74,13 +78,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, pass: string) => {
     await signInWithEmailAndPassword(auth, email, pass);
-    // onAuthStateChanged will handle the rest
   };
 
   const signup = async (formData: Record<string, any>) => {
-    const { email, password, role, ...profileData } = formData;
+    const { email, password, role, referredBy: referralCode, ...profileData } = formData;
     
-    // For partner requests, we don't create an auth user immediately.
     if (role === 'partenaire') {
         const partnerRequestRef = doc(collection(firestore, 'partnerRequests'));
         await setDoc(partnerRequestRef, {
@@ -99,16 +101,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             status: 'pending',
             createdAt: serverTimestamp(),
         });
-        return; // End here for partners
+        return; 
     }
     
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const { user: fbUser } = userCredential;
     
     const batch = writeBatch(firestore);
-
-    // Create user document for non-partners
     const userDocRef = doc(firestore, 'users', fbUser.uid);
+
+    let referrerId: string | undefined = undefined;
+    if (referralCode) {
+        const q = query(collection(firestore, 'users'), where('referralCode', '==', referralCode.toUpperCase()), limit(1));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const referrerDoc = querySnapshot.docs[0];
+            referrerId = referrerDoc.id;
+            const referrerRef = doc(firestore, 'users', referrerId);
+            batch.update(referrerRef, { referralsCount: increment(1) });
+        } else {
+            console.warn(`Referral code "${referralCode}" not found.`);
+        }
+    }
+
     const newUser: Partial<User> = {
       displayName: profileData.displayName,
       email: fbUser.email,
@@ -123,12 +138,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       referralsCount: 0,
       referralCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
       profileImage: `https://picsum.photos/seed/${fbUser.uid}/400/400`,
+      referredBy: referrerId,
       ...profileData,
     };
     
     batch.set(userDocRef, newUser, { merge: true });
 
-    // Create wallet for the new user
     const walletRef = doc(firestore, 'wallets', fbUser.uid);
     batch.set(walletRef, {
       balance: 0,
@@ -140,7 +155,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     
     await batch.commit();
-    // onAuthStateChanged will handle setting the user state.
   };
   
   const logout = async () => {
@@ -157,8 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login, 
       signup,
       logout, 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }), [user, firebaseUser, loading]);
+    }), [user, firebaseUser, loading, login, signup, logout]);
 
   return (
     <AuthContext.Provider value={value}>
