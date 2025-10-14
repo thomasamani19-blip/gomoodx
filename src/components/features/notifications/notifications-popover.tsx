@@ -4,12 +4,11 @@
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore } from '@/firebase';
 import type { Notification } from '@/lib/types';
-import { collection, query, where, orderBy, limit, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, writeBatch, getDocs, doc } from 'firebase/firestore';
 import { useMemo, useState } from 'react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Bell, Loader2 } from 'lucide-react';
-import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -63,16 +62,20 @@ export function NotificationsPopover() {
         }
     };
 
-    const handleNotificationClick = (notification: Notification) => {
+    const handleNotificationClick = async (notification: Notification) => {
         setIsOpen(false);
         router.push(notification.link);
         if (!notification.isRead) {
-            fetch('/api/notifications/mark-as-read', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user?.id, notificationIds: [notification.id] }),
-            });
-             setData(prev => prev?.map(n => n.id === notification.id ? { ...n, isRead: true } : n) || null);
+            try {
+                await fetch('/api/notifications/mark-as-read', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: user?.id, notificationIds: [notification.id] }),
+                });
+                setData(prev => prev?.map(n => n.id === notification.id ? { ...n, isRead: true } : n) || null);
+            } catch (e) {
+                console.error("Failed to mark notification as read", e);
+            }
         }
     }
 
@@ -146,4 +149,3 @@ export function NotificationsPopover() {
         </Popover>
     );
 }
-

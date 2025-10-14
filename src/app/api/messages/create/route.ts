@@ -1,3 +1,4 @@
+
 // /src/app/api/messages/create/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
