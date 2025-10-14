@@ -49,6 +49,7 @@ function MessagerieContent() {
     const [isContactUnlocked, setIsContactUnlocked] = useState(false);
     const [isCheckingUnlock, setIsCheckingUnlock] = useState(false);
     const [hasActiveReservation, setHasActiveReservation] = useState(false);
+    const [isSendingMessage, setIsSendingMessage] = useState(false);
 
     const contactIdFromUrl = searchParams.get('contact');
 
@@ -279,21 +280,25 @@ function MessagerieContent() {
             });
             return;
         }
-
-        const messageData: Omit<Message, 'id'> = {
-            message: newMessage,
-            senderId: user.id,
-            receiverId: selectedContact.id,
-            createdAt: serverTimestamp() as any,
-            isRead: false,
-            type: 'text',
-        };
+        
+        setIsSendingMessage(true);
 
         try {
-            await addDoc(collection(firestore, 'messages'), messageData);
+            await fetch('/api/messages/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    senderId: user.id,
+                    receiverId: selectedContact.id,
+                    message: newMessage,
+                }),
+            });
             setNewMessage('');
         } catch (error) {
             console.error("Erreur lors de l'envoi du message:", error);
+            toast({ title: 'Erreur', description: 'Impossible d\'envoyer le message.', variant: 'destructive' });
+        } finally {
+            setIsSendingMessage(false);
         }
     };
 
@@ -487,9 +492,9 @@ function MessagerieContent() {
                     </ScrollArea>
                     <div className="p-4 border-t mt-auto bg-card">
                         <form className="flex items-center gap-2" onSubmit={handleSendMessage}>
-                            <Input placeholder="Écrivez votre message..." autoComplete="off" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} disabled={!isContactUnlocked || isCheckingUnlock} />
-                            <Button type="submit" size="icon" variant="ghost" disabled={!newMessage.trim() || !isContactUnlocked || isCheckingUnlock}>
-                                <Send className="h-5 w-5 text-primary" />
+                            <Input placeholder="Écrivez votre message..." autoComplete="off" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} disabled={!isContactUnlocked || isCheckingUnlock || isSendingMessage} />
+                            <Button type="submit" size="icon" variant="ghost" disabled={!newMessage.trim() || !isContactUnlocked || isCheckingUnlock || isSendingMessage}>
+                                {isSendingMessage ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5 text-primary" />}
                             </Button>
                         </form>
                     </div>
