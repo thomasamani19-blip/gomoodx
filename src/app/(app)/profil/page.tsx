@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
@@ -20,6 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { BankDetails } from '@/lib/types';
+import { doc, getDoc, writeBatch } from 'firebase/firestore';
 
 function fileToDataUrl(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -29,6 +31,8 @@ function fileToDataUrl(file: File): Promise<string> {
         reader.readAsDataURL(file);
     });
 }
+
+const PROFILE_COMPLETION_BONUS = 250;
 
 export default function ProfilPage() {
   const { user, loading: authLoading } = useAuth();
@@ -175,11 +179,47 @@ export default function ProfilPage() {
       if (isCreatorOrPartner) {
         updatedData.bankDetails = bankDetails;
       }
+      
+      const userRef = doc(firestore, 'users', user.id);
 
-      await updateUserProfile(firestore, user.id, updatedData);
+      // Check for profile completion bonus
+      let bonusAwarded = false;
+      const currentUserDoc = await getDoc(userRef);
+      const currentUserData = currentUserDoc.data();
+      
+      if (isCreatorOrPartner && !currentUserData?.hasCompletedProfile) {
+          const profileIsComplete = avatarUrl && bannerUrl && bio && (updatedData.galleryImages.length >= 3);
+          
+          if (profileIsComplete) {
+              const batch = writeBatch(firestore);
+              const walletRef = doc(firestore, 'wallets', user.id);
+              const rewardTxRef = doc(collection(walletRef, 'transactions'));
+              
+              updatedData.hasCompletedProfile = true;
+              updatedData.rewardPoints = (currentUserData?.rewardPoints || 0) + PROFILE_COMPLETION_BONUS;
+
+              batch.update(userRef, updatedData);
+              batch.set(rewardTxRef, {
+                  amount: PROFILE_COMPLETION_BONUS,
+                  type: 'reward',
+                  description: 'Bonus pour profil complet !',
+                  status: 'success',
+                  createdAt: new Date(),
+              });
+              
+              await batch.commit();
+              bonusAwarded = true;
+          }
+      }
+
+      // If no bonus was awarded, just update the profile
+      if (!bonusAwarded) {
+          await updateUserProfile(firestore, user.id, updatedData);
+      }
+
       toast({
         title: 'Profil mis à jour',
-        description: 'Vos informations ont été enregistrées avec succès.',
+        description: `Vos informations ont été enregistrées. ${bonusAwarded ? `Vous avez reçu ${PROFILE_COMPLETION_BONUS} points de récompense !` : ''}`,
       });
       setGalleryFiles([]); // Clear file queue after upload
     } catch (error) {

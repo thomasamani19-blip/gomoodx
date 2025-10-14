@@ -1,4 +1,5 @@
 
+
 import type { Timestamp } from 'firebase/firestore';
 
 // Main User Roles
@@ -162,6 +163,7 @@ export interface User {
   hasMadeFirstDeposit?: boolean;
   hasMadeFirstSale?: boolean;
   hasPostedFirstContent?: boolean;
+  hasCompletedProfile?: boolean;
   bankDetails?: BankDetails;
 }
 
