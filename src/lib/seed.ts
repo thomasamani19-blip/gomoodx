@@ -180,6 +180,7 @@ async function seedDatabase() {
                         lastReset: Timestamp.now(),
                     },
                     hasMadeFirstDeposit: false,
+                    hasMadeFirstSale: false,
                 };
 
                 if (user.data.role === 'partenaire') {

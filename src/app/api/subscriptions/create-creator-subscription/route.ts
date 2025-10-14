@@ -56,7 +56,9 @@ export async function POST(request: Request) {
                 finalPrice = finalPrice * (1 - discount / 100);
             }
 
-            if (memberWallet.balance < finalPrice) throw new Error("Solde insuffisant.");
+            if (memberWallet.balance < finalPrice) {
+                throw new Error("Solde insuffisant.");
+            }
 
             // 1. Débiter le membre
             t.update(memberWalletRef, {
