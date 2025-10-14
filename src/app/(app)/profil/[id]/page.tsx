@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useCollection, useDoc, useFirestore } from '@/firebase';
@@ -271,8 +272,14 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         let price = 0;
         let isFree = false;
 
-        if (type === 'voice') {
-            const reservationsQuery = query(
+        // Producer to Escort call logic
+        const isCollaborationCall = (currentUser.role === 'partenaire' && currentUser.partnerType === 'producer' && user.role === 'escorte') ||
+                                   (currentUser.role === 'escorte' && user.role === 'partenaire' && user.partnerType === 'producer');
+
+        if (isCollaborationCall) {
+            price = globalSettings?.callRates?.videoToProducerPerMinute || 8; // Default to a specific rate for these calls.
+        } else if (type === 'voice') {
+             const reservationsQuery = query(
                 collection(firestore, 'reservations'),
                 where('status', '==', 'confirmed'),
                 or(
@@ -390,9 +397,9 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         let totalPrice = tier.price * subscriptionDuration;
         let discount = 0;
         
-        if (subscriptionDuration === 3 && tier.discounts?.quarterly) discount = tier.discounts.quarterly;
-        else if (subscriptionDuration === 6 && tier.discounts?.semiAnnual) discount = tier.discounts.semiAnnual;
-        else if (subscriptionDuration === 12 && tier.discounts?.annual) discount = tier.discounts.annual;
+        if (d.duration === 3 && tier.discounts?.quarterly) discount = tier.discounts.quarterly;
+        else if (d.duration === 6 && tier.discounts?.semiAnnual) discount = tier.discounts.semiAnnual;
+        else if (d.duration === 12 && tier.discounts?.annual) discount = tier.discounts.annual;
         
         if (discount > 0) {
             totalPrice = totalPrice * (1 - discount / 100);
@@ -400,6 +407,10 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         
         return totalPrice.toFixed(2);
     };
+
+    const canCall = (currentUser?.role === 'escorte' && user.role === 'partenaire' && user.partnerType === 'producer') ||
+                  (currentUser?.role === 'partenaire' && currentUser.partnerType === 'producer' && user.role === 'escorte') ||
+                  (user.role === 'escorte' && currentUser?.role === 'client');
 
     return (
         <>
@@ -444,7 +455,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                             <MessageCircle className="mr-2 h-4 w-4" />
                             Message
                         </Button>
-                         {(user.role === 'escorte') && (
+                         {canCall && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline">
