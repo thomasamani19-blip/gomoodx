@@ -40,8 +40,9 @@ export async function POST(request: Request) {
         // 3. Update the document in Firestore
         const settingsRef = doc(db, 'settings', 'global');
         
-        // We need to use dot notation for nested objects
+        // Using a flat object for updateDoc
         const updateData: { [key: string]: any } = {};
+        
         if (newSettings.rewards) {
             for (const [key, value] of Object.entries(newSettings.rewards)) {
                 if (typeof value === 'number' && value >= 0) {
@@ -50,6 +51,30 @@ export async function POST(request: Request) {
             }
         }
         
+        if (newSettings.callRates) {
+            for (const [key, value] of Object.entries(newSettings.callRates)) {
+                if (typeof value === 'number' && value >= 0) {
+                     updateData[`callRates.${key}`] = value;
+                }
+            }
+        }
+
+        if (typeof newSettings.platformCommissionRate === 'number') {
+            updateData.platformCommissionRate = newSettings.platformCommissionRate;
+        }
+        if (typeof newSettings.platformFee === 'number') {
+            updateData.platformFee = newSettings.platformFee;
+        }
+         if (typeof newSettings.welcomeBonusAmount === 'number') {
+            updateData.welcomeBonusAmount = newSettings.welcomeBonusAmount;
+        }
+         if (typeof newSettings.withdrawalMinAmount === 'number') {
+            updateData.withdrawalMinAmount = newSettings.withdrawalMinAmount;
+        }
+         if (typeof newSettings.withdrawalMaxAmount === 'number') {
+            updateData.withdrawalMaxAmount = newSettings.withdrawalMaxAmount;
+        }
+
         if(Object.keys(updateData).length === 0) {
              return NextResponse.json({ status: 'error', message: 'Données de paramètres non valides.' }, { status: 400 });
         }

@@ -104,7 +104,7 @@ export default function AdminSettingsPage() {
     
     return (
         <div>
-            <PageHeader title="Paramètres Administrateur" description="Configurez les valeurs globales de la plateforme." />
+            <PageHeader title="Paramètres des Récompenses" description="Configurez les points attribués pour les actions clés des utilisateurs." />
             <form onSubmit={form.handleSubmit(onSubmit)}>
                 <Card>
                     <CardHeader>

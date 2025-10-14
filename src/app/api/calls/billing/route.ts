@@ -1,4 +1,3 @@
-
 // /src/app/api/calls/billing/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -69,7 +68,8 @@ export async function POST(request: Request) {
             const receiverUser = receiverUserDoc.data() as User;
             
             const settingsDoc = await t.get(settingsRef);
-            const commissionRate = (settingsDoc.data() as Settings)?.platformCommissionRate || 0;
+            const settings = (settingsDoc.data() as Settings);
+            const commissionRate = settings?.platformCommissionRate || 0.20;
             
             // Logique de commission
             if (callData.type === 'video' && receiverUser.role === 'escorte') {

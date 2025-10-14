@@ -43,6 +43,7 @@ import {
   GanttChart,
   Banknote,
   AlertTriangle,
+  DollarSign,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -101,8 +102,9 @@ const adminNav = [
   { title: 'Modération Contenu', href: '/admin/moderation', icon: AlertTriangle },
   { title: 'Portefeuille Plateforme', href: '/admin/portefeuille', icon: Wallet },
   { title: 'Gestion des Retraits', href: '/admin/retraits', icon: Banknote },
-  { title: 'Paramètres Admin', href: '/admin/parametres', icon: Settings },
-  { title: "Gestion Abonnements", href: "/admin/abonnements", icon: Crown },
+  { title: 'Gestion Abonnements', href: "/admin/abonnements", icon: Crown },
+  { title: 'Paramètres Financiers', href: '/admin/parametres-financiers', icon: DollarSign },
+  { title: 'Paramètres Récompenses', href: '/admin/parametres', icon: Settings },
   { title: "Fil d'actualité", href: '/feed', icon: Newspaper },
 ];
 
