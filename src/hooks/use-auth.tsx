@@ -18,7 +18,8 @@ import {
     setDoc, 
     serverTimestamp,
     onSnapshot,
-    writeBatch
+    writeBatch,
+    collection
 } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 
@@ -50,6 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 if (doc.exists()) {
                     setUser({ id: doc.id, ...doc.data() } as User);
                 } else {
+                    // This can happen if the user record is created in Auth but not in Firestore yet,
+                    // or for a partner request where the user is signed out.
                     setUser(null);
                 }
                 setLoading(false);
@@ -81,13 +84,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     const batch = writeBatch(firestore);
 
-    // Create user document
+    if (role === 'partenaire') {
+        const partnerRequestRef = doc(collection(firestore, 'partnerRequests'));
+        batch.set(partnerRequestRef, {
+            type: profileData.partnerType as PartnerType,
+            companyName: profileData.companyName,
+            registerNumber: profileData.registerNumber || '',
+            country: profileData.country,
+            city: profileData.city,
+            address: profileData.address,
+            companyEmail: profileData.companyEmail,
+            phone: profileData.phone,
+            website: profileData.website || '',
+            description: profileData.description || '',
+            managerName: profileData.managerName || '',
+            managerEmail: profileData.managerEmail || '',
+            status: 'pending',
+            createdAt: serverTimestamp(),
+        });
+        // Partners don't get a user doc immediately.
+        // We sign them out after creating the request.
+        await signOut(auth);
+        await batch.commit();
+        return; // End here for partners
+    }
+
+    // Create user document for non-partners
     const userDocRef = doc(firestore, 'users', fbUser.uid);
     const newUser: Partial<User> = {
       displayName: profileData.displayName,
       email: fbUser.email,
       role: role as UserRole,
-      status: role === 'escorte' || role === 'partenaire' ? 'pending' : 'active',
+      status: role === 'escorte' ? 'pending' : 'active',
       verificationStatus: role === 'escorte' ? 'pending' : undefined,
       createdAt: serverTimestamp() as any,
       updatedAt: serverTimestamp() as any,
@@ -99,41 +127,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profileImage: `https://picsum.photos/seed/${fbUser.uid}/400/400`,
       ...profileData,
     };
-    
-    if (role === 'partenaire') {
-        const partnerRequestRef = doc(collection(firestore, 'partnerRequests'));
-        batch.set(partnerRequestRef, {
-            type: profileData.partnerType as PartnerType,
-            companyName: profileData.companyName,
-            registerNumber: profileData.registerNumber,
-            country: profileData.country,
-            city: profileData.city,
-            address: profileData.address,
-            companyEmail: profileData.companyEmail,
-            phone: profileData.phone,
-            website: profileData.website,
-            description: profileData.description,
-            managerName: profileData.managerName,
-            managerEmail: profileData.managerEmail,
-            status: 'pending',
-            createdAt: serverTimestamp(),
-        });
-        // Partners don't get a user doc immediately, just the request.
-        // We'll sign them out after creating the request.
-        await signOut(auth);
-        await batch.commit();
-        return; // End here for partners
-    }
-
-    if (profileData.referralCode) {
-        // Find user with this referral code
-        // This is a simplified search. For production, use a more robust method like a dedicated collection.
-        // const q = query(collection(firestore, 'users'), where('referralCode', '==', profileData.referralCode), limit(1));
-        // const querySnapshot = await getDocs(q);
-        // if (!querySnapshot.empty) {
-        //     newUser.referredBy = querySnapshot.docs[0].id;
-        // }
-    }
     
     batch.set(userDocRef, newUser, { merge: true });
 
@@ -154,6 +147,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   const logout = async () => {
     await signOut(auth);
+    setUser(null);
+    setFirebaseUser(null);
     router.push('/');
   };
 
@@ -164,7 +159,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login, 
       signup,
       logout, 
-    }), [user, firebaseUser, loading, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }), [user, firebaseUser, loading]);
 
   return (
     <AuthContext.Provider value={value}>
