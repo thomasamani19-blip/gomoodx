@@ -4,14 +4,14 @@
 
 import { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import PageHeader from '@/components/shared/page-header';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Search, Send, Video, Phone, ChevronDown, CheckCircle, Calendar } from 'lucide-react';
+import { MessageSquare, Search, Send, Video, Phone, ChevronDown, CheckCircle, Calendar, ShoppingBag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Message, User, Call, CallType, Reservation, Settings } from '@/lib/types';
+import type { Message, User, Call, CallType, Reservation, Settings, Product } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore, useDoc } from '@/firebase';
 import { addDoc, collection, serverTimestamp, query, where, orderBy, or, getDocs, doc, updateDoc, and } from 'firebase/firestore';
@@ -32,6 +32,22 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import Image from 'next/image';
+
+const ProductContextCard = ({ product }: { product: Product }) => (
+    <Card className="mb-4 bg-muted/50">
+        <CardContent className="p-3 flex items-center gap-3">
+            <div className="relative h-16 w-16 rounded-md overflow-hidden flex-shrink-0">
+                <Image src={product.imageUrl} alt={product.title} fill className="object-cover" />
+            </div>
+            <div>
+                <p className="text-xs text-muted-foreground">Discussion concernant le produit :</p>
+                <p className="font-semibold line-clamp-1">{product.title}</p>
+                <Link href={`/boutique/${product.id}`} className="text-xs text-primary hover:underline">Voir le produit</Link>
+            </div>
+        </CardContent>
+    </Card>
+)
 
 function MessagerieContent() {
     const { user, loading: authLoading } = useAuth();
@@ -52,6 +68,13 @@ function MessagerieContent() {
     const [isSendingMessage, setIsSendingMessage] = useState(false);
 
     const contactIdFromUrl = searchParams.get('contact');
+    const productIdFromUrl = searchParams.get('product');
+
+    const productRef = useMemo(() => {
+        if (!firestore || !productIdFromUrl) return null;
+        return doc(firestore, 'products', productIdFromUrl);
+    }, [firestore, productIdFromUrl]);
+    const { data: productContext, loading: productLoading } = useDoc<Product>(productRef);
 
     const settingsRef = useMemo(() => firestore ? doc(firestore, 'settings', 'global') : null, [firestore]);
     const { data: globalSettings } = useDoc<Settings>(settingsRef);
@@ -169,59 +192,11 @@ function MessagerieContent() {
         };
 
         setIsCheckingUnlock(true);
-        // Free contact for escorts
-        if (selectedContact.role === 'escorte') {
-            setIsContactUnlocked(true);
-            setHasActiveReservation(false);
-            setIsCheckingUnlock(false);
-            return;
-        }
 
-        const checkAccess = async () => {
-            // 1. Check for Pass Contact
-            if (user.unlockedContacts?.includes(selectedContact.id)) {
-                setIsContactUnlocked(true);
-                setIsCheckingUnlock(false);
-                setHasActiveReservation(false);
-                return;
-            }
-
-            // 2. Check for an active, confirmed reservation between the two users
-            try {
-                const reservationsQuery = query(
-                    collection(firestore, 'reservations'),
-                    where('status', '==', 'confirmed'),
-                    or(
-                        and(where('memberId', '==', user.id), where('creatorId', '==', selectedContact.id)),
-                        and(where('memberId', '==', selectedContact.id), where('creatorId', '==', user.id))
-                    )
-                );
-                const reservationsSnapshot = await getDocs(reservationsQuery);
-                const hasActiveRes = reservationsSnapshot.docs.some(doc => {
-                    const res = doc.data() as Reservation;
-                    const isStillActive = res.reservationDate.toDate().getTime() + (res.durationHours || 0) * 3600 * 1000 > Date.now();
-                    return isStillActive;
-                });
-
-                if (hasActiveRes) {
-                    setIsContactUnlocked(true);
-                    setHasActiveReservation(true);
-                } else {
-                    setIsContactUnlocked(false);
-                    setHasActiveReservation(false);
-                }
-
-            } catch (e) {
-                console.error("Error checking for reservations:", e);
-                setIsContactUnlocked(false);
-                setHasActiveReservation(false);
-            }
-            
-            setIsCheckingUnlock(false);
-        };
-
-        checkAccess();
-
+        // All messaging is free now, no need for complex checks
+        setIsContactUnlocked(true);
+        setIsCheckingUnlock(false);
+        
     }, [user, selectedContact, firestore]);
 
     // 2. Listen to messages for the selected contact in real-time
@@ -468,6 +443,7 @@ function MessagerieContent() {
                         </div>
                     </div>
                     <ScrollArea className="flex-1 p-6 bg-muted/20">
+                        {productContext && <ProductContextCard product={productContext} />}
                         <div className="space-y-6">
                             {messagesLoading && <div className="text-center text-muted-foreground">Chargement des messages...</div>}
                             {!messagesLoading && activeMessages?.map(msg => (
@@ -497,8 +473,8 @@ function MessagerieContent() {
                     </ScrollArea>
                     <div className="p-4 border-t mt-auto bg-card">
                         <form className="flex items-center gap-2" onSubmit={handleSendMessage}>
-                            <Input placeholder="Écrivez votre message..." autoComplete="off" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} disabled={!isContactUnlocked || isCheckingUnlock || isSendingMessage} />
-                            <Button type="submit" size="icon" variant="ghost" disabled={!newMessage.trim() || !isContactUnlocked || isCheckingUnlock || isSendingMessage}>
+                            <Input placeholder="Écrivez votre message..." autoComplete="off" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} disabled={isSendingMessage} />
+                            <Button type="submit" size="icon" variant="ghost" disabled={!newMessage.trim() || isSendingMessage}>
                                 {isSendingMessage ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5 text-primary" />}
                             </Button>
                         </form>

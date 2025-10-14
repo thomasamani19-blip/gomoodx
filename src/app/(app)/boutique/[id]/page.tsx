@@ -83,8 +83,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const { toast } = useToast();
   
   const [isPurchasing, setIsPurchasing] = useState(false);
-  const [showContactPassDialog, setShowContactPassDialog] = useState(false);
-  const [isBuyingPass, setIsBuyingPass] = useState(false);
 
   const productRef = useMemo(() => firestore ? doc(firestore, 'products', params.id) : null, [firestore, params.id]);
   const { data: product, loading: productLoading } = useDoc<Product>(productRef);
@@ -146,42 +144,14 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     }
   };
   
-  const handleBuyContactPass = async () => {
-    if (!user || !creator) return;
-    setIsBuyingPass(true);
-    try {
-        const response = await fetch('/api/products/purchase-contact-pass', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id, sellerId: creator.id })
-        });
-        const result = await response.json();
-        if (result.status === 'success') {
-            toast({ title: "Contact débloqué !", description: "Vous pouvez maintenant envoyer un message." });
-            router.push(`/messagerie?contact=${creator.id}`);
-        } else {
-            throw new Error(result.message || "Une erreur est survenue.");
-        }
-    } catch (error: any) {
-        toast({ title: "Erreur d'achat", description: error.message, variant: "destructive" });
-    } finally {
-        setIsBuyingPass(false);
-        setShowContactPassDialog(false);
-    }
-  }
-
-  const handleContactSeller = () => {
+  const handlePhysicalProductPurchase = () => {
     if (!user || !creator) {
         toast({ title: 'Connexion requise', variant: 'destructive' });
         router.push('/connexion');
         return;
     }
-    // Check if user has already unlocked this contact
-    if (user.unlockedContacts?.includes(creator.id)) {
-        router.push(`/messagerie?contact=${creator.id}`);
-    } else {
-        setShowContactPassDialog(true);
-    }
+    // Redirect to messaging with product context
+    router.push(`/messagerie?contact=${creator.id}&product=${params.id}`);
   }
 
 
@@ -218,8 +188,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const isPhysical = product.productType === 'physique';
   const isFreeDigital = product.productType === 'digital' && product.price === 0;
   const isPaidDigital = product.productType === 'digital' && product.price > 0;
-  const contactPassPrice = settings?.passContact?.price || 5;
-  const hasUnlockedContact = !!(user && creator && user.unlockedContacts?.includes(creator.id));
 
   return (
     <>
@@ -263,9 +231,8 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
                         {isPhysical ? (
-                            <Button size="lg" onClick={handleContactSeller}>
-                                {hasUnlockedContact ? <CheckCircle className="mr-2 h-4 w-4"/> : <MessageCircle className="mr-2 h-4 w-4" />}
-                                {hasUnlockedContact ? 'Contacter' : 'Contacter pour acheter'}
+                            <Button size="lg" onClick={handlePhysicalProductPurchase}>
+                               <ShoppingBag className="mr-2 h-4 w-4" /> Acheter
                             </Button>
                         ) : isPaidDigital ? (
                              <Button size="lg" onClick={handlePurchase} disabled={isPurchasing}>
@@ -305,26 +272,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         </div>
         <SuggestedProducts currentProductId={params.id} />
     </div>
-    
-    <AlertDialog open={showContactPassDialog} onOpenChange={setShowContactPassDialog}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Débloquer le Contact</AlertDialogTitle>
-                <AlertDialogDescription>
-                    Pour contacter le vendeur de ce produit physique, vous devez acheter un "Pass Contact". Ce pass, d'un montant de <span className="font-bold">{contactPassPrice.toFixed(2)}€</span>, vous donnera accès à la messagerie privée avec ce vendeur pour finaliser votre achat.
-                    <br/><br/>
-                    Ce montant est facturé par la plateforme pour la mise en relation.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel disabled={isBuyingPass}>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={handleBuyContactPass} disabled={isBuyingPass}>
-                    {isBuyingPass && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Payer le Pass et Contacter
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
     </>
   );
 }
