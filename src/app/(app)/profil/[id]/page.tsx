@@ -375,6 +375,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
             const result = await response.json();
             if (result.status === 'success') {
                 toast({ title: 'Abonnement réussi !', description: `Vous êtes maintenant abonné(e) à ${user.displayName}.` });
+                setSubscriptionDialog({ open: false, tier: null });
             } else {
                 throw new Error(result.message || "Une erreur est survenue.");
             }
@@ -382,7 +383,6 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
             toast({ title: "Erreur d'abonnement", description: error.message, variant: "destructive" });
         } finally {
             setIsSubscribing(false);
-            setSubscriptionDialog({ open: false, tier: null });
         }
     };
     
@@ -521,7 +521,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         </div>
         
         {/* Subscription Confirmation Dialog */}
-        <AlertDialog open={subscriptionDialog.open} onOpenChange={(open) => setSubscriptionDialog({ open, tier: null })}>
+        <AlertDialog open={subscriptionDialog.open} onOpenChange={(open) => !open && setSubscriptionDialog({ ...subscriptionDialog, open: false })}>
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>S'abonner à "{subscriptionDialog.tier?.name}"</AlertDialogTitle>
@@ -586,6 +586,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                     <AlertDialogAction onClick={handleInitiateCall}>Confirmer</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
+        </AlertDialog>
         </>
     );
 };
@@ -666,5 +667,3 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   // Default to creator/producer profile view
   return <CreatorProfile user={user} isOwnProfile={isOwnProfile} />;
 }
-
-    
