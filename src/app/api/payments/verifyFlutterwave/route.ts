@@ -23,6 +23,7 @@ const creditPacksEUR = [
 ];
 
 const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
+const REFERRAL_BONUS_POINTS = 500; // 500 points = 5 EUR
 
 export async function POST(request: Request) {
   const db = getFirestore();
@@ -118,6 +119,23 @@ export async function POST(request: Request) {
 
         if (isFirstDeposit) {
             t.update(userRef, { hasMadeFirstDeposit: true });
+             // Handle referral reward
+            if (userData.referredBy) {
+                const referrerRef = db.collection('users').doc(userData.referredBy);
+                const referrerWalletRef = db.collection('wallets').doc(userData.referredBy);
+
+                t.update(referrerRef, { rewardPoints: FieldValue.increment(REFERRAL_BONUS_POINTS), referralsCount: FieldValue.increment(1) });
+                
+                const rewardTxRef = referrerWalletRef.collection('transactions').doc();
+                t.set(rewardTxRef, {
+                  amount: REFERRAL_BONUS_POINTS,
+                  type: 'reward',
+                  description: `Récompense de parrainage: ${userData.displayName}`,
+                  status: 'success',
+                  createdAt: FieldValue.serverTimestamp(),
+                  reference: userId,
+                });
+            }
         }
         
         // Create a new transaction record to log the event
@@ -143,4 +161,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: 'error', message: error.message || 'Erreur Interne du Serveur' }, { status: 500 });
   }
 }
-

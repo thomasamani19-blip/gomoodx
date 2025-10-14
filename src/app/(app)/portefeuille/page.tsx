@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowDownCircle, ArrowUpCircle, PlusCircle, Video, Phone, ArrowRight, ArrowLeft, Eye, EyeOff, Banknote } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, PlusCircle, Video, Phone, ArrowRight, ArrowLeft, Eye, EyeOff, Banknote, Gift } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { doc, collection, query, or, where, orderBy } from 'firebase/firestore';
@@ -147,6 +147,8 @@ export default function PortefeuillePage() {
       case 'deposit':
       case 'credit':
         return <ArrowUpCircle className="h-5 w-5 text-green-500" />;
+      case 'reward':
+          return <Gift className="h-5 w-5 text-yellow-500" />;
       case 'purchase':
       case 'debit':
       case 'withdrawal':
@@ -168,7 +170,7 @@ export default function PortefeuillePage() {
         description="Gérez votre solde et consultez l'historique de vos transactions."
       />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-4">
            <Card>
             <CardHeader>
               <div className="flex justify-between items-center">
@@ -205,6 +207,20 @@ export default function PortefeuillePage() {
                 )}
             </CardFooter>
            </Card>
+           {user?.rewardPoints !== undefined && user.rewardPoints > 0 && (
+             <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Gift className="h-5 w-5 text-primary" /> Points de Récompense</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{user.rewardPoints} pts</p>
+                <p className="text-sm text-muted-foreground">Équivaut à environ {(user.rewardPoints / 100).toFixed(2)} €</p>
+              </CardContent>
+              <CardFooter>
+                 <Button variant="secondary" disabled>Convertir (bientôt)</Button>
+              </CardFooter>
+             </Card>
+           )}
         </div>
         <div className="lg:col-span-2 flex flex-col gap-8">
             <Card>
@@ -235,8 +251,8 @@ export default function PortefeuillePage() {
                                     <TableRow key={tx.id}>
                                         <TableCell>{getTransactionIcon(tx.type)}</TableCell>
                                         <TableCell className="font-medium capitalize">{tx.description || tx.reference || tx.type}</TableCell>
-                                        <TableCell className={`text-right font-semibold ${['deposit', 'credit'].includes(tx.type) ? 'text-green-600' : 'text-destructive'}`}>
-                                            {['deposit', 'credit'].includes(tx.type) ? '+' : '-'} {tx.amount.toFixed(2)} €
+                                        <TableCell className={`text-right font-semibold ${['deposit', 'credit', 'reward'].includes(tx.type) ? 'text-green-600' : 'text-destructive'}`}>
+                                            {['deposit', 'credit', 'reward'].includes(tx.type) ? '+' : '-'} {tx.amount.toFixed(2)} {tx.type === 'reward' ? 'pts' : '€'}
                                         </TableCell>
                                         <TableCell className="text-right text-muted-foreground text-xs">
                                             {tx.createdAt?.toDate ? format(tx.createdAt.toDate(), "d MMM yyyy, HH:mm", { locale: fr }) : 'Date inconnue'}

@@ -24,6 +24,7 @@ const kkiapay = new Kkiapay(
 );
 
 const XOF_TO_EUR_RATE = 1 / 655.957;
+const REFERRAL_BONUS_POINTS = 500; // 500 points = 5 EUR
 
 const creditPacksEUR = [
   { name: 'Essentiel', price: 20, bonus: 0 },
@@ -106,6 +107,23 @@ export async function POST(request: Request) {
         
         if(isFirstDeposit) {
             t.update(userRef, { hasMadeFirstDeposit: true });
+            // Handle referral reward
+            if (userData.referredBy) {
+                const referrerRef = db.collection('users').doc(userData.referredBy);
+                const referrerWalletRef = db.collection('wallets').doc(userData.referredBy);
+
+                t.update(referrerRef, { rewardPoints: FieldValue.increment(REFERRAL_BONUS_POINTS), referralsCount: FieldValue.increment(1) });
+                
+                const rewardTxRef = referrerWalletRef.collection('transactions').doc();
+                t.set(rewardTxRef, {
+                  amount: REFERRAL_BONUS_POINTS,
+                  type: 'reward',
+                  description: `Récompense de parrainage: ${userData.displayName}`,
+                  status: 'success',
+                  createdAt: FieldValue.serverTimestamp(),
+                  reference: userId,
+                });
+            }
         }
         
         t.set(transactionRef, {
