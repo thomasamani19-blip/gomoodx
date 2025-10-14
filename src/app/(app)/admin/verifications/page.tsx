@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from '@/components/shared/page-header';
@@ -5,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useCollection, useFirestore } from '@/firebase';
 import type { User, VerificationStatus } from '@/lib/types';
-import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc, writeBatch, getDoc, FieldValue } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -30,6 +31,8 @@ const statusTextMap = {
     verified: 'Vérifié',
     rejected: 'Rejeté',
 };
+
+const PROFILE_COMPLETION_BONUS = 500;
 
 export default function AdminVerificationsPage() {
     const { user: currentUser, loading: authLoading } = useAuth();
@@ -67,17 +70,51 @@ export default function AdminVerificationsPage() {
 
         setLoadingStates(prev => ({...prev, [userId]: true}));
 
-        const userRef = doc(firestore, 'users', userId);
         try {
-            await updateDoc(userRef, { 
+            const userRef = doc(firestore, 'users', userId);
+            const userDoc = await getDoc(userRef);
+            if (!userDoc.exists()) throw new Error("Utilisateur introuvable.");
+            
+            const userData = userDoc.data() as User;
+            const batch = writeBatch(firestore);
+
+            batch.update(userRef, { 
                 verificationStatus: status,
                 status: status === 'verified' ? 'active' : 'suspended',
                 isVerified: status === 'verified',
             });
+
+            // Check for profile completion bonus
+            let bonusAwarded = false;
+            if (status === 'verified' && !userData.hasCompletedProfile) {
+                const profileIsComplete = userData.profileImage && userData.bannerImage && userData.bio && userData.galleryImages && userData.galleryImages.length >= 3;
+                if (profileIsComplete) {
+                    const walletRef = doc(firestore, 'wallets', userId);
+                    const rewardTxRef = doc(collection(walletRef, 'transactions'));
+                    
+                    batch.update(userRef, {
+                        hasCompletedProfile: true,
+                        rewardPoints: FieldValue.increment(PROFILE_COMPLETION_BONUS),
+                    });
+
+                    batch.set(rewardTxRef, {
+                        amount: PROFILE_COMPLETION_BONUS,
+                        type: 'reward',
+                        description: 'Bonus pour profil complet et vérifié !',
+                        status: 'success',
+                        createdAt: new Date(),
+                    });
+                    bonusAwarded = true;
+                }
+            }
+            
+            await batch.commit();
+
             toast({
                 title: 'Statut mis à jour',
-                description: `Le créateur a été ${status === 'verified' ? 'approuvé' : 'rejeté'}.`,
+                description: `Le créateur a été ${status === 'verified' ? 'approuvé' : 'rejeté'}. ${bonusAwarded ? `Et a reçu ${PROFILE_COMPLETION_BONUS} points bonus !` : ''}`,
             });
+
             setUsers(prev => prev?.filter(u => u.id !== userId) || null);
         } catch (error) {
             console.error("Error updating verification status:", error);

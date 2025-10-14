@@ -21,7 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { BankDetails } from '@/lib/types';
-import { doc, getDoc, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, writeBatch, FieldValue } from 'firebase/firestore';
 
 function fileToDataUrl(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -32,7 +32,7 @@ function fileToDataUrl(file: File): Promise<string> {
     });
 }
 
-const PROFILE_COMPLETION_BONUS = 250;
+const PROFILE_COMPLETION_BONUS = 500;
 
 export default function ProfilPage() {
   const { user, loading: authLoading } = useAuth();
@@ -118,7 +118,6 @@ export default function ProfilPage() {
     const newPreviews = galleryPreviews.filter((_, i) => i !== index);
     setGalleryPreviews(newPreviews);
     
-    // If the URL is a data URL, it corresponds to a newly added file
     if (urlToRemove.startsWith('data:')) {
         let fileIndexToRemove = -1;
         let dataUrlCount = 0;
@@ -155,7 +154,6 @@ export default function ProfilPage() {
         bannerUrl = await uploadFile(storage, storagePath, bannerFile);
       }
 
-      // Upload new gallery files
       const newGalleryUrls = await Promise.all(
         galleryFiles.map(file => {
             const storagePath = `galleries/${user.id}/${Date.now()}_${file.name}`;
@@ -169,7 +167,6 @@ export default function ProfilPage() {
       const updatedData: any = {
         displayName,
         pseudo,
-        // email cannot be updated from here
         bio,
         profileImage: avatarUrl,
         bannerImage: bannerUrl,
@@ -181,45 +178,12 @@ export default function ProfilPage() {
       }
       
       const userRef = doc(firestore, 'users', user.id);
-
-      // Check for profile completion bonus
-      let bonusAwarded = false;
-      const currentUserDoc = await getDoc(userRef);
-      const currentUserData = currentUserDoc.data();
       
-      if (isCreatorOrPartner && !currentUserData?.hasCompletedProfile) {
-          const profileIsComplete = avatarUrl && bannerUrl && bio && (updatedData.galleryImages.length >= 3);
-          
-          if (profileIsComplete) {
-              const batch = writeBatch(firestore);
-              const walletRef = doc(firestore, 'wallets', user.id);
-              const rewardTxRef = doc(collection(walletRef, 'transactions'));
-              
-              updatedData.hasCompletedProfile = true;
-              updatedData.rewardPoints = (currentUserData?.rewardPoints || 0) + PROFILE_COMPLETION_BONUS;
-
-              batch.update(userRef, updatedData);
-              batch.set(rewardTxRef, {
-                  amount: PROFILE_COMPLETION_BONUS,
-                  type: 'reward',
-                  description: 'Bonus pour profil complet !',
-                  status: 'success',
-                  createdAt: new Date(),
-              });
-              
-              await batch.commit();
-              bonusAwarded = true;
-          }
-      }
-
-      // If no bonus was awarded, just update the profile
-      if (!bonusAwarded) {
-          await updateUserProfile(firestore, user.id, updatedData);
-      }
+      await updateUserProfile(firestore, user.id, updatedData);
 
       toast({
         title: 'Profil mis à jour',
-        description: `Vos informations ont été enregistrées. ${bonusAwarded ? `Vous avez reçu ${PROFILE_COMPLETION_BONUS} points de récompense !` : ''}`,
+        description: `Vos informations ont été enregistrées.`,
       });
       setGalleryFiles([]); // Clear file queue after upload
     } catch (error) {
