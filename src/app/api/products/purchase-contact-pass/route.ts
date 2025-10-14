@@ -1,3 +1,4 @@
+
 // This file is deprecated. The logic has been changed to initiate a conversation instead of a purchase.
 import { NextResponse } from 'next/server';
 
