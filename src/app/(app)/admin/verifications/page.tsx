@@ -6,7 +6,7 @@ import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useCollection, useFirestore } from '@/firebase';
-import type { User, VerificationStatus } from '@/lib/types';
+import type { User, VerificationStatus, Settings } from '@/lib/types';
 import { collection, query, where, doc, updateDoc, writeBatch, getDoc, FieldValue } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
+import { useDoc } from '@/firebase/firestore/use-doc';
 
 const statusVariantMap: { [key in VerificationStatus]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
     pending: 'outline',
@@ -33,7 +34,6 @@ const statusTextMap = {
     rejected: 'Rejeté',
 };
 
-const PROFILE_COMPLETION_BONUS = 500;
 
 export default function AdminVerificationsPage() {
     const { user: currentUser, loading: authLoading } = useAuth();
@@ -42,6 +42,9 @@ export default function AdminVerificationsPage() {
     const { toast } = useToast();
     const [isAllowed, setIsAllowed] = useState(false);
     const [loadingStates, setLoadingStates] = useState<{[key: string]: boolean}>({});
+
+    const settingsRef = useMemo(() => firestore ? doc(firestore, 'settings', 'global') : null, [firestore]);
+    const { data: settings, loading: settingsLoading } = useDoc<Settings>(settingsRef);
     
     useEffect(() => {
         if (!authLoading) {
@@ -64,7 +67,7 @@ export default function AdminVerificationsPage() {
         
     const { data: users, loading: usersLoading, setData: setUsers } = useCollection<User>(verificationQuery);
     
-    const loading = authLoading || !isAllowed || usersLoading;
+    const loading = authLoading || !isAllowed || usersLoading || settingsLoading;
 
     const handleUpdateVerification = async (userId: string, status: 'verified' | 'rejected') => {
         if (!firestore) return;
@@ -87,7 +90,9 @@ export default function AdminVerificationsPage() {
 
             // Check for profile completion bonus
             let bonusAwarded = false;
-            if (status === 'verified' && !userData.hasCompletedProfile) {
+            const PROFILE_COMPLETION_BONUS = settings?.rewards?.profileCompletionBonus || 0;
+
+            if (status === 'verified' && !userData.hasCompletedProfile && PROFILE_COMPLETION_BONUS > 0) {
                 const profileIsComplete = userData.profileImage && userData.bannerImage && userData.bio && userData.galleryImages && userData.galleryImages.length >= 3;
                 if (profileIsComplete) {
                     const walletRef = doc(firestore, 'wallets', userId);

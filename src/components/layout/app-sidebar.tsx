@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -102,6 +103,7 @@ const adminNav = [
   { title: 'Modération Contenu', href: '/admin/moderation', icon: AlertTriangle },
   { title: 'Portefeuille Plateforme', href: '/admin/portefeuille', icon: Wallet },
   { title: 'Gestion des Retraits', href: '/admin/retraits', icon: Banknote },
+  { title: 'Paramètres Admin', href: '/admin/parametres', icon: Settings },
   { title: "Fil d'actualité", href: '/feed', icon: Newspaper },
 ];
 

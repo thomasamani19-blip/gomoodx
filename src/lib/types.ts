@@ -420,6 +420,12 @@ export interface Settings {
     withdrawalMinAmount?: number;
     withdrawalMaxAmount?: number;
     welcomeBonusAmount?: number;
+    rewards?: {
+      firstContentBonus: number;
+      firstSaleBonus: number;
+      profileCompletionBonus: number;
+      referralBonus: number;
+    };
 }
 
 // AI Assistant Log

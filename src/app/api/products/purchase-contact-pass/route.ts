@@ -13,7 +13,6 @@ if (!getApps().length) {
 const db = getFirestore();
 
 const PLATFORM_WALLET_ID = 'platform_wallet';
-const FIRST_SALE_BONUS = 1000; // 1000 points = 10 EUR
 
 export async function POST(request: Request) {
     try {
@@ -31,7 +30,9 @@ export async function POST(request: Request) {
 
         const purchaseResult = await db.runTransaction(async (t) => {
             const settingsDoc = await t.get(settingsRef);
-            const passPrice = (settingsDoc.data() as Settings)?.passContact?.price;
+            const settingsData = settingsDoc.data() as Settings;
+            const passPrice = settingsData?.passContact?.price;
+            const firstSaleBonus = settingsData?.rewards?.firstSaleBonus || 0;
 
             if (!passPrice || passPrice <= 0) {
                 throw new Error("Le prix du Pass Contact n'est pas configuré.");
@@ -88,15 +89,15 @@ export async function POST(request: Request) {
             });
             
             // First sale bonus logic for the seller
-            if (!seller.hasMadeFirstSale) {
+            if (!seller.hasMadeFirstSale && firstSaleBonus > 0) {
                 t.update(sellerRef, {
-                    rewardPoints: FieldValue.increment(FIRST_SALE_BONUS),
+                    rewardPoints: FieldValue.increment(firstSaleBonus),
                     hasMadeFirstSale: true,
                 });
                 const sellerWalletRef = db.collection('wallets').doc(sellerId);
                 const rewardTxRef = sellerWalletRef.collection('transactions').doc();
                 t.set(rewardTxRef, {
-                    amount: FIRST_SALE_BONUS, type: 'reward', createdAt: Timestamp.now(),
+                    amount: firstSaleBonus, type: 'reward', createdAt: Timestamp.now(),
                     description: `Bonus pour votre première vente !`, status: 'success', reference: txId
                 } as Omit<Transaction, 'id'|'path'>);
             }

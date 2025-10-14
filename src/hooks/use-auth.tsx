@@ -2,7 +2,7 @@
 'use client';
 
 import { createContext, useContext, ReactNode, useMemo, useEffect, useState } from 'react';
-import type { User, PartnerType, UserRole } from '@/lib/types';
+import type { User, PartnerType, UserRole, Settings } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { 
     getAuth, 
@@ -25,7 +25,8 @@ import {
     getDocs,
     limit,
     updateDoc,
-    increment
+    increment,
+    getDoc
 } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 
@@ -116,9 +117,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
             const referrerDoc = querySnapshot.docs[0];
+            const settingsDoc = await getDoc(doc(firestore, 'settings', 'global'));
+            const referralBonus = (settingsDoc.data() as Settings)?.rewards?.referralBonus || 0;
+
             referrerId = referrerDoc.id;
             const referrerRef = doc(firestore, 'users', referrerId);
-            batch.update(referrerRef, { referralsCount: increment(1) });
+            
+            if (referralBonus > 0) {
+                 batch.update(referrerRef, { 
+                    referralsCount: increment(1),
+                    rewardPoints: increment(referralBonus),
+                 });
+                 // Log transaction for referrer
+                 const referrerWalletRef = collection(firestore, 'wallets', referrerId, 'transactions');
+                 batch.set(doc(referrerWalletRef), {
+                     amount: referralBonus,
+                     type: 'reward',
+                     description: `Bonus de parrainage - Nouvel utilisateur: ${profileData.displayName}`,
+                     status: 'success',
+                     createdAt: serverTimestamp()
+                 });
+
+            } else {
+                 batch.update(referrerRef, { referralsCount: increment(1) });
+            }
+
         } else {
             console.warn(`Referral code "${referralCode}" not found.`);
         }

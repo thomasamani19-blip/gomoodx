@@ -14,7 +14,6 @@ if (!getApps().length) {
 
 const db = getFirestore();
 const PLATFORM_WALLET_ID = 'platform_wallet';
-const FIRST_SALE_BONUS = 1000; // 1000 points = 10 EUR
 
 export async function POST(request: Request) {
     try {
@@ -54,7 +53,10 @@ export async function POST(request: Request) {
             const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
 
             const settingsDoc = await t.get(settingsRef);
-            const commissionRate = (settingsDoc.data() as Settings)?.platformCommissionRate || 0;
+            const settingsData = settingsDoc.data() as Settings;
+            const commissionRate = settingsData?.platformCommissionRate || 0.20;
+            const firstSaleBonus = settingsData?.rewards?.firstSaleBonus || 0;
+
             
             if (memberWallet.balance < articlePrice) throw new Error("Solde insuffisant pour effectuer cet achat.");
             if (article.authorId === memberId) throw new Error("Vous ne pouvez pas acheter votre propre article.");
@@ -120,14 +122,14 @@ export async function POST(request: Request) {
             } as Omit<Transaction, 'id'>);
             
             // First sale bonus logic
-            if (!seller.hasMadeFirstSale) {
+            if (!seller.hasMadeFirstSale && firstSaleBonus > 0) {
                 t.update(sellerRef, {
-                    rewardPoints: FieldValue.increment(FIRST_SALE_BONUS),
+                    rewardPoints: FieldValue.increment(firstSaleBonus),
                     hasMadeFirstSale: true,
                 });
                 const rewardTxRef = sellerWalletRef.collection('transactions').doc();
                 t.set(rewardTxRef, {
-                    amount: FIRST_SALE_BONUS, type: 'reward', createdAt: Timestamp.now(),
+                    amount: firstSaleBonus, type: 'reward', createdAt: Timestamp.now(),
                     description: `Bonus pour votre première vente !`, status: 'success', reference: purchaseId
                 } as Omit<Transaction, 'id'|'path'>);
             }
