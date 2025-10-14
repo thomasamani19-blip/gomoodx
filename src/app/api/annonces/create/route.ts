@@ -1,14 +1,12 @@
 
-
-// /src/app/api/posts/create/route.ts
+// /src/app/api/annonces/create/route.ts
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, applicationDefault, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, serverTimestamp, doc, writeBatch, FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
-import type { Post, User } from '@/lib/types';
-import { getAuth } from 'firebase-admin/auth';
-import { firebaseConfig } from '@/firebase/config';
+import type { Annonce, User } from '@/lib/types';
 import { modererContenu } from '@/ai/flows/moderer-contenu';
+import { firebaseConfig } from '@/firebase/config';
 
 if (!getApps().length) {
     initializeApp({
@@ -19,70 +17,65 @@ if (!getApps().length) {
 
 const db = getFirestore();
 const storage = getStorage();
-const auth = getAuth();
 const FIRST_CONTENT_BONUS = 250; // Points
 
 export async function POST(request: Request) {
     try {
         const formData = await request.formData();
-        const content = formData.get('content') as string;
         const authorId = formData.get('authorId') as string;
+        const title = formData.get('title') as string;
+        const description = formData.get('description') as string;
+        const price = parseFloat(formData.get('price') as string);
+        const category = formData.get('category') as string;
+        const location = formData.get('location') as string;
         const imageFile = formData.get('image') as File | null;
 
-        // Basic validation
-        if (!authorId) {
-            return NextResponse.json({ status: 'error', message: "L'auteur de la publication est manquant." }, { status: 400 });
-        }
-        if (!content && !imageFile) {
-            return NextResponse.json({ status: 'error', message: "Le contenu de la publication est vide." }, { status: 400 });
+        if (!authorId || !title || !description || isNaN(price) || !category || !location || !imageFile) {
+            return NextResponse.json({ status: 'error', message: 'Données du formulaire invalides ou manquantes.' }, { status: 400 });
         }
         
         const authorRef = db.collection('users').doc(authorId);
         const authorDoc = await authorRef.get();
         if (!authorDoc.exists) {
-            return NextResponse.json({ status: 'error', message: "Auteur inconnu." }, { status: 404 });
+            return NextResponse.json({ status: 'error', message: 'Auteur inconnu.' }, { status: 404 });
         }
         const authorData = authorDoc.data() as User;
 
-        // AI Content Moderation
         const moderationResult = await modererContenu({
-            texte: content,
-            typeContenu: 'Post',
+            texte: `${title} - ${description}`,
+            typeContenu: 'Annonce',
         });
 
-        let imageUrl: string | undefined = undefined;
+        const imagePath = `services/${authorId}/${Date.now()}_${imageFile.name}`;
+        const buffer = Buffer.from(await imageFile.arrayBuffer());
+        
+        const file = storage.bucket().file(imagePath);
+        await file.save(buffer, { metadata: { contentType: imageFile.type } });
+        await file.makePublic();
+        const imageUrl = file.publicUrl();
 
-        if (imageFile) {
-            const imagePath = `posts/${authorId}/${Date.now()}_${imageFile.name}`;
-            const buffer = Buffer.from(await imageFile.arrayBuffer());
-            
-            const file = storage.bucket().file(imagePath);
-            await file.save(buffer, {
-                metadata: {
-                    contentType: imageFile.type,
-                },
-            });
-            await file.makePublic();
-            imageUrl = file.publicUrl();
-        }
-
-        const newPost: Omit<Post, 'id'> = {
-            authorId,
-            authorName: authorData.displayName,
-            authorImage: authorData.profileImage || '',
-            content: content,
-            type: imageFile ? 'image' : 'text',
-            mediaUrl: imageUrl,
-            likes: [],
-            commentsCount: 0,
+        const newAnnonce: Omit<Annonce, 'id'> = {
+            title,
+            description,
+            price,
+            category,
+            location,
+            imageUrl,
+            createdBy: authorId,
+            status: 'active',
+            rating: 0,
+            ratingCount: 0,
+            views: 0,
             createdAt: serverTimestamp() as any,
+            updatedAt: serverTimestamp() as any,
+            isSponsored: false,
             moderationStatus: moderationResult.status,
             moderationReason: moderationResult.raison,
         };
         
         const batch = db.batch();
-        const postRef = db.collection('posts').doc();
-        batch.set(postRef, newPost);
+        const annonceRef = db.collection('services').doc();
+        batch.set(annonceRef, newAnnonce);
 
         // First content bonus logic
         if (!authorData.hasPostedFirstContent) {
@@ -100,16 +93,16 @@ export async function POST(request: Request) {
                 description: 'Bonus pour votre premier contenu !',
                 status: 'success',
                 createdAt: serverTimestamp(),
-                reference: postRef.id,
+                reference: annonceRef.id,
             });
         }
         
         await batch.commit();
 
-        return NextResponse.json({ status: 'success', message: 'Publication créée.', postId: postRef.id });
+        return NextResponse.json({ status: 'success', message: 'Annonce créée.', annonceId: annonceRef.id });
 
     } catch (error: any) {
-        console.error('Erreur lors de la création de la publication:', error);
+        console.error("Erreur lors de la création de l'annonce :", error);
         return NextResponse.json({ status: 'error', message: error.message || "Une erreur interne est survenue." }, { status: 500 });
     }
 }

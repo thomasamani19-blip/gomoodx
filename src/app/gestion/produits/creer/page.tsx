@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
@@ -10,19 +10,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from '@/hooks/use-auth';
-import { useFirestore, useStorage } from '@/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { useCollection, useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { Loader2, PlusCircle, Upload } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Loader2, PlusCircle, Upload, Users, Percent, Trash2, UserSearch } from 'lucide-react';
 import PageHeader from '@/components/shared/page-header';
-import { uploadFile } from '@/lib/storage';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import type { ProductType } from '@/lib/types';
+import type { User } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { collection, query, where } from 'firebase/firestore';
 
+const revenueShareSchema = z.object({
+  userId: z.string(),
+  displayName: z.string(),
+  percentage: z.coerce.number().min(0, "Le % doit être positif.").max(100, "Le % ne peut dépasser 100."),
+});
 
 const productSchema = z.object({
   title: z.string().min(5, "Le titre doit faire au moins 5 caractères."),
@@ -30,59 +39,87 @@ const productSchema = z.object({
   price: z.coerce.number().min(0, "Le prix ne peut pas être négatif."),
   productType: z.enum(['digital', 'physique'], { required_error: 'Veuillez sélectionner un type de produit.'}),
   image: z.any().refine(file => file instanceof File, 'Une image est requise.'),
+  isCollaborative: z.boolean().default(false),
+  revenueShares: z.array(revenueShareSchema).optional(),
+}).refine(data => {
+    if (!data.isCollaborative) return true;
+    const total = data.revenueShares?.reduce((sum, share) => sum + share.percentage, 0) || 0;
+    return total === 100;
+}, {
+    message: "La somme des pourcentages doit être exactement 100%.",
+    path: ["revenueShares"],
 });
+
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
 export default function CreerProduitPage() {
     const { user, loading: authLoading } = useAuth();
     const firestore = useFirestore();
-    const storage = useStorage();
     const { toast } = useToast();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-    const { register, handleSubmit, control, formState: { errors }, watch, setValue } = useForm<ProductFormValues>({
+    const escortesQuery = useMemo(() => firestore ? query(collection(firestore, 'users'), where('role', '==', 'escorte')) : null, [firestore]);
+    const { data: allEscortes, loading: escortesLoading } = useCollection<User>(escortesQuery);
+
+    const form = useForm<ProductFormValues>({
         resolver: zodResolver(productSchema),
         defaultValues: {
             productType: 'digital',
-            price: 0,
+            price: 10,
+            isCollaborative: false,
+            revenueShares: [],
         }
     });
 
-    const productType = watch('productType');
+    const { fields, append, remove, update } = useFieldArray({
+        control: form.control,
+        name: "revenueShares",
+    });
+    
+    useEffect(() => {
+        if(user && fields.length === 0) {
+            append({ userId: user.id, displayName: 'Moi (Producteur)', percentage: 100 });
+        }
+    }, [user, fields.length, append]);
+
+
+    const productType = form.watch('productType');
+    const isCollaborative = form.watch('isCollaborative');
 
     const onSubmit = async (data: ProductFormValues) => {
-        if (!user || !firestore || !storage) {
-            toast({ title: "Erreur", description: "Impossible de créer le produit. Veuillez vous reconnecter.", variant: "destructive" });
-            return;
-        }
-
+        if (!user) return;
         setIsLoading(true);
 
-        try {
-            // 1. Upload image to Firebase Storage
-            const imageFile = data.image as File;
-            const imagePath = `products/${user.id}/${Date.now()}_${imageFile.name}`;
-            const imageUrl = await uploadFile(storage, imagePath, imageFile);
+        const formData = new FormData();
+        formData.append('title', data.title);
+        formData.append('description', data.description);
+        formData.append('price', data.price.toString());
+        formData.append('productType', data.productType);
+        formData.append('image', data.image);
+        formData.append('authorId', user.id);
+        formData.append('isCollaborative', String(data.isCollaborative));
+        if (data.isCollaborative && data.revenueShares) {
+             formData.append('revenueShares', JSON.stringify(data.revenueShares));
+        }
 
-            // 2. Create document in Firestore
-            await addDoc(collection(firestore, 'products'), {
-                title: data.title,
-                description: data.description,
-                price: data.productType === 'physique' ? 0 : data.price,
-                productType: data.productType as ProductType,
-                imageUrl: imageUrl,
-                createdBy: user.id,
-                createdAt: serverTimestamp(),
+        try {
+            const response = await fetch('/api/products/create', {
+                method: 'POST',
+                body: formData,
             });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'La création du produit a échoué.');
+            }
 
             toast({ title: "Produit créé !", description: "Votre nouveau produit est maintenant dans votre boutique." });
             router.push('/gestion/produits');
-
-        } catch (error) {
-            console.error("Erreur lors de la création du produit :", error);
+        } catch (error: any) {
+            console.error("Erreur:", error);
             toast({ title: "Erreur", description: "Une erreur est survenue.", variant: "destructive" });
         } finally {
             setIsLoading(false);
@@ -92,112 +129,124 @@ export default function CreerProduitPage() {
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setValue('image', file, { shouldValidate: true });
+            form.setValue('image', file, { shouldValidate: true });
             const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-            };
+            reader.onloadend = () => setImagePreview(reader.result as string);
             reader.readAsDataURL(file);
         }
     };
 
+    const totalPercentage = form.watch('revenueShares')?.reduce((sum, share) => sum + (share.percentage || 0), 0) || 0;
+
     return (
         <div>
             <PageHeader title="Créer un Nouveau Produit" description="Remplissez les détails de votre produit pour votre boutique." />
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
                 <Card>
                     <CardContent className="pt-6 grid gap-6">
-                       
                         <div className="space-y-2">
                             <Label htmlFor="title">Titre du produit</Label>
-                            <Input id="title" {...register('title')} placeholder="Ex: Vidéo exclusive, Lingerie dédicacée..." />
-                            {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
+                            <Input id="title" {...form.register('title')} />
+                            {form.formState.errors.title && <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>}
                         </div>
-
                         <div className="space-y-2">
                             <Label htmlFor="description">Description détaillée</Label>
-                            <Textarea id="description" {...register('description')} placeholder="Décrivez votre produit..." rows={5} />
-                            {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
+                            <Textarea id="description" {...form.register('description')} rows={5} />
+                            {form.formState.errors.description && <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>}
                         </div>
-
-                         <div className="space-y-2">
+                        <div className="space-y-2">
                             <Label>Image du produit</Label>
-                             <Controller
-                                name="image"
-                                control={control}
-                                render={({ field }) => (
-                                    <div>
-                                        <Input
-                                            id="image-upload"
-                                            type="file"
-                                            accept="image/png, image/jpeg, image/webp"
-                                            className="hidden"
-                                            onChange={handleImageChange}
-                                        />
-                                        <label htmlFor="image-upload" className="cursor-pointer">
-                                            <Card className="aspect-video w-full max-w-sm hover:bg-muted/50 transition-colors flex items-center justify-center">
-                                                {imagePreview ? (
-                                                    <Image src={imagePreview} alt="Aperçu" width={400} height={225} className="object-cover rounded-md" />
-                                                ) : (
-                                                    <div className="text-center text-muted-foreground">
-                                                        <Upload className="mx-auto h-10 w-10 mb-2"/>
-                                                        <p>Cliquez pour choisir une image</p>
-                                                    </div>
-                                                )}
-                                            </Card>
-                                        </label>
-                                    </div>
-                                )}
-                            />
-                            {errors.image && <p className="text-sm text-destructive">{errors.image.message as string}</p>}
+                            <Input id="image-upload" type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                            <label htmlFor="image-upload" className="cursor-pointer">
+                                <Card className="aspect-video w-full max-w-sm hover:bg-muted/50 transition-colors flex items-center justify-center">
+                                    {imagePreview ? <Image src={imagePreview} alt="Aperçu" width={400} height={225} className="object-cover rounded-md" /> : <div className="text-center text-muted-foreground"><Upload className="mx-auto h-10 w-10 mb-2"/><p>Cliquez pour choisir une image</p></div>}
+                                </Card>
+                            </label>
+                            {form.formState.errors.image && <p className="text-sm text-destructive">{form.formState.errors.image.message as string}</p>}
                         </div>
-
                         <div className="grid md:grid-cols-2 gap-6">
-                            <Controller
-                                name="productType"
-                                control={control}
-                                render={({ field }) => (
-                                     <div className="space-y-2">
-                                        <Label>Type de produit</Label>
-                                        <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4 pt-2">
-                                            <div className="flex items-center space-x-2">
-                                                <RadioGroupItem value="digital" id="digital" />
-                                                <Label htmlFor="digital">Contenu Digital</Label>
-                                            </div>
-                                            <div className="flex items-center space-x-2">
-                                                <RadioGroupItem value="physique" id="physique" />
-                                                <Label htmlFor="physique">Produit Physique</Label>
-                                            </div>
-                                        </RadioGroup>
-                                         {errors.productType && <p className="text-sm text-destructive">{errors.productType.message}</p>}
-                                    </div>
-                                )}
-                            />
-                             <div className={cn("space-y-2", productType === 'physique' && 'opacity-50')}>
+                            <Controller name="productType" control={form.control} render={({ field }) => (
+                                <div className="space-y-2">
+                                    <Label>Type de produit</Label>
+                                    <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4 pt-2">
+                                        <RadioGroupItem value="digital" id="digital" /><Label htmlFor="digital">Contenu Digital</Label>
+                                        <RadioGroupItem value="physique" id="physique" /><Label htmlFor="physique">Produit Physique</Label>
+                                    </RadioGroup>
+                                </div>
+                            )}/>
+                            <div className={cn("space-y-2", productType === 'physique' && 'opacity-50')}>
                                 <Label htmlFor="price">Prix (€)</Label>
-                                <Input 
-                                    id="price" 
-                                    type="number" 
-                                    step="0.01" 
-                                    {...register('price')} 
-                                    placeholder={productType === 'digital' ? '0 pour gratuit' : 'Ex: 25.50'}
-                                    disabled={productType === 'physique'}
-                                />
-                                {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
-                                <p className="text-xs text-muted-foreground">
-                                    {productType === 'digital' 
-                                        ? "Pour un produit digital, laissez à 0 pour qu'il soit gratuit." 
-                                        : "Le prix des produits physiques sera discuté par messagerie (prix indicatif de 0€)."
-                                    }
-                                </p>
+                                <Input id="price" type="number" step="0.01" {...form.register('price')} disabled={productType === 'physique'} />
+                                {form.formState.errors.price && <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>}
+                                <p className="text-xs text-muted-foreground">{productType === 'digital' ? "Laissez à 0 pour un produit gratuit." : "Le prix des produits physiques sera discuté par messagerie."}</p>
                             </div>
                         </div>
 
+                        <Separator/>
+                        
+                         <Controller
+                            name="isCollaborative"
+                            control={form.control}
+                            render={({ field }) => (
+                                <div className="flex items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                        <Label htmlFor="collaborative-switch" className="text-base flex items-center"><Users className="mr-2 h-4 w-4 text-primary"/> Contenu Collaboratif</Label>
+                                        <p className="text-sm text-muted-foreground">Activez pour partager les revenus avec d'autres créateurs.</p>
+                                    </div>
+                                    <Switch id="collaborative-switch" checked={field.value} onCheckedChange={field.onChange} />
+                                </div>
+                            )}
+                        />
+
+                        {isCollaborative && (
+                            <div className="space-y-4">
+                                <CardTitle>Partage des Revenus</CardTitle>
+                                <CardDescription>Ajoutez les escortes participantes et définissez leur pourcentage sur les ventes. Le total doit faire 100%.</CardDescription>
+                                
+                                {fields.map((field, index) => (
+                                    <div key={field.id} className="flex items-center gap-4 p-2 rounded-md border">
+                                        <p className="font-medium flex-1">{field.displayName}</p>
+                                        <div className="relative w-28">
+                                            <Input type="number" {...form.register(`revenueShares.${index}.percentage`)} className="pr-8" />
+                                            <Percent className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
+                                        </div>
+                                        {field.userId !== user?.id && <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive"/></Button>}
+                                    </div>
+                                ))}
+
+                                <div className={cn("p-2 rounded-md font-bold text-right", totalPercentage === 100 ? "text-green-600" : "text-destructive")}>
+                                    Total: {totalPercentage} / 100 %
+                                </div>
+                                {form.formState.errors.revenueShares && <p className="text-sm text-destructive text-right">{form.formState.errors.revenueShares.message}</p>}
+
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button type="button" variant="outline"><UserSearch className="mr-2 h-4 w-4" /> Ajouter une escorte</Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="p-0">
+                                        <Command>
+                                            <CommandInput placeholder="Rechercher une escorte..." />
+                                            <CommandList>
+                                                <CommandEmpty>Aucune escorte trouvée.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {allEscortes?.filter(escort => !fields.some(f => f.userId === escort.id)).map(escort => (
+                                                        <CommandItem key={escort.id} onSelect={() => append({ userId: escort.id, displayName: escort.displayName, percentage: 0 })}>
+                                                             <Avatar className="mr-2 h-6 w-6"><AvatarImage src={escort.profileImage}/><AvatarFallback>{escort.displayName.charAt(0)}</AvatarFallback></Avatar>
+                                                            {escort.displayName}
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        )}
                     </CardContent>
                     <CardFooter>
                         <Button type="submit" disabled={isLoading || authLoading}>
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                            {isLoading ? 'Création en cours...' : 'Ajouter le produit'}
+                            Ajouter le produit
                         </Button>
                     </CardFooter>
                 </Card>
