@@ -13,7 +13,6 @@ if (!getApps().length) {
 }
 const db = getFirestore();
 const PLATFORM_WALLET_ID = 'platform_wallet';
-const FIRST_SALE_BONUS = 1000; // 1000 points = 10 EUR
 
 export async function POST(request: Request) {
     try {
@@ -45,7 +44,10 @@ export async function POST(request: Request) {
             const memberWallet = memberWalletDoc.data() as Wallet;
 
             const settingsDoc = await t.get(settingsRef);
-            const commissionRate = (settingsDoc.data() as Settings)?.platformCommissionRate || 0.20;
+            const settingsData = settingsDoc.data() as Settings;
+            const commissionRate = settingsData?.platformCommissionRate || 0.20;
+            const firstSaleBonus = settingsData?.rewards?.firstSaleBonus || 0;
+
 
             let finalPrice = selectedTier.price * durationMonths;
             let discount = 0;
@@ -86,14 +88,14 @@ export async function POST(request: Request) {
             t.update(platformWalletRef, { balance: FieldValue.increment(commissionAmount), totalEarned: FieldValue.increment(commissionAmount) });
 
             // First sale bonus logic
-            if (!creator.hasMadeFirstSale) {
+            if (!creator.hasMadeFirstSale && firstSaleBonus > 0) {
                 t.update(creatorRef, {
-                    rewardPoints: FieldValue.increment(FIRST_SALE_BONUS),
+                    rewardPoints: FieldValue.increment(firstSaleBonus),
                     hasMadeFirstSale: true,
                 });
                 const rewardTxRef = creatorWalletRef.collection('transactions').doc();
                 t.set(rewardTxRef, {
-                    amount: FIRST_SALE_BONUS, type: 'reward', createdAt: Timestamp.now(),
+                    amount: firstSaleBonus, type: 'reward', createdAt: Timestamp.now(),
                     description: `Bonus pour votre première vente !`, status: 'success', reference: creditTxId
                 } as Omit<Transaction, 'id'|'path'>);
             }
