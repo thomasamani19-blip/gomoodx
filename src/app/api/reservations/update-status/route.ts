@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
-import type { Reservation, ReservationStatus } from '@/lib/types';
+import type { Reservation, ReservationStatus, Wallet } from '@/lib/types';
 
 if (!getApps().length) {
     initializeApp({
@@ -47,7 +47,8 @@ export async function POST(request: Request) {
                  if (reservation.status === 'completed' || reservation.status === 'cancelled') {
                     throw new Error("Cette réservation/commande ne peut plus être annulée.");
                  }
-                 
+
+                 // Refund logic
                  const memberWalletRef = db.collection('wallets').doc(reservation.memberId);
                  t.update(memberWalletRef, { balance: FieldValue.increment(reservation.amount) });
                  
@@ -60,10 +61,18 @@ export async function POST(request: Request) {
                     createdAt: Timestamp.now(),
                     reference: reservation.id
                  });
-                 
-                 if(reservation.status === 'pending_delivery' || reservation.status === 'confirmed') {
+
+                 // If funds were in escrow, remove them
+                 const wasInEscrow = reservation.status === 'pending_delivery' || reservation.status === 'confirmed';
+                 if(wasInEscrow) {
                      const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
-                     t.update(platformWalletRef, { escrowBalance: FieldValue.increment(-reservation.amount) });
+                     const platformWalletDoc = await t.get(platformWalletRef);
+                     if (platformWalletDoc.exists) {
+                        const platformWallet = platformWalletDoc.data() as Wallet;
+                        if ((platformWallet.escrowBalance || 0) >= reservation.amount) {
+                            t.update(platformWalletRef, { escrowBalance: FieldValue.increment(-reservation.amount) });
+                        }
+                     }
                  }
 
                  t.update(reservationRef, { status: 'cancelled' });

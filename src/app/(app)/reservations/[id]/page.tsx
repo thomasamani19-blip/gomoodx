@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Phone, ShieldQuestion, Calendar, Tag, CreditCard, User as UserIcon, Users, Timer, BedDouble, Clock, HelpCircle, Check, X, Building, MapPin, Loader2, Info, Package, Plane } from 'lucide-react';
+import { MessageSquare, Phone, ShieldQuestion, Calendar, Tag, CreditCard, User as UserIcon, Users, Timer, BedDouble, Clock, HelpCircle, Check, X, Building, MapPin, Loader2, Info, Package, Plane, Truck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -164,21 +164,23 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     const isPhysicalProductOrder = reservation.type === 'physical_product_order';
     
     const mainActionButtons = () => {
-        if (reservation.status === 'pending') {
+        if (reservation.status === 'pending' || reservation.status === 'pending_delivery') {
             if (isCurrentUserTheMember) {
                 return <Button variant="destructive" onClick={() => handleStatusUpdate('cancelled')} disabled={isUpdatingStatus}>
-                    {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null} Annuler la réservation
+                    {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null} Annuler {isPhysicalProductOrder ? 'la commande' : 'la réservation'}
                 </Button>
             }
             if (isCurrentUserTheCreator) {
                 return (
                     <div className="flex gap-2">
                          <Button variant="destructive" onClick={() => handleStatusUpdate('cancelled')} disabled={isUpdatingStatus}>
-                            {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <X />} Refuser
+                            {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <X />} {isPhysicalProductOrder ? 'Annuler (stock épuisé)' : 'Refuser'}
                         </Button>
-                        <Button onClick={() => handleStatusUpdate('confirmed')} disabled={isUpdatingStatus}>
-                            {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check />} Confirmer
-                        </Button>
+                        {!isPhysicalProductOrder &&
+                            <Button onClick={() => handleStatusUpdate('confirmed')} disabled={isUpdatingStatus}>
+                                {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check />} Confirmer
+                            </Button>
+                        }
                     </div>
                 );
             }
@@ -189,6 +191,11 @@ export default function ReservationDetailPage({ params }: { params: { id: string
 
     const memberHasConfirmed = reservation.memberPresenceConfirmed;
     const creatorHasConfirmed = reservation.establishmentPresenceConfirmed;
+
+    const confirmationQuestion = isPhysicalProductOrder 
+        ? (isCurrentUserTheMember ? "Avez-vous reçu le colis ?" : "Avez-vous expédié le colis ?")
+        : (isCurrentUserTheMember ? "Confirmez-vous votre présence ?" : "Confirmez-vous la présence du client ?");
+
     const currentUserHasConfirmed = isCurrentUserTheMember ? memberHasConfirmed : isCurrentUserTheCreator ? creatorHasConfirmed : false;
 
     return (
@@ -270,16 +277,16 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                      {(reservation.status === 'confirmed' || reservation.status === 'pending_delivery') && (
                          <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5" /> Confirmation Mutuelle</CardTitle>
+                                <CardTitle className="flex items-center gap-2"><Truck className="h-5 w-5" /> Confirmation Mutuelle</CardTitle>
                                 <CardDescription>Chaque partie doit confirmer l'échange pour finaliser la transaction.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div className={cn("flex items-center justify-between p-3 rounded-lg", memberHasConfirmed ? "bg-green-500/10 text-green-700" : "bg-muted")}>
-                                    <span className="font-semibold">{isCurrentUserTheMember ? 'Votre confirmation de réception' : `Confirmation du client`}</span>
+                                    <span className="font-semibold">{isCurrentUserTheMember ? 'Votre confirmation de réception' : 'Confirmation du client'}</span>
                                     {memberHasConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
                                 </div>
                                 <div className={cn("flex items-center justify-between p-3 rounded-lg", creatorHasConfirmed ? "bg-green-500/10 text-green-700" : "bg-muted")}>
-                                     <span className="font-semibold">{isCurrentUserTheCreator ? 'Votre confirmation de livraison' : `Confirmation du vendeur`}</span>
+                                     <span className="font-semibold">{isCurrentUserTheCreator ? 'Votre confirmation de livraison' : 'Confirmation du vendeur'}</span>
                                     {creatorHasConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
                                 </div>
                                 {reservation.escorts?.map(escort => {
@@ -293,11 +300,18 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                 })}
                             </CardContent>
                              <CardFooter className="flex-col items-start gap-4">
+                                {!currentUserHasConfirmed ? (
+                                    <>
+                                        <p className="font-medium">{confirmationQuestion}</p>
+                                        <Button onClick={handlePresenceConfirm} disabled={isUpdatingStatus}>
+                                            {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4" />}
+                                            Oui, je confirme
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <p className="text-sm text-green-600 font-medium">Merci, votre confirmation a bien été enregistrée.</p>
+                                )}
                                 <p className="text-xs text-muted-foreground">Lorsque toutes les parties auront confirmé, la transaction sera finalisée et les fonds transférés.</p>
-                               <Button onClick={handlePresenceConfirm} disabled={isUpdatingStatus || currentUserHasConfirmed}>
-                                 {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4" />}
-                                 {currentUserHasConfirmed ? 'Votre confirmation a été enregistrée' : `Confirmer ma présence/livraison`}
-                               </Button>
                              </CardFooter>
                          </Card>
                      )}
@@ -360,7 +374,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                     <MessageSquare className="mr-2 h-4 w-4" /> Contacter
                                 </Link>
                             </Button>
-                            {reservation.status === 'confirmed' && (
+                            {reservation.status === 'confirmed' && !isPhysicalProductOrder && (
                                 <Button asChild variant="outline">
                                     <Link href={`/messagerie?contact=${otherParty.id}&call=true`}>
                                         <Phone className="mr-2 h-4 w-4" /> Appeler (Gratuit)
