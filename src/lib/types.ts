@@ -216,6 +216,7 @@ export interface Annonce {
   title: string;
   description: string;
   price: number;
+  originalPrice?: number;
   category: string;
   imageUrl: string;
   imageHint?: string;

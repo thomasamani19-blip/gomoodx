@@ -7,7 +7,7 @@ import type { Annonce, User, Review, Settings } from '@/lib/types';
 import { doc, collection, query, orderBy, serverTimestamp, runTransaction, where, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import { Star, MessageCircle, Heart, Share2, Send, Loader2, CheckCircle, Calendar } from 'lucide-react';
+import { Star, MessageCircle, Heart, Share2, Send, Loader2, CheckCircle, Calendar, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
@@ -369,6 +369,7 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
   }
 
   const isAvailableNow = annonce.availableNowUntil && annonce.availableNowUntil.toDate() > new Date();
+  const isOnSale = annonce.originalPrice && annonce.originalPrice > annonce.price;
 
   return (
     <div className="space-y-8">
@@ -382,11 +383,14 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
                 priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-             {isAvailableNow && (
-                <div className="absolute top-4 left-4">
+             <div className="absolute top-4 left-4 flex gap-2">
+                {isAvailableNow && (
                     <Badge className="bg-green-500 hover:bg-green-600 animate-pulse text-base shadow-lg">Disponible maintenant</Badge>
-                </div>
-             )}
+                )}
+                {isOnSale && (
+                    <Badge variant="destructive" className="text-base"><Percent className="mr-1 h-4 w-4"/> PROMO</Badge>
+                )}
+            </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 -mt-24">
@@ -410,7 +414,12 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
             <div className="md:col-span-1 space-y-6">
                  <Card>
                     <CardHeader className="text-center">
-                        <p className="text-4xl font-bold text-primary">{annonce.price} €</p>
+                        <div className="flex items-baseline justify-center gap-2">
+                            <p className="text-4xl font-bold text-primary">{annonce.price} €</p>
+                             {isOnSale && (
+                                <p className="text-xl font-medium text-muted-foreground line-through">{annonce.originalPrice?.toFixed(2)} €</p>
+                            )}
+                        </div>
                          <p className="text-xs text-muted-foreground">{isCreatorAnEscort ? "Tarif indicatif" : "par personne"}</p>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">

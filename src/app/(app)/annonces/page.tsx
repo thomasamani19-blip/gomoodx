@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { collection, query, orderBy } from 'firebase/firestore';
-import { Star } from 'lucide-react';
+import { Star, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useMemo } from 'react';
@@ -85,6 +85,7 @@ export default function AnnoncesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {sortedAnnonces.map((annonce) => {
              const isAvailableNow = annonce.availableNowUntil && annonce.availableNowUntil.toDate() > new Date();
+             const isOnSale = annonce.originalPrice && annonce.originalPrice > annonce.price;
              return (
             <Card key={annonce.id} className="overflow-hidden group">
               <CardContent className="p-0">
@@ -102,7 +103,10 @@ export default function AnnoncesPage() {
                         <Badge variant="secondary" className="absolute top-2 right-2">À la une</Badge>
                      )}
                      {isAvailableNow && (
-                        <Badge className="absolute top-2 left-2 bg-green-500 hover:bg-green-600 animate-pulse">Disponible maintenant</Badge>
+                        <Badge className="absolute top-2 left-2 bg-green-500 hover:bg-green-600 animate-pulse">Disponible</Badge>
+                     )}
+                     {isOnSale && (
+                        <Badge variant="destructive" className="absolute top-2 left-2"><Percent className="mr-1 h-3 w-3"/>PROMO</Badge>
                      )}
                   </div>
                 </Link>
@@ -111,7 +115,12 @@ export default function AnnoncesPage() {
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{annonce.description}</p>
                    <div className="flex items-center justify-between mt-4">
                     <div>
-                        <p className="text-lg font-bold text-primary">{annonce.price ? `${annonce.price} €` : 'Sur demande'}</p>
+                        <div className="flex items-baseline gap-2">
+                           <p className="text-lg font-bold text-primary">{annonce.price ? `${annonce.price.toFixed(2)} €` : 'Sur demande'}</p>
+                            {isOnSale && (
+                                <p className="text-sm text-muted-foreground line-through">{annonce.originalPrice?.toFixed(2)} €</p>
+                            )}
+                        </div>
                         <StarRating rating={annonce.rating} ratingCount={annonce.ratingCount} />
                     </div>
                      <Button variant="secondary" size="sm" asChild>

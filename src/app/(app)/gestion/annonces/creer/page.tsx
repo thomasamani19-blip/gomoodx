@@ -13,7 +13,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Loader2, PlusCircle, Upload } from 'lucide-react';
+import { Loader2, PlusCircle, Upload, DollarSign } from 'lucide-react';
 import PageHeader from '@/components/shared/page-header';
 import Image from 'next/image';
 
@@ -21,6 +21,7 @@ const annonceSchema = z.object({
   title: z.string().min(5, "Le titre doit faire au moins 5 caractères."),
   description: z.string().min(20, "La description doit faire au moins 20 caractères."),
   price: z.coerce.number().min(1, "Le prix doit être supérieur à 0."),
+  originalPrice: z.coerce.number().optional(),
   category: z.string().min(3, "La catégorie est requise."),
   location: z.string().min(3, "La localisation est requise."),
   image: z.any().refine(file => file instanceof File, 'Une image est requise.'),
@@ -51,6 +52,9 @@ export default function CreerAnnoncePage() {
         formData.append('title', data.title);
         formData.append('description', data.description);
         formData.append('price', data.price.toString());
+        if (data.originalPrice) {
+            formData.append('originalPrice', data.originalPrice.toString());
+        }
         formData.append('category', data.category);
         formData.append('location', data.location);
         formData.append('image', data.image);
@@ -140,12 +144,25 @@ export default function CreerAnnoncePage() {
                             {errors.image && <p className="text-sm text-destructive">{errors.image.message as string}</p>}
                         </div>
 
-                        <div className="grid md:grid-cols-3 gap-6">
+                        <div className="grid md:grid-cols-2 gap-6">
                              <div className="space-y-2">
-                                <Label htmlFor="price">Prix (€)</Label>
-                                <Input id="price" type="number" step="0.01" {...register('price')} placeholder="Ex: 250" />
+                                <Label htmlFor="price">Prix de vente (€)</Label>
+                                 <div className="relative">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input id="price" type="number" step="0.01" {...register('price')} placeholder="Ex: 250" className="pl-8" />
+                                 </div>
                                 {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
                             </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="originalPrice">Prix original (barré, optionnel)</Label>
+                                 <div className="relative">
+                                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input id="originalPrice" type="number" step="0.01" {...register('originalPrice')} placeholder="Ex: 300" className="pl-8" />
+                                 </div>
+                                <p className="text-xs text-muted-foreground">Pour afficher une promotion.</p>
+                            </div>
+                        </div>
+                         <div className="grid md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <Label htmlFor="category">Catégorie</Label>
                                 <Input id="category" {...register('category')} placeholder="Ex: Rencontre, Massage, Soirée" />
