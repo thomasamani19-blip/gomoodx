@@ -14,7 +14,7 @@ import { useCollection, useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState, useMemo, useEffect } from 'react';
-import { Loader2, PlusCircle, Upload, Users, Percent, Trash2, UserSearch } from 'lucide-react';
+import { Loader2, PlusCircle, Upload, Users, Percent, Trash2, UserSearch, DollarSign } from 'lucide-react';
 import PageHeader from '@/components/shared/page-header';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -40,6 +40,7 @@ const productSchema = z.object({
     // This logic will be handled based on productType below, Zod needs a value.
     return true;
   }),
+  originalPrice: z.coerce.number().optional(),
   productType: z.enum(['digital', 'physique'], { required_error: 'Veuillez sélectionner un type de produit.'}),
   image: z.any().refine(file => file instanceof File, 'Une image est requise.'),
   isCollaborative: z.boolean().default(false),
@@ -105,6 +106,9 @@ export default function CreerProduitPage() {
         formData.append('title', data.title);
         formData.append('description', data.description);
         formData.append('price', data.price.toString());
+        if (data.originalPrice) {
+            formData.append('originalPrice', data.originalPrice.toString());
+        }
         formData.append('productType', data.productType);
         formData.append('image', data.image);
         formData.append('authorId', user.id);
@@ -182,11 +186,22 @@ export default function CreerProduitPage() {
                                     </RadioGroup>
                                 </div>
                             )}/>
-                            <div className={cn("space-y-2", productType === 'physique' && 'opacity-50')}>
-                                <Label htmlFor="price">Prix (€)</Label>
-                                <Input id="price" type="number" step="0.01" {...form.register('price')} disabled={productType === 'physique'} />
-                                {form.formState.errors.price && <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>}
-                                <p className="text-xs text-muted-foreground">{productType === 'digital' ? "Laissez à 0 pour un produit gratuit." : "Le prix des produits physiques est négocié par message."}</p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className={cn("space-y-2", productType === 'physique' && 'opacity-50')}>
+                                    <Label htmlFor="price">Prix de vente (€)</Label>
+                                    <div className="relative">
+                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input id="price" type="number" step="0.01" {...form.register('price')} disabled={productType === 'physique'} className="pl-8" />
+                                    </div>
+                                    {form.formState.errors.price && <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>}
+                                </div>
+                                <div className={cn("space-y-2", productType === 'physique' && 'opacity-50')}>
+                                    <Label htmlFor="originalPrice">Prix original (barré)</Label>
+                                     <div className="relative">
+                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input id="originalPrice" type="number" step="0.01" {...form.register('originalPrice')} disabled={productType === 'physique'} placeholder="Optionnel" className="pl-8" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

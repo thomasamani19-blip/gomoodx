@@ -468,6 +468,7 @@ export interface Product {
     title: string;
     description: string;
     price: number;
+    originalPrice?: number;
     imageUrl: string;
     imageHint?: string;
     createdBy: string; // creator or partner UID

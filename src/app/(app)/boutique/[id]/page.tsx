@@ -6,7 +6,7 @@ import type { Product, User, Settings, Purchase } from '@/lib/types';
 import { doc, collection, query, where, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import { MessageCircle, Heart, Loader2, Package, Film, Download, CheckCircle, ShoppingBag } from 'lucide-react';
+import { MessageCircle, Heart, Loader2, Package, Film, Download, CheckCircle, ShoppingBag, Percent } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,7 +65,12 @@ function SuggestedProducts({ currentProductId }: { currentProductId: string }) {
                                 </div>
                                 <div className="p-4">
                                     <h3 className="font-headline text-lg font-semibold truncate">{product.title}</h3>
-                                    <p className="text-lg font-bold text-primary mt-2">{product.price ? `${product.price} €` : 'Prix non disponible'}</p>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <p className="text-lg font-bold text-primary">{product.price ? `${product.price.toFixed(2)} €` : 'Gratuit'}</p>
+                                        {product.originalPrice && product.originalPrice > product.price && (
+                                            <p className="text-sm text-muted-foreground line-through">{product.originalPrice.toFixed(2)} €</p>
+                                        )}
+                                    </div>
                                 </div>
                             </CardContent>
                         </Link>
@@ -224,6 +229,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const isPhysical = product.productType === 'physique';
   const isFreeDigital = product.productType === 'digital' && product.price === 0;
   const isPaidDigital = product.productType === 'digital' && product.price > 0;
+  const isOnSale = product.originalPrice && product.originalPrice > product.price;
 
   return (
     <>
@@ -238,6 +244,9 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                 priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            {isOnSale && (
+                <Badge variant="destructive" className="absolute top-4 left-4 text-base"><Percent className="mr-1 h-4 w-4"/> PROMO</Badge>
+            )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 -mt-24">
@@ -260,9 +269,14 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
             <div className="md:col-span-1 space-y-6">
                  <Card>
                     <CardHeader className="text-center">
-                        <p className="text-4xl font-bold text-primary">
-                            {isFreeDigital ? 'Gratuit' : `${product.price} €`}
-                        </p>
+                        <div className="flex items-baseline justify-center gap-2">
+                             <p className="text-4xl font-bold text-primary">
+                                {isFreeDigital ? 'Gratuit' : `${product.price.toFixed(2)} €`}
+                            </p>
+                            {isOnSale && (
+                                <p className="text-xl font-medium text-muted-foreground line-through">{product.originalPrice?.toFixed(2)} €</p>
+                            )}
+                        </div>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
                         {isPhysical ? (
