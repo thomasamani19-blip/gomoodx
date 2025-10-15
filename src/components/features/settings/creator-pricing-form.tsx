@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -17,9 +18,11 @@ import type { User, CreatorRates } from '@/lib/types';
 
 
 const formSchema = z.object({
-  escortPerHour: z.coerce.number().min(0, "Le tarif horaire doit être positif.").optional(),
-  escortOvernight: z.coerce.number().min(0, "Le tarif pour la nuit doit être positif.").optional(),
-  videoCallPerMinute: z.coerce.number().min(0, "Le tarif d'appel vidéo doit être positif.").optional(),
+  escortPerHour: z.coerce.number().min(0, "Le tarif doit être positif.").optional(),
+  escortHalfDay: z.coerce.number().min(0, "Le tarif doit être positif.").optional(),
+  escortFullDay: z.coerce.number().min(0, "Le tarif doit être positif.").optional(),
+  escortOvernight: z.coerce.number().min(0, "Le tarif doit être positif.").optional(),
+  videoCallPerMinute: z.coerce.number().min(0, "Le tarif doit être positif.").optional(),
 });
 
 type PricingFormValues = z.infer<typeof formSchema>;
@@ -37,6 +40,8 @@ export function CreatorPricingForm({ user }: CreatorPricingFormProps) {
         resolver: zodResolver(formSchema),
         defaultValues: {
             escortPerHour: 0,
+            escortHalfDay: 0,
+            escortFullDay: 0,
             escortOvernight: 0,
             videoCallPerMinute: 0,
         },
@@ -82,7 +87,7 @@ export function CreatorPricingForm({ user }: CreatorPricingFormProps) {
                     <CardContent className="space-y-8">
                         <div className="grid md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="escortPerHour">Tarif de prestation par heure (€)</Label>
+                                <Label htmlFor="escortPerHour">Tarif par heure (€)</Label>
                                 <div className="relative">
                                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                     <Input id="escortPerHour" type="number" className="pl-8" {...form.register('escortPerHour')} placeholder="150" />
@@ -90,10 +95,26 @@ export function CreatorPricingForm({ user }: CreatorPricingFormProps) {
                                 {form.formState.errors.escortPerHour && <p className="text-sm text-destructive">{form.formState.errors.escortPerHour.message}</p>}
                             </div>
                              <div className="space-y-2">
+                                <Label htmlFor="escortHalfDay">Tarif demi-journée (4h) (€)</Label>
+                                <div className="relative">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input id="escortHalfDay" type="number" className="pl-8" {...form.register('escortHalfDay')} placeholder="500" />
+                                </div>
+                                {form.formState.errors.escortHalfDay && <p className="text-sm text-destructive">{form.formState.errors.escortHalfDay.message}</p>}
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="escortFullDay">Tarif journée complète (8h) (€)</Label>
+                                <div className="relative">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input id="escortFullDay" type="number" className="pl-8" {...form.register('escortFullDay')} placeholder="900" />
+                                </div>
+                                {form.formState.errors.escortFullDay && <p className="text-sm text-destructive">{form.formState.errors.escortFullDay.message}</p>}
+                            </div>
+                             <div className="space-y-2">
                                 <Label htmlFor="escortOvernight">Tarif pour la nuit (€)</Label>
                                 <div className="relative">
                                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input id="escortOvernight" type="number" className="pl-8" {...form.register('escortOvernight')} placeholder="1000" />
+                                    <Input id="escortOvernight" type="number" className="pl-8" {...form.register('escortOvernight')} placeholder="1200" />
                                 </div>
                                 {form.formState.errors.escortOvernight && <p className="text-sm text-destructive">{form.formState.errors.escortOvernight.message}</p>}
                             </div>

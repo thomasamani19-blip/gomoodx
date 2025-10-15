@@ -102,6 +102,8 @@ export interface CreatorRates {
     videoCallPerMinute?: number;
     voiceCallPerMinute?: number;
     escortPerHour?: number;
+    escortHalfDay?: number; // Nouveau
+    escortFullDay?: number; // Nouveau
     escortOvernight?: number;
 }
 
