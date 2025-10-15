@@ -1,7 +1,7 @@
 // /src/app/api/cart/update/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
-import { getFirestore, doc, updateDoc, serverTimestamp } from 'firebase-admin/firestore';
+import { getFirestore, doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase-admin/firestore';
 
 if (!getApps().length) {
     initializeApp({
@@ -19,13 +19,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ status: 'error', message: "Informations manquantes ou invalides." }, { status: 400 });
         }
         
+        // In the cart, the document ID is the product ID
         const cartItemRef = doc(db, 'users', userId, 'cart', productId);
 
         if (quantity === 0) {
-             await updateDoc(cartItemRef, {
-                quantity: 0,
-                updatedAt: serverTimestamp(),
-            });
+             await deleteDoc(cartItemRef);
         } else {
             await updateDoc(cartItemRef, {
                 quantity: quantity,

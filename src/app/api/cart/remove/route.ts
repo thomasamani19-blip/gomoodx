@@ -19,6 +19,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ status: 'error', message: "Informations manquantes." }, { status: 400 });
         }
         
+        // In the cart, the document ID is the product ID
         const cartItemRef = doc(db, 'users', userId, 'cart', productId);
         
         await deleteDoc(cartItemRef);

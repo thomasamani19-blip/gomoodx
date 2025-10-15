@@ -68,7 +68,7 @@ export default function PanierPage() {
             const result = await response.json();
             if (!response.ok) throw new Error(result.message);
             // Optimistic update for faster UI feedback
-            setCartItems(prev => prev?.filter(item => item.id !== productId) || null);
+            setCartItems(prev => prev?.filter(item => item.productId !== productId) || null);
             toast({ title: "Produit retiré", description: "Le produit a été retiré de votre panier." });
         } catch (error: any) {
              toast({ title: "Erreur", description: error.message, variant: "destructive" });
@@ -121,7 +121,7 @@ export default function PanierPage() {
                             {!loading && cartItems && cartItems.length > 0 && (
                                 <div className="divide-y">
                                     {cartItems.map(item => (
-                                        <div key={item.id} className="flex items-center gap-4 py-4">
+                                        <div key={item.productId} className="flex items-center gap-4 py-4">
                                             <div className="relative h-20 w-20 rounded-md overflow-hidden flex-shrink-0">
                                                 <Image src={item.imageUrl} alt={item.title} fill className="object-cover" />
                                             </div>
@@ -134,12 +134,12 @@ export default function PanierPage() {
                                                     type="number"
                                                     min="1"
                                                     value={item.quantity}
-                                                    onChange={(e) => handleUpdateQuantity(item.id, Number(e.target.value))}
+                                                    onChange={(e) => handleUpdateQuantity(item.productId, Number(e.target.value))}
                                                     className="w-16 h-9"
-                                                    disabled={updatingItems.includes(item.id)}
+                                                    disabled={updatingItems.includes(item.productId)}
                                                 />
-                                                <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)} disabled={updatingItems.includes(item.id)}>
-                                                    {updatingItems.includes(item.id) ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4 text-destructive" />}
+                                                <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.productId)} disabled={updatingItems.includes(item.productId)}>
+                                                    {updatingItems.includes(item.productId) ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4 text-destructive" />}
                                                 </Button>
                                             </div>
                                         </div>
