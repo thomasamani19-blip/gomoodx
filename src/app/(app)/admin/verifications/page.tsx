@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import PageHeader from '@/components/shared/page-header';
@@ -21,6 +20,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useDoc } from '@/firebase/firestore/use-doc';
+import Link from 'next/link';
 
 const statusVariantMap: { [key in VerificationStatus]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
     pending: 'outline',
@@ -50,7 +50,7 @@ export default function AdminVerificationsPage() {
         if (!authLoading) {
             if (currentUser && ['founder', 'administrateur', 'moderator'].includes(currentUser.role)) {
                 setIsAllowed(true);
-            } else {
+            } else if (currentUser) {
                  setIsAllowed(false);
                  router.push('/dashboard');
             }
@@ -93,7 +93,7 @@ export default function AdminVerificationsPage() {
             const PROFILE_COMPLETION_BONUS = settings?.rewards?.profileCompletionBonus || 0;
 
             if (status === 'verified' && !userData.hasCompletedProfile && PROFILE_COMPLETION_BONUS > 0) {
-                const profileIsComplete = userData.profileImage && userData.bannerImage && userData.bio && userData.galleryImages && userData.galleryImages.length >= 3;
+                const profileIsComplete = userData.profileImage && !userData.profileImage.includes('picsum.photos') && userData.bannerImage && !userData.bannerImage.includes('picsum.photos') && userData.bio && userData.galleryImages && userData.galleryImages.length >= 3;
                 if (profileIsComplete) {
                     const walletRef = doc(firestore, 'wallets', userId);
                     const rewardTxRef = doc(collection(walletRef, 'transactions'));
@@ -122,11 +122,11 @@ export default function AdminVerificationsPage() {
             });
 
             setUsers(prev => prev?.filter(u => u.id !== userId) || null);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error updating verification status:", error);
             toast({
                 title: 'Erreur',
-                description: 'Impossible de mettre à jour le statut.',
+                description: error.message || 'Impossible de mettre à jour le statut.',
                 variant: 'destructive',
             });
         } finally {
@@ -219,7 +219,10 @@ export default function AdminVerificationsPage() {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent>
-                                                    <DropdownMenuItem>Voir les documents</DropdownMenuItem>
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/profil/${user.id}`}>Voir le profil</Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem disabled>Voir les documents (Bientôt)</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
