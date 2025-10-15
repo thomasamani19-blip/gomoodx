@@ -212,7 +212,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                             <div className="flex items-center gap-2 pt-2">
                                 <p className="text-sm">Commande n° {reservation.id.substring(0, 8)}</p>
                                 <Badge variant={statusVariantMap[reservation.status] || 'default'}>
-                                    {statusTextMap[reservation.status]}
+                                    {statusTextMap[reservation.status as keyof typeof statusTextMap] || reservation.status}
                                 </Badge>
                             </div>
                         </CardHeader>
@@ -355,7 +355,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                         </div>
                                     )
                                 })}
-                                {isCurrentUserAnInvitedEscort && reservation.escortConfirmations[currentUser.id].status === 'pending' && (
+                                {isCurrentUserAnInvitedEscort && reservation.escortConfirmations[currentUser!.id].status === 'pending' && (
                                      <div className="flex gap-2 pt-4 border-t">
                                         <Button size="sm" onClick={() => handleEscortInvitationResponse('confirmed')} disabled={isUpdatingStatus}>Accepter</Button>
                                         <Button size="sm" variant="destructive" onClick={() => handleEscortInvitationResponse('declined')} disabled={isUpdatingStatus}>Refuser</Button>
