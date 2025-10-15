@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useCollection, useDoc, useFirestore } from '@/firebase';
@@ -396,9 +395,9 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         let totalPrice = tier.price * subscriptionDuration;
         let discount = 0;
         
-        if (durationMonths === 3 && tier.discounts?.quarterly) discount = tier.discounts.quarterly;
-        else if (durationMonths === 6 && tier.discounts?.semiAnnual) discount = tier.discounts.semiAnnual;
-        else if (durationMonths === 12 && tier.discounts?.annual) discount = tier.discounts.annual;
+        if (subscriptionDuration === 3 && tier.discounts?.quarterly) discount = tier.discounts.quarterly;
+        else if (subscriptionDuration === 6 && tier.discounts?.semiAnnual) discount = tier.discounts.semiAnnual;
+        else if (subscriptionDuration === 12 && tier.discounts?.annual) discount = tier.discounts.annual;
         
         if (discount > 0) {
             totalPrice = totalPrice * (1 - discount / 100);
