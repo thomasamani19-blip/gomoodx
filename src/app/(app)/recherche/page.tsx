@@ -1,18 +1,22 @@
 
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import PageHeader from '@/components/shared/page-header';
 import { rechercheMultilingue, type RechercheMultilingueOutput } from '@/ai/flows/recherche-multilingue';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, SlidersHorizontal, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Slider } from '@/components/ui/slider';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import Image from 'next/image';
 
 const langues = [
     { value: 'fr', label: 'Français' },
@@ -22,6 +26,38 @@ const langues = [
     { value: 'ar', label: 'العربية' },
 ];
 
+interface Filters {
+    types: ('profil' | 'contenu')[];
+    priceRange: [number, number];
+    location: string;
+}
+
+const ResultCard = ({ item }: { item: RechercheMultilingueOutput[0] }) => (
+    <Card className="hover:bg-accent/50 transition-colors">
+        <CardContent className="p-4">
+            <Link href={item.url} className="flex items-start gap-4">
+                <div className="relative h-16 w-16 rounded-md overflow-hidden flex-shrink-0 bg-muted">
+                     {item.imageUrl ? (
+                        <Image src={item.imageUrl} alt={item.titre} fill className="object-cover" />
+                    ) : (
+                        <Avatar className="h-16 w-16 rounded-md">
+                            <AvatarFallback className="text-xl rounded-md">{item.titre.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                    )}
+                </div>
+                <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className={`capitalize text-xs font-medium px-2 py-0.5 rounded-full ${item.type === 'profil' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>{item.type}</span>
+                        <h3 className="font-semibold line-clamp-1">{item.titre}</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+                     {item.price && <p className="text-sm font-bold text-primary mt-1">{item.price.toFixed(2)} €</p>}
+                </div>
+            </Link>
+        </CardContent>
+    </Card>
+);
+
 function RechercheComponent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
@@ -30,17 +66,26 @@ function RechercheComponent() {
   const [isLoading, setIsLoading] = useState(false);
   const [query, setQuery] = useState(initialQuery);
   const { toast } = useToast();
+  
+  const [filters, setFilters] = useState<Filters>({
+      types: ['profil', 'contenu'],
+      priceRange: [0, 5000],
+      location: '',
+  });
 
-  const performSearch = async (searchQuery: string, langSource: string, langCible: string, filtres: Record<string, boolean>) => {
-    if (!searchQuery) return;
+  const performSearch = async (searchQuery: string, currentFilters: Filters) => {
+    if (!searchQuery && !currentFilters.location) return;
     setIsLoading(true);
     setResult(null);
 
     const input = {
       query: searchQuery,
-      langueSource: langSource as 'fr' | 'en' | 'es' | 'it' | 'ar',
-      langueCible: langCible as 'fr' | 'en' | 'es' | 'it' | 'ar',
-      filtres: filtres,
+      langueSource: 'fr' as 'fr',
+      langueCible: 'fr' as 'fr',
+      types: currentFilters.types,
+      priceMin: currentFilters.priceRange[0],
+      priceMax: currentFilters.priceRange[1],
+      location: currentFilters.location,
     };
 
     try {
@@ -59,99 +104,116 @@ function RechercheComponent() {
   };
 
   useEffect(() => {
-    const filtres: Record<string, boolean> = {};
-    for (const [key, value] of searchParams.entries()) {
-        if(key !== 'q') {
-            filtres[key] = value === 'true';
-        }
-    }
-
-    if (initialQuery || Object.keys(filtres).length > 0) {
-        performSearch(initialQuery, 'fr', 'fr', filtres);
+    if (initialQuery) {
+        performSearch(initialQuery, filters);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, initialQuery]);
+  }, []);
+  
+  // Use a debounce for search on filter change
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      performSearch(query, filters);
+    }, 500); // 500ms delay
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const langSource = formData.get('langueSource') as string;
-    const langCible = formData.get('langueCible') as string;
-    
-    // Récupérer les filtres actuels de l'URL pour les conserver lors d'une nouvelle recherche manuelle
-    const filtres: Record<string, boolean> = {};
-     for (const [key, value] of searchParams.entries()) {
-        if(key !== 'q') {
-            filtres[key] = value === 'true';
-        }
-    }
+    return () => {
+      clearTimeout(handler);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, query]);
 
-    performSearch(query, langSource, langCible, filtres);
+
+  const handleTypeChange = (type: 'profil' | 'contenu', checked: boolean | string) => {
+    setFilters(prev => {
+        const newTypes = checked ? [...prev.types, type] : prev.types.filter(t => t !== type);
+        return { ...prev, types: newTypes.length > 0 ? newTypes : ['profil', 'contenu'] }; // Prevent empty selection
+    });
   };
 
   return (
     <div>
         <PageHeader
-          title="Recherche Multilingue"
-          description="Trouvez des profils et du contenu dans votre langue."
+          title="Recherche Avancée"
+          description="Trouvez des profils, services et contenus sur mesure."
         />
-        <Card>
-            <form onSubmit={handleSubmit}>
-                <CardContent className="pt-6 grid sm:grid-cols-4 gap-4">
-                    <div className="space-y-2 sm:col-span-2">
-                        <Label htmlFor="query">Terme de recherche</Label>
-                        <Input name="query" id="query" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Que cherchez-vous ?" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="langueSource">Votre langue</Label>
-                        <Select name="langueSource" defaultValue="fr">
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>{langues.map(l => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}</SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="langueCible">Langue des résultats</Label>
-                        <Select name="langueCible" defaultValue="fr">
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>{langues.map(l => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}</SelectContent>
-                        </Select>
-                    </div>
-                </CardContent>
-                <CardFooter>
-                <Button type="submit" disabled={isLoading}>
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-                    Rechercher
-                </Button>
-                </CardFooter>
-            </form>
-        </Card>
+        <div className="grid md:grid-cols-4 gap-8 items-start">
+            {/* Filters Sidebar */}
+            <div className="md:col-span-1 space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><SlidersHorizontal className="h-5 w-5"/> Filtres</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="space-y-2">
+                            <Label>Catégories</Label>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="type-profil" checked={filters.types.includes('profil')} onCheckedChange={(c) => handleTypeChange('profil', c)} />
+                                <Label htmlFor="type-profil">Profils</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="type-contenu" checked={filters.types.includes('contenu')} onCheckedChange={(c) => handleTypeChange('contenu', c)} />
+                                <Label htmlFor="type-contenu">Contenus</Label>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Fourchette de prix</Label>
+                             <Slider
+                                value={filters.priceRange}
+                                onValueChange={(value) => setFilters(prev => ({ ...prev, priceRange: value as [number, number]}))}
+                                max={5000}
+                                step={10}
+                            />
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>{filters.priceRange[0]}€</span>
+                                <span>{filters.priceRange[1]}€</span>
+                            </div>
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="location" className="flex items-center gap-2"><MapPin className="h-4 w-4"/> Localisation</Label>
+                            <Input id="location" placeholder="Ex: Paris" value={filters.location} onChange={(e) => setFilters(prev => ({...prev, location: e.target.value}))}/>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+            
+            {/* Search Results */}
+            <div className="md:col-span-3 space-y-6">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input 
+                        value={query} 
+                        onChange={(e) => setQuery(e.target.value)} 
+                        placeholder="Rechercher par mot-clé..."
+                        className="pl-10 h-12 text-lg"
+                    />
+                </div>
 
-        <div className="mt-8">
-            <h2 className="font-headline text-2xl mb-4">Résultats</h2>
-            {isLoading && (
-                <div className="flex items-center justify-center h-40">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-            )}
-            {result && result.length > 0 && (
-                <div className="grid gap-4">
-                    {result.map((item, index) => (
-                        <Card key={index}>
-                           <CardHeader>
-                               <CardTitle className="flex items-center gap-2">
-                                  <span className={`capitalize text-xs font-medium px-2 py-0.5 rounded-full ${item.type === 'profil' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>{item.type}</span>
-                                  <Link href={item.url} className="hover:underline">{item.titre}</Link>
-                                </CardTitle>
-                           </CardHeader>
-                           <CardContent>
-                                <p className="text-sm text-muted-foreground">{item.description}</p>
-                           </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            )}
-            {result && result.length === 0 && <p className="text-sm text-muted-foreground">Aucun résultat trouvé pour votre recherche.</p>}
-            {!isLoading && !result && <p className="text-sm text-muted-foreground">Les résultats de la recherche apparaîtront ici.</p>}
+                {isLoading && (
+                    <div className="flex items-center justify-center h-64">
+                        <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+                    </div>
+                )}
+                
+                {result && (
+                    <p className="text-sm text-muted-foreground">{result.length} résultat(s) trouvé(s).</p>
+                )}
+
+                {result && result.length > 0 && (
+                    <div className="grid gap-4">
+                        {result.map((item, index) => (
+                            <ResultCard key={index} item={item} />
+                        ))}
+                    </div>
+                )}
+
+                {!isLoading && result && result.length === 0 && (
+                    <Card>
+                        <CardContent className="pt-6 text-center text-muted-foreground">
+                            Aucun résultat trouvé pour votre recherche. Essayez d'ajuster vos filtres.
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
         </div>
     </div>
   );
@@ -159,7 +221,7 @@ function RechercheComponent() {
 
 export default function RecherchePage() {
     return (
-        <Suspense fallback={<div>Chargement...</div>}>
+        <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin mx-auto mt-16" />}>
             <RechercheComponent />
         </Suspense>
     )
