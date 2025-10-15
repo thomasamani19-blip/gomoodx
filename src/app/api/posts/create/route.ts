@@ -1,5 +1,3 @@
-
-
 // /src/app/api/posts/create/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault, cert } from 'firebase-admin/app';

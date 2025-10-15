@@ -153,9 +153,9 @@ export default function AdminDashboard({ user }: { user: User }) {
             loading={loading}
         />
         <StatCard 
-            title="Paramètres Généraux"
+            title="Paramètres Financiers"
             value="Configurer"
-            icon={Settings}
+            icon={DollarSign}
             href="/admin/parametres-financiers"
             loading={loading}
         />
