@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useDoc, useFirestore, useCollection } from '@/firebase';
@@ -215,7 +214,3 @@ export default function PartnerProfilePage({ params }: { params: { id: string } 
     </div>
   );
 }
-
-    
-
-    
