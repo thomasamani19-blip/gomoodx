@@ -385,6 +385,13 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                     </Link>
                                 </Button>
                             )}
+                             {reservation.status !== 'cancelled' && (
+                                <Button asChild variant="outline">
+                                    <Link href="/contact">
+                                        <ShieldQuestion className="mr-2 h-4 w-4" /> Signaler un problème
+                                    </Link>
+                                </Button>
+                            )}
                         </CardContent>
                      </Card>
                 </div>
