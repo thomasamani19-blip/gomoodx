@@ -217,6 +217,7 @@ export interface Annonce {
   description: string;
   price: number;
   originalPrice?: number;
+  isTravelIncluded?: boolean;
   category: string;
   imageUrl: string;
   imageHint?: string;

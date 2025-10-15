@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { collection, query, orderBy } from 'firebase/firestore';
-import { Star, Percent } from 'lucide-react';
+import { Star, Percent, Car } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useMemo } from 'react';
@@ -102,12 +102,17 @@ export default function AnnoncesPage() {
                      {annonce.isSponsored && (
                         <Badge variant="secondary" className="absolute top-2 right-2">À la une</Badge>
                      )}
-                     {isAvailableNow && !isOnSale && (
-                        <Badge className="absolute top-2 left-2 bg-green-500 hover:bg-green-600 animate-pulse">Disponible</Badge>
-                     )}
-                     {isOnSale && (
-                        <Badge variant="destructive" className="absolute top-2 left-2"><Percent className="mr-1 h-3 w-3"/>PROMO</Badge>
-                     )}
+                     <div className="absolute top-2 left-2 flex flex-col gap-2">
+                        {isAvailableNow && !isOnSale && (
+                            <Badge className="bg-green-500 hover:bg-green-600 animate-pulse">Disponible</Badge>
+                        )}
+                        {isOnSale && (
+                            <Badge variant="destructive" className="flex items-center"><Percent className="mr-1 h-3 w-3"/>PROMO</Badge>
+                        )}
+                        {annonce.isTravelIncluded && (
+                             <Badge variant="outline" className="bg-background/80 flex items-center"><Car className="mr-1 h-3 w-3"/>Déplacement Inclus</Badge>
+                        )}
+                     </div>
                   </div>
                 </Link>
                 <div className="p-4">

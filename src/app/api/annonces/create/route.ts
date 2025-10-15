@@ -27,6 +27,7 @@ export async function POST(request: Request) {
         const description = formData.get('description') as string;
         const price = parseFloat(formData.get('price') as string);
         const originalPrice = formData.get('originalPrice') ? parseFloat(formData.get('originalPrice') as string) : undefined;
+        const isTravelIncluded = formData.get('isTravelIncluded') === 'true';
         const category = formData.get('category') as string;
         const location = formData.get('location') as string;
         const imageFile = formData.get('image') as File | null;
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
             description,
             price,
             originalPrice,
+            isTravelIncluded,
             category,
             location,
             imageUrl,
