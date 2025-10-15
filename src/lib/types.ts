@@ -502,10 +502,7 @@ export interface BlogArticle {
     authorName?: string;
     isPremium?: boolean;
     price?: number;
-    moderationStatus: ModerationStatus;
-    moderationReason?: string;
 }
-
 
 export type CreatorStats = {
     monthlyRevenue?: { value: number; change: number };
