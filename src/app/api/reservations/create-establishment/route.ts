@@ -1,4 +1,4 @@
-
+'use client';
 // /src/app/api/reservations/create-establishment/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';

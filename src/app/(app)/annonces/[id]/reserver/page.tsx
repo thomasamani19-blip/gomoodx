@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -119,6 +118,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                     escorts: selectedEscorts.map(e => ({ id: e.id, name: e.displayName, profileImage: e.profileImage, rate: e.rates?.escortPerHour || 0 })),
                     amount: totalPrice,
                     roomType: selectedRoomType,
+                    notes: '', // Add notes if needed
                 }),
             });
 
