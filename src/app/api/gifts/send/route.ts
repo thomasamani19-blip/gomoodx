@@ -73,7 +73,10 @@ export async function POST(request: Request) {
              } as Omit<Transaction, 'id'>);
 
             // Créditer la plateforme
-            t.update(platformWalletRef, { balance: FieldValue.increment(commissionAmount), totalEarned: FieldValue.increment(commissionAmount) });
+            t.update(platformWalletRef, {
+                balance: FieldValue.increment(commissionAmount),
+                totalEarned: FieldValue.increment(commissionAmount)
+            });
 
             return { message: "Cadeau envoyé avec succès !" };
         });

@@ -85,7 +85,7 @@ export default function CallPage({ params }: { params: { callId: string } }) {
                 await fetch('/api/calls/log-duration', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: callDoc.callerId, duration: callDuration }),
+                    body: JSON.stringify({ userId: callDoc.callerId, duration: callDuration, callId: callDoc.id }),
                 });
             } catch (error) { console.error("Failed to log call duration:", error); }
         } else if (callDoc.pricePerMinute && callDoc.pricePerMinute > 0) {
@@ -304,13 +304,13 @@ export default function CallPage({ params }: { params: { callId: string } }) {
                         <Gift />
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-2 bg-black/70 border-primary/50 backdrop-blur-sm">
+                <PopoverContent className="w-auto p-2 bg-black/70 border-primary/50 backdrop-blur-sm mb-2">
                     <div className="flex gap-2">
                         {VIRTUAL_GIFTS.map(gift => (
                              <Button 
                                 key={gift.name} 
                                 variant="ghost" 
-                                className="flex flex-col h-auto p-2"
+                                className="flex flex-col h-auto p-2 text-white hover:bg-white/10"
                                 onClick={() => handleSendGift(gift)}
                                 disabled={isSendingGift !== null}
                             >
