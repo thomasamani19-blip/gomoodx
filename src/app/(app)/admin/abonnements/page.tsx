@@ -24,7 +24,6 @@ const planSchema = z.object({
     name: z.string().min(1, "Le nom est requis."),
     price: z.coerce.number().min(0, "Le prix doit être positif."),
     description: z.string().min(1, "La description est requise."),
-    features: z.array(z.string()).optional(),
     isPopular: z.boolean().default(false),
 });
 
@@ -53,10 +52,10 @@ export default function AdminAbonnementsPage() {
         resolver: zodResolver(settingsSchema),
         defaultValues: {
             platformPlans: {
-                essential: { name: 'Essentiel', price: 9.99, description: '', features: [], isPopular: false },
-                advanced: { name: 'Avancé', price: 24.99, description: '', features: [], isPopular: true },
-                premium: { name: 'Premium', price: 49.99, description: '', features: [], isPopular: false },
-                elite: { name: 'Élite', price: 99.99, description: '', features: [], isPopular: false },
+                essential: { name: 'Essentiel', price: 9.99, description: 'Pour bien démarrer.', isPopular: false },
+                advanced: { name: 'Avancé', price: 24.99, description: 'Pour les créateurs ambitieux.', isPopular: true },
+                premium: { name: 'Premium', price: 49.99, description: 'Accès à tous les outils.', isPopular: false },
+                elite: { name: 'Élite', price: 99.99, description: 'Pour les professionnels.', isPopular: false },
             }
         },
     });
@@ -121,7 +120,7 @@ export default function AdminAbonnementsPage() {
                     {planIds.map((planId) => (
                         <Card key={planId}>
                             <CardHeader>
-                                <CardTitle className="capitalize">{planId}</CardTitle>
+                                <CardTitle className="capitalize">{form.watch(`platformPlans.${planId}.name`)}</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
@@ -140,6 +139,7 @@ export default function AdminAbonnementsPage() {
                                 <div className="space-y-2">
                                     <Label>Description</Label>
                                     <Textarea {...form.register(`platformPlans.${planId}.description`)} rows={2} />
+                                     {form.formState.errors.platformPlans?.[planId]?.description && <p className="text-sm text-destructive">{form.formState.errors.platformPlans[planId]?.description?.message}</p>}
                                 </div>
                                  <div className="flex items-center space-x-2">
                                     <Switch

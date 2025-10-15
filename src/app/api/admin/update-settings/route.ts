@@ -40,55 +40,8 @@ export async function POST(request: Request) {
         // 3. Update the document in Firestore
         const settingsRef = doc(db, 'settings', 'global');
         
-        // Using a flat object for updateDoc
-        const updateData: { [key: string]: any } = {};
-        
-        if (newSettings.rewards) {
-            for (const [key, value] of Object.entries(newSettings.rewards)) {
-                if (typeof value === 'number' && value >= 0) {
-                     updateData[`rewards.${key}`] = value;
-                }
-            }
-        }
-        
-        if (newSettings.callRates) {
-            for (const [key, value] of Object.entries(newSettings.callRates)) {
-                if (typeof value === 'number' && value >= 0) {
-                     updateData[`callRates.${key}`] = value;
-                }
-            }
-        }
-        
-        if (newSettings.passContact) {
-            if(typeof newSettings.passContact.price === 'number' && newSettings.passContact.price >= 0) {
-                updateData['passContact.price'] = newSettings.passContact.price;
-            }
-        }
+        await updateDoc(settingsRef, newSettings, { merge: true });
 
-        if (typeof newSettings.platformCommissionRate === 'number') {
-            updateData.platformCommissionRate = newSettings.platformCommissionRate;
-        }
-        if (typeof newSettings.platformFee === 'number') {
-            updateData.platformFee = newSettings.platformFee;
-        }
-         if (typeof newSettings.welcomeBonusAmount === 'number') {
-            updateData.welcomeBonusAmount = newSettings.welcomeBonusAmount;
-        }
-         if (typeof newSettings.withdrawalMinAmount === 'number') {
-            updateData.withdrawalMinAmount = newSettings.withdrawalMinAmount;
-        }
-         if (typeof newSettings.withdrawalMaxAmount === 'number') {
-            updateData.withdrawalMaxAmount = newSettings.withdrawalMaxAmount;
-        }
-         if (newSettings.platformPlans) {
-            updateData.platformPlans = newSettings.platformPlans;
-        }
-
-        if(Object.keys(updateData).length === 0) {
-             return NextResponse.json({ status: 'error', message: 'Données de paramètres non valides.' }, { status: 400 });
-        }
-
-        await updateDoc(settingsRef, updateData);
 
         return NextResponse.json({
             status: 'success', 

@@ -23,7 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
-import type { Settings, PlatformPlan } from '@/lib/types';
+import type { Settings, PlatformPlan, PlatformSubscriptionType } from '@/lib/types';
 import { useDoc, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -148,11 +148,13 @@ export default function AbonnementPage() {
 
     const plansData: PlatformPlan[] = useMemo(() => {
         const basePlans: PlatformPlan[] = [
-            { id: 'gratuit', name: 'Gratuit', price: 0, description: 'Pour démarrer', features: [] },
+            { id: 'gratuit', name: 'Gratuit', price: 0, description: 'Pour démarrer', features: [], isPopular: false },
         ];
         if (settings?.platformPlans) {
             const dynamicPlans: PlatformPlan[] = Object.entries(settings.platformPlans).map(([id, plan]) => ({
-                id: id as any, ...plan
+                id: id as PlatformSubscriptionType,
+                features: [], // Placeholder, features are hardcoded in the table for now
+                ...plan
             }));
             return [...basePlans, ...dynamicPlans];
         }
@@ -271,7 +273,7 @@ export default function AbonnementPage() {
                                 {plansData.map(plan => (
                                     <td key={plan.id} className="px-3 pt-6 text-center">
                                         {plan.price > 0 ? (
-                                            <p><span className="text-3xl font-bold">{plan.price}€</span><span className="text-muted-foreground">/mois</span></p>
+                                            <p><span className="text-3xl font-bold">{plan.price.toFixed(2)}€</span><span className="text-muted-foreground">/mois</span></p>
                                         ) : (
                                              <p className="text-3xl font-bold">0 €</p>
                                         )}
