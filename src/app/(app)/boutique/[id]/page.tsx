@@ -2,7 +2,7 @@
 'use-client';
 
 import { useCollection, useDoc, useFirestore } from '@/firebase';
-import type { Product, User, Settings } from '@/lib/types';
+import type { Product, User, Settings, Purchase } from '@/lib/types';
 import { doc, collection, query, where, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
@@ -93,9 +93,22 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
   const settingsRef = useMemo(() => firestore ? doc(firestore, 'settings', 'global') : null, [firestore]);
   const { data: settings, loading: settingsLoading } = useDoc<Settings>(settingsRef);
+  
+  const purchaseQuery = useMemo(() => {
+    if (!firestore || !user || !product || product.productType !== 'digital') return null;
+    return query(
+        collection(firestore, 'purchases'),
+        where('memberId', '==', user.id),
+        where('contentId', '==', product.id),
+        where('contentType', '==', 'product')
+    );
+  }, [firestore, user, product]);
+  
+  const { data: purchases, loading: purchasesLoading } = useCollection<Purchase>(purchaseQuery);
+  const hasPurchased = useMemo(() => (purchases && purchases.length > 0) || user?.id === product?.createdBy, [purchases, user, product]);
 
 
-  const loading = productLoading || creatorLoading || authLoading || settingsLoading;
+  const loading = productLoading || creatorLoading || authLoading || settingsLoading || purchasesLoading;
   
   const handlePurchase = async () => {
     if (!user || !product) {
@@ -268,6 +281,10 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                                     </Link>
                                 </Button>
                             </>
+                        ) : hasPurchased ? (
+                            <Button size="lg" disabled>
+                                <Download className="mr-2 h-4 w-4" /> Télécharger (Bientôt)
+                            </Button>
                         ) : isPaidDigital ? (
                              <Button size="lg" onClick={handlePurchase} disabled={isPurchasing}>
                                  {isPurchasing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
