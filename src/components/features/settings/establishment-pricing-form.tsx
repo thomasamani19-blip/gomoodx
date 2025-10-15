@@ -117,7 +117,7 @@ export function EstablishmentPricingForm({ user }: EstablishmentPricingFormProps
                              <CardTitle>Suppléments fixes pour chambres supérieures</CardTitle>
                              <CardDescription>Définissez le coût supplémentaire unique pour les chambres supérieures. Ce montant est ajouté une seule fois au coût total de la réservation, quelle que soit la durée.</CardDescription>
                             
-                             {Object.entries(form.getValues().roomTypes).map(([key, value]) => {
+                             {Object.keys(form.getValues().roomTypes).map((key) => {
                                 if (key === 'standard') return null;
 
                                 const roomKey = key as keyof PricingFormValues['roomTypes'];

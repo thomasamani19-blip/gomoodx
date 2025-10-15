@@ -168,7 +168,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                                  <div className="space-y-2">
                                     <Label className="flex items-center gap-2"><BedDouble className="h-4 w-4"/> Type de chambre</Label>
                                     {pricing ? (
-                                        <RadioGroup value={selectedRoomType} onValueChange={(v) => setSelectedRoomType(v as RoomType)}>
+                                        <RadioGroup value={selectedRoomType} onValueChange={(v) => setSelectedRoomType(v as RoomType)} className="space-y-1">
                                             {Object.entries(pricing.roomTypes).filter(([, room]) => room.enabled).map(([key, room]) => (
                                                 <div key={key} className="flex items-center space-x-2">
                                                     <RadioGroupItem value={key} id={key} />

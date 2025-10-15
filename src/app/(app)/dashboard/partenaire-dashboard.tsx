@@ -170,7 +170,7 @@ function EstablishmentDashboard({ user }: { user: User }) {
                             </Link>
                         </Button>
                          <Button asChild size="lg" className="h-full col-span-2" variant="outline">
-                            <Link href="/profil" className="flex-col gap-2">
+                            <Link href="/profil">
                                 <Building className="h-6 w-6"/>
                                 <span>Modifier le Profil</span>
                             </Link>

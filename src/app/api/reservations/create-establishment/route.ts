@@ -1,4 +1,3 @@
-'use client';
 // /src/app/api/reservations/create-establishment/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -44,6 +43,12 @@ export async function POST(request: Request) {
                 totalSpent: FieldValue.increment(amount)
             });
 
+            // Placer les fonds dans le compte de séquestre de la plateforme
+            const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
+            t.update(platformWalletRef, {
+                escrowBalance: FieldValue.increment(amount)
+            });
+
             // Créer une transaction de débit
             const debitTxRef = memberWalletRef.collection('transactions').doc();
             t.set(debitTxRef, {
@@ -55,12 +60,6 @@ export async function POST(request: Request) {
                 reference: debitTxRef.id
             } as Omit<Transaction, 'id' | 'path'>);
             
-            // Placer les fonds dans un compte de séquestre virtuel (logique future)
-            const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
-            t.update(platformWalletRef, {
-                escrowBalance: FieldValue.increment(amount)
-            });
-
 
             // Créer la réservation
             const reservationRef = db.collection('reservations').doc();
