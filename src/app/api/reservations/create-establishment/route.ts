@@ -1,3 +1,4 @@
+
 // /src/app/api/reservations/create-establishment/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -10,6 +11,8 @@ if (!getApps().length) {
     });
 }
 const db = getFirestore();
+const PLATFORM_WALLET_ID = 'platform_wallet';
+
 
 export async function POST(request: Request) {
     try {

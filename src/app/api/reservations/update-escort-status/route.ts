@@ -1,3 +1,4 @@
+
 // /src/app/api/reservations/update-escort-status/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';

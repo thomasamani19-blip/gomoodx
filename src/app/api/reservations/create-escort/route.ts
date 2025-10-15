@@ -1,3 +1,4 @@
+
 // /src/app/api/reservations/create-escort/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -10,6 +11,8 @@ if (!getApps().length) {
     });
 }
 const db = getFirestore();
+const PLATFORM_WALLET_ID = 'platform_wallet';
+
 
 export async function POST(request: Request) {
     try {
@@ -36,14 +39,19 @@ export async function POST(request: Request) {
                 totalSpent: FieldValue.increment(amount)
             });
 
+             const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
+             t.update(platformWalletRef, {
+                escrowBalance: FieldValue.increment(amount)
+            });
+
             // Créer une transaction de débit
             const debitTxRef = memberWalletRef.collection('transactions').doc();
             t.set(debitTxRef, {
                 amount,
                 type: 'debit',
-                createdAt: Timestamp.now(),
                 description: `Paiement réservation`,
-                status: 'success',
+                status: 'pending_escrow',
+                createdAt: Timestamp.now(),
                 reference: debitTxRef.id
             } as Omit<Transaction, 'id' | 'path'>);
 

@@ -63,7 +63,7 @@ export async function POST(request: Request) {
                  });
 
                  // If funds were in escrow, remove them
-                 const wasInEscrow = reservation.status === 'pending_delivery' || reservation.status === 'confirmed';
+                 const wasInEscrow = reservation.status === 'pending_delivery' || reservation.status === 'confirmed' || reservation.status === 'pending';
                  if(wasInEscrow) {
                      const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
                      const platformWalletDoc = await t.get(platformWalletRef);
