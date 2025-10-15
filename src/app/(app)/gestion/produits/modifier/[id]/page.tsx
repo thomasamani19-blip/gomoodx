@@ -1,4 +1,5 @@
 
+
 'use-client';
 
 import { useForm, Controller } from 'react-hook-form';
@@ -15,7 +16,7 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Loader2, Save, Upload } from 'lucide-react';
+import { Loader2, Save, Upload, DollarSign } from 'lucide-react';
 import PageHeader from '@/components/shared/page-header';
 import { uploadFile } from '@/lib/storage';
 import Image from 'next/image';
@@ -28,6 +29,7 @@ const productSchema = z.object({
   title: z.string().min(5, "Le titre doit faire au moins 5 caractères."),
   description: z.string().min(20, "La description doit faire au moins 20 caractères."),
   price: z.coerce.number().min(0, "Le prix ne peut pas être négatif."),
+  originalPrice: z.coerce.number().optional(),
   productType: z.enum(['digital', 'physique'], { required_error: 'Veuillez sélectionner un type de produit.'}),
   image: z.any().optional(),
 });
@@ -59,6 +61,7 @@ export default function ModifierProduitPage({ params }: { params: { id: string }
                 title: product.title,
                 description: product.description,
                 price: product.price,
+                originalPrice: product.originalPrice,
                 productType: product.productType,
             });
             setImagePreview(product.imageUrl);
@@ -90,6 +93,7 @@ export default function ModifierProduitPage({ params }: { params: { id: string }
                 title: data.title,
                 description: data.description,
                 price: data.price,
+                originalPrice: data.originalPrice,
                 productType: data.productType as ProductType,
                 imageUrl: imageUrl,
                 updatedAt: serverTimestamp(),
@@ -208,23 +212,22 @@ export default function ModifierProduitPage({ params }: { params: { id: string }
                                     </div>
                                 )}
                             />
-                             <div className={cn("space-y-2", productType === 'physique' && 'opacity-50')}>
-                                <Label htmlFor="price">Prix (€)</Label>
-                                <Input 
-                                    id="price" 
-                                    type="number" 
-                                    step="0.01" 
-                                    {...register('price')} 
-                                    placeholder={productType === 'digital' ? '0 pour gratuit' : 'Ex: 25.50'}
-                                    disabled={productType === 'physique'}
-                                />
-                                {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
-                                <p className="text-xs text-muted-foreground">
-                                    {productType === 'digital' 
-                                        ? "Pour un produit digital, laissez à 0 pour qu'il soit gratuit." 
-                                        : "Le prix des produits physiques sera discuté par messagerie."
-                                    }
-                                </p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="price">Prix de vente (€)</Label>
+                                    <div className="relative">
+                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input id="price" type="number" step="0.01" {...register('price')} className="pl-8" />
+                                    </div>
+                                    {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="originalPrice">Prix original (barré)</Label>
+                                     <div className="relative">
+                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input id="originalPrice" type="number" step="0.01" {...register('originalPrice')} placeholder="Optionnel" className="pl-8" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

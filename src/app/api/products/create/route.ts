@@ -1,4 +1,5 @@
 
+
 // /src/app/api/products/create/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -71,8 +72,8 @@ export async function POST(request: Request) {
         const newProduct: Omit<Product, 'id'> = {
             title,
             description,
-            price: price,
-            originalPrice: originalPrice,
+            price: productType === 'physique' ? price : price,
+            originalPrice,
             productType,
             imageUrl,
             createdBy: authorId,

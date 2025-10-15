@@ -132,7 +132,7 @@ export default function CreerProduitPage() {
             router.push('/gestion/produits');
         } catch (error: any) {
             console.error("Erreur:", error);
-            toast({ title: "Erreur", description: error.message, variant: "destructive" });
+            toast({ title: "Erreur", description: "Une erreur est survenue.", variant: "destructive" });
         } finally {
             setIsLoading(false);
         }
@@ -187,19 +187,19 @@ export default function CreerProduitPage() {
                                 </div>
                             )}/>
                             <div className="grid grid-cols-2 gap-4">
-                                <div className={cn("space-y-2", productType === 'physique' && 'opacity-50')}>
+                                <div className="space-y-2">
                                     <Label htmlFor="price">Prix de vente (€)</Label>
                                     <div className="relative">
                                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input id="price" type="number" step="0.01" {...form.register('price')} disabled={productType === 'physique'} className="pl-8" />
+                                        <Input id="price" type="number" step="0.01" {...form.register('price')} className="pl-8" />
                                     </div>
                                     {form.formState.errors.price && <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>}
                                 </div>
-                                <div className={cn("space-y-2", productType === 'physique' && 'opacity-50')}>
+                                <div className="space-y-2">
                                     <Label htmlFor="originalPrice">Prix original (barré)</Label>
                                      <div className="relative">
                                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input id="originalPrice" type="number" step="0.01" {...form.register('originalPrice')} disabled={productType === 'physique'} placeholder="Optionnel" className="pl-8" />
+                                        <Input id="originalPrice" type="number" step="0.01" {...form.register('originalPrice')} placeholder="Optionnel" className="pl-8" />
                                     </div>
                                 </div>
                             </div>
