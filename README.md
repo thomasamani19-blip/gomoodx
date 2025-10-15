@@ -107,10 +107,14 @@ Le projet inclut des données de démarrage dans `src/lib/seed.ts`. Pour peupler
    firebase deploy --only firestore:rules
    ```
 
-**Comptes de test par défaut :**
--   **Admin** : `admin@gomoodx.com` / `password123`
--   **Créateur** : `creator@gomoodx.com` / `password123`
--   **Membre** : `member@gomoodx.com` / `password123`
+**Comptes de test par défaut :** (Mot de passe pour tous : `password123`)
+-   **Founder** : `amanignangoran104@gmail.com`
+-   **Admin** : `admin@test.com`
+-   **Créateur** : `creator@test.com`
+-   **Client** : `member@test.com`
+-   **Modérateur**: `moderator@test.com`
+-   **Partenaire Hôtel**: `partner@test.com`
+-   **Partenaire Producteur**: `producer@test.com`
 
 ---
 Généré avec ❤️ par Firebase Studio IA.

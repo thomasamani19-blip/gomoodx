@@ -1,4 +1,3 @@
-
 # Guide de Configuration GoMoodX sur Termux
 
 Ce guide vous aidera à configurer et lancer le projet GoMoodX sur votre appareil Android en utilisant l'application Termux.
