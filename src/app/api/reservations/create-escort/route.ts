@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
-import type { Reservation, Wallet, Transaction, User, Settings } from '@/lib/types';
+import type { Reservation, Wallet, Transaction, User, Settings, TravelArrangement } from '@/lib/types';
 
 if (!getApps().length) {
     initializeApp({
@@ -16,7 +16,7 @@ const PLATFORM_WALLET_ID = 'platform_wallet';
 
 export async function POST(request: Request) {
     try {
-        const { memberId, creatorId, reservationDate, durationHours, location, notes, amount } = await request.json();
+        const { memberId, creatorId, reservationDate, durationHours, location, notes, amount, travelArrangement, travelFee } = await request.json();
 
         if (!memberId || !creatorId || !reservationDate || !durationHours || !amount) {
             return NextResponse.json({ status: 'error', message: 'Informations de réservation manquantes.' }, { status: 400 });
@@ -71,6 +71,8 @@ export async function POST(request: Request) {
                 durationHours,
                 location,
                 notes,
+                travelArrangement: travelArrangement as TravelArrangement,
+                travelFee: travelFee || 0,
             };
             t.set(reservationRef, newReservation);
 

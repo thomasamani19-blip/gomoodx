@@ -249,6 +249,7 @@ export interface Review {
 export type ReservationType = 'service' | 'establishment' | 'physical_product_order';
 export type ReservationStatus = 'pending' | 'pending_delivery' | 'confirmed' | 'cancelled' | 'completed';
 export type ConfirmationStatus = 'pending' | 'confirmed' | 'declined';
+export type TravelArrangement = 'client_travels' | 'creator_travels';
 
 export interface EscortConfirmation {
   status: ConfirmationStatus;
@@ -286,7 +287,7 @@ export interface Reservation {
     // On-site presence confirmation
     memberPresenceConfirmed: boolean;
     establishmentPresenceConfirmed: boolean; // Final confirmation by establishment for their bookings
-    travelArrangement?: 'client_travels' | 'creator_travels';
+    travelArrangement?: TravelArrangement;
     travelFee?: number;
 }
 

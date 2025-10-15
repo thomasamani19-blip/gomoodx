@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useDoc, useFirestore } from '@/firebase';
-import type { User, CreatorRates, Settings } from '@/lib/types';
+import type { User, CreatorRates, Settings, TravelArrangement } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/shared/page-header';
@@ -14,13 +15,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Calendar as CalendarIcon, MapPin, Clock, Timer, Check, Info } from 'lucide-react';
+import { Loader2, Calendar as CalendarIcon, MapPin, Clock, Timer, Check, Info, Car } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Separator } from '@/components/ui/separator';
 
 export default function CreerReservationPage({ params }: { params: { creatorId: string } }) {
     const { user, loading: authLoading } = useAuth();
@@ -42,6 +45,7 @@ export default function CreerReservationPage({ params }: { params: { creatorId: 
     const [durationHours, setDurationHours] = useState(1);
     const [location, setLocation] = useState('');
     const [notes, setNotes] = useState('');
+    const [travelArrangement, setTravelArrangement] = useState<TravelArrangement>('client_travels');
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     // Derived values
@@ -49,7 +53,8 @@ export default function CreerReservationPage({ params }: { params: { creatorId: 
     const serviceFee = settings?.platformFee || 20; // Default fee if not set
     const creatorRatePerHour = creator?.rates?.escortPerHour || 0;
     const bookingCost = durationHours * creatorRatePerHour;
-    const totalCost = bookingCost + serviceFee;
+    const travelFee = travelArrangement === 'creator_travels' ? (creator?.rates?.travelFee || 0) : 0;
+    const totalCost = bookingCost + travelFee + serviceFee;
 
     useEffect(() => {
         if (!loading && !user) {
@@ -96,6 +101,8 @@ export default function CreerReservationPage({ params }: { params: { creatorId: 
                     location: location,
                     notes: notes,
                     amount: totalCost,
+                    travelArrangement: travelArrangement,
+                    travelFee: travelFee,
                 }),
             });
 
@@ -161,6 +168,26 @@ export default function CreerReservationPage({ params }: { params: { creatorId: 
                                 <Label className="flex items-center gap-2"><MapPin className="h-4 w-4"/> Lieu du rendez-vous</Label>
                                 <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="Ex: Hôtel Le Grand Paris" />
                             </div>
+                             <div className="space-y-2">
+                                <Label className="flex items-center gap-2"><Car className="h-4 w-4" /> Déplacement</Label>
+                                <RadioGroup value={travelArrangement} onValueChange={(v) => setTravelArrangement(v as TravelArrangement)} className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <RadioGroupItem value="client_travels" id="client_travels" className="peer sr-only" />
+                                        <Label htmlFor="client_travels" className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-4 text-sm hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                            Je me déplace
+                                        </Label>
+                                    </div>
+                                     <div>
+                                        <RadioGroupItem value="creator_travels" id="creator_travels" className="peer sr-only" />
+                                        <Label htmlFor="creator_travels" className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-4 text-sm hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                            L'escorte se déplace
+                                        </Label>
+                                    </div>
+                                </RadioGroup>
+                                 {(creator.rates?.travelFee || 0) > 0 && 
+                                    <p className="text-xs text-muted-foreground">Des frais de déplacement de {creator.rates?.travelFee}€ s'appliquent si l'escorte se déplace.</p>
+                                 }
+                            </div>
                             <div className="space-y-2">
                                 <Label>Notes pour le créateur (optionnel)</Label>
                                 <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Préférences, informations utiles..." />
@@ -183,12 +210,14 @@ export default function CreerReservationPage({ params }: { params: { creatorId: 
                                 <li className="flex justify-between"><span>Date:</span><span className="font-semibold">{selectedDate ? format(selectedDate, 'EEEE d MMM yyyy', {locale: fr}) : ''} à {selectedTime}</span></li>
                                 <li className="flex justify-between"><span>Durée:</span><span className="font-semibold">{durationHours} heure(s)</span></li>
                                 <li className="flex justify-between"><span>Lieu:</span><span className="font-semibold">{location}</span></li>
+                                <li className="flex justify-between"><span>Déplacement:</span><span className="font-semibold">{travelArrangement === 'client_travels' ? 'Vous vous déplacez' : 'L\'escorte se déplace'}</span></li>
                             </ul>
                              <div className="space-y-3 rounded-lg border bg-muted/50 p-4">
                                 <div className="flex justify-between"><span>Tarif horaire de {creator.displayName}:</span><span>{creatorRatePerHour.toFixed(2)} €</span></div>
                                 <div className="flex justify-between"><span>Coût de la prestation ({durationHours}h):</span><span>{bookingCost.toFixed(2)} €</span></div>
+                                {travelFee > 0 && <div className="flex justify-between"><span>Frais de déplacement:</span><span>{travelFee.toFixed(2)} €</span></div>}
                                 <div className="flex justify-between"><span>Frais de service GoMoodX:</span><span>{serviceFee.toFixed(2)} €</span></div>
-                                <hr className="border-border"/>
+                                <Separator />
                                 <div className="flex justify-between text-xl font-bold"><span>Total à payer:</span><span>{totalCost.toFixed(2)} €</span></div>
                              </div>
                              <Alert>
