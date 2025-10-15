@@ -4,7 +4,7 @@
 import { useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useDoc, useFirestore } from '@/firebase';
-import type { Reservation, User, CallType, ConfirmationStatus, ReservationStatus } from '@/lib/types';
+import type { Reservation, User, CallType, ConfirmationStatus, ReservationStatus, Product } from '@/lib/types';
 import { doc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/shared/page-header';
@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Phone, ShieldQuestion, Calendar, Tag, CreditCard, User as UserIcon, Users, Timer, BedDouble, Clock, HelpCircle, Check, X, Building, MapPin, Loader2, Info, Package } from 'lucide-react';
+import { MessageSquare, Phone, ShieldQuestion, Calendar, Tag, CreditCard, User as UserIcon, Users, Timer, BedDouble, Clock, HelpCircle, Check, X, Building, MapPin, Loader2, Info, Package, Plane } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -38,12 +38,6 @@ const statusTextMap = {
     completed: 'Terminée',
 };
 
-const confirmationStatusVariantMap = {
-    pending: 'outline',
-    confirmed: 'default',
-    declined: 'destructive',
-} as const;
-
 const confirmationStatusTextMap = {
     pending: 'En attente',
     confirmed: 'Confirmé',
@@ -60,7 +54,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
     const reservationRef = useMemo(() => firestore ? doc(firestore, 'reservations', params.id) : null, [firestore, params.id]);
-    const { data: reservation, loading: reservationLoading, setData: setReservation } = useDoc<Reservation>(reservationRef);
+    const { data: reservation, loading: reservationLoading } = useDoc<Reservation>(reservationRef);
     
     const otherPartyId = useMemo(() => {
         if (!reservation || !currentUser) return null;
@@ -70,7 +64,10 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     const otherPartyRef = useMemo(() => (firestore && otherPartyId) ? doc(firestore, 'users', otherPartyId) : null, [firestore, otherPartyId]);
     const { data: otherParty, loading: otherPartyLoading } = useDoc<User>(otherPartyRef);
     
-    const loading = authLoading || reservationLoading || otherPartyLoading;
+    const productRef = useMemo(() => (firestore && reservation?.type === 'physical_product_order') ? doc(firestore, 'products', reservation.annonceId) : null, [firestore, reservation]);
+    const { data: product, loading: productLoading } = useDoc<Product>(productRef);
+    
+    const loading = authLoading || reservationLoading || otherPartyLoading || productLoading;
     
     const isCurrentUserTheMember = currentUser?.id === reservation?.memberId;
     const isCurrentUserTheCreator = currentUser?.id === reservation?.creatorId;
@@ -186,14 +183,6 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                 );
             }
         }
-
-        if (isPhysicalProductOrder && reservation.status === 'pending_delivery' && isCurrentUserTheMember) {
-            return (
-                <Button onClick={() => handleStatusUpdate('completed')} disabled={isUpdatingStatus}>
-                    {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check />} Confirmer la réception
-                </Button>
-            )
-        }
         
         return null;
     }
@@ -277,20 +266,20 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                         </CardContent>
                     </Card>
                     
-                     {/* On-site Presence Card for service reservations */}
-                     {reservation.status === 'confirmed' && !isPhysicalProductOrder && (
+                     {/* Confirmation Card */}
+                     {(reservation.status === 'confirmed' || reservation.status === 'pending_delivery') && (
                          <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5" /> Confirmation sur Site</CardTitle>
-                                <CardDescription>Chaque participant doit confirmer sa présence une fois sur les lieux pour finaliser la réservation.</CardDescription>
+                                <CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5" /> Confirmation Mutuelle</CardTitle>
+                                <CardDescription>Chaque partie doit confirmer l'échange pour finaliser la transaction.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div className={cn("flex items-center justify-between p-3 rounded-lg", memberHasConfirmed ? "bg-green-500/10 text-green-700" : "bg-muted")}>
-                                    <span className="font-semibold">{isCurrentUserTheMember ? 'Votre présence' : `Présence de ${isCurrentUserTheCreator ? reservation.memberId : otherParty.displayName}`}</span>
+                                    <span className="font-semibold">{isCurrentUserTheMember ? 'Votre confirmation de réception' : `Confirmation du client`}</span>
                                     {memberHasConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
                                 </div>
                                 <div className={cn("flex items-center justify-between p-3 rounded-lg", creatorHasConfirmed ? "bg-green-500/10 text-green-700" : "bg-muted")}>
-                                     <span className="font-semibold">{isCurrentUserTheCreator ? 'Votre présence' : `Présence de ${otherParty.displayName}`}</span>
+                                     <span className="font-semibold">{isCurrentUserTheCreator ? 'Votre confirmation de livraison' : `Confirmation du vendeur`}</span>
                                     {creatorHasConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
                                 </div>
                                 {reservation.escorts?.map(escort => {
@@ -304,26 +293,15 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                 })}
                             </CardContent>
                              <CardFooter className="flex-col items-start gap-4">
-                                <p className="text-xs text-muted-foreground">Lorsque tous les participants auront confirmé leur présence, la réservation sera finalisée.</p>
+                                <p className="text-xs text-muted-foreground">Lorsque toutes les parties auront confirmé, la transaction sera finalisée et les fonds transférés.</p>
                                <Button onClick={handlePresenceConfirm} disabled={isUpdatingStatus || currentUserHasConfirmed}>
                                  {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4" />}
-                                 {currentUserHasConfirmed ? 'Votre présence est confirmée' : 'Confirmer ma présence sur les lieux'}
+                                 {currentUserHasConfirmed ? 'Votre confirmation a été enregistrée' : `Confirmer ma présence/livraison`}
                                </Button>
                              </CardFooter>
                          </Card>
                      )}
 
-                     {isPhysicalProductOrder && (
-                        <Alert>
-                            <Package className="h-4 w-4" />
-                            <AlertTitle>Commande de Produit Physique</AlertTitle>
-                            <AlertDescription>
-                                {reservation.status === 'pending_delivery' && 'Le vendeur a été notifié et prépare votre commande. Vous serez informé une fois le produit expédié.'}
-                                {reservation.status === 'completed' && 'Vous avez confirmé la réception de ce produit.'}
-                                {reservation.status === 'cancelled' && 'Cette commande a été annulée.'}
-                            </AlertDescription>
-                        </Alert>
-                     )}
                 </div>
                 
                 <div className="space-y-6">
@@ -359,7 +337,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                                 <Avatar className="h-8 w-8"><AvatarImage src={escort.profileImage} /><AvatarFallback>{escort.name.charAt(0)}</AvatarFallback></Avatar>
                                                 <span className="text-sm font-medium">{escort.name} {isSelf && '(Vous)'}</span>
                                             </Link>
-                                            <Badge variant={confirmationStatusVariantMap[status]}>{confirmationStatusTextMap[status]}</Badge>
+                                            <Badge variant={status === 'confirmed' ? 'default' : status === 'declined' ? 'destructive' : 'outline'}>{confirmationStatusTextMap[status]}</Badge>
                                         </div>
                                     )
                                 })}

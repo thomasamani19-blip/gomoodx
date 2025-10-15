@@ -1,9 +1,8 @@
-
 // /src/app/api/reservations/confirm-presence/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
-import type { Reservation, Settings, Transaction } from '@/lib/types';
+import type { Reservation, Settings, Transaction, Product, User } from '@/lib/types';
 
 if (!getApps().length) {
     initializeApp({
@@ -28,8 +27,8 @@ export async function POST(request: Request) {
             if (!reservationDoc.exists) throw new Error("La réservation n'existe pas.");
             const reservation = reservationDoc.data() as Reservation;
 
-            if (reservation.status !== 'confirmed') {
-                throw new Error("La réservation doit être confirmée pour pouvoir valider la présence.");
+            if (reservation.status !== 'confirmed' && reservation.status !== 'pending_delivery') {
+                throw new Error("La réservation doit être confirmée ou en attente de livraison pour pouvoir valider la présence/livraison.");
             }
 
             const isMember = reservation.memberId === userId;
@@ -43,14 +42,14 @@ export async function POST(request: Request) {
             
             let allParticipantsConfirmed = false;
 
-            // Update presence status
+            // Update presence/delivery status
             if (isMember) {
-                if (reservation.memberPresenceConfirmed) throw new Error("Vous avez déjà confirmé votre présence.");
+                if (reservation.memberPresenceConfirmed) throw new Error("Vous avez déjà confirmé votre présence/réception.");
                 t.update(reservationRef, { memberPresenceConfirmed: true });
             }
 
             if (isCreator) {
-                if (reservation.establishmentPresenceConfirmed) throw new Error("Vous avez déjà confirmé votre présence.");
+                if (reservation.establishmentPresenceConfirmed) throw new Error("Vous avez déjà confirmé votre présence/livraison.");
                 t.update(reservationRef, { establishmentPresenceConfirmed: true });
             }
             
@@ -60,79 +59,122 @@ export async function POST(request: Request) {
                  t.update(reservationRef, { [updatePath]: true });
             }
 
-            // Check if all participants have now confirmed
+            // --- Check if all participants have now confirmed ---
             const updatedReservationDoc = await t.get(reservationRef); // Re-fetch to get updated data within transaction
             const updatedReservation = updatedReservationDoc.data() as Reservation;
 
-            const allEscortsConfirmed = updatedReservation.escorts?.every(e => updatedReservation.escortConfirmations[e.id]?.presenceConfirmed) ?? true;
-            
-            if (updatedReservation.creatorId) { // For establishment booking
-                 allParticipantsConfirmed = updatedReservation.memberPresenceConfirmed && updatedReservation.establishmentPresenceConfirmed && allEscortsConfirmed;
-            } else { // For direct escort booking
-                 allParticipantsConfirmed = updatedReservation.memberPresenceConfirmed && allEscortsConfirmed; // Assuming creator is also an escort here
-            }
+            // Logic for a physical product order
+            if (updatedReservation.type === 'physical_product_order') {
+                if (updatedReservation.memberPresenceConfirmed && updatedReservation.establishmentPresenceConfirmed) {
+                     // Both buyer and seller confirmed, release funds
+                    t.update(reservationRef, { status: 'completed' });
+                    
+                    const settingsDoc = await t.get(db.collection('settings').doc('global'));
+                    const settings = settingsDoc.data() as Settings;
+                    const commissionRate = settings?.platformCommissionRate || 0.20;
+                    const firstSaleBonus = settings?.rewards?.firstSaleBonus || 0;
 
-            // If all parties have now confirmed, complete the transaction
-            if (allParticipantsConfirmed) {
-                t.update(reservationRef, { status: 'completed' });
-                
-                const settingsRef = db.collection('settings').doc('global');
-                const settingsDoc = await t.get(settingsRef);
-                const settings = settingsDoc.data() as Settings;
-                const commissionRate = settings.platformCommissionRate || 0.20;
+                    const sellerRef = db.collection('users').doc(reservation.creatorId);
+                    const sellerDoc = await t.get(sellerRef);
+                    const seller = sellerDoc.data() as User;
 
-                const totalAmount = reservation.amount;
-                const serviceFee = reservation.fee || 0;
-                const netRevenue = totalAmount - serviceFee;
+                    const totalAmount = reservation.amount;
+                    const commissionAmount = totalAmount * commissionRate;
+                    const sellerAmount = totalAmount - commissionAmount;
 
-                // Credit Platform's wallet with service fee
-                 const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
-                 if (serviceFee > 0) {
-                    t.update(platformWalletRef, { balance: FieldValue.increment(serviceFee), totalEarned: FieldValue.increment(serviceFee) });
-                     const platformFeeTxRef = platformWalletRef.collection('transactions').doc();
-                    t.set(platformFeeTxRef, {
-                        amount: serviceFee, type: 'commission', createdAt: Timestamp.now(),
-                        description: `Frais de service RDV: ${reservation.annonceTitle}`, status: 'success', reference: reservation.id
-                    } as Omit<Transaction, 'id'>);
-                 }
+                    // Move from escrow to platform and seller
+                    const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
+                    t.update(platformWalletRef, { 
+                        escrowBalance: FieldValue.increment(-totalAmount),
+                        balance: FieldValue.increment(commissionAmount),
+                        totalEarned: FieldValue.increment(commissionAmount)
+                    });
+                    const sellerWalletRef = db.collection('wallets').doc(reservation.creatorId);
+                    t.update(sellerWalletRef, {
+                        balance: FieldValue.increment(sellerAmount),
+                        totalEarned: FieldValue.increment(sellerAmount)
+                    });
+                    
+                    // Log transactions
+                    const platformTxRef = platformWalletRef.collection('transactions').doc();
+                    t.set(platformTxRef, { amount: commissionAmount, type: 'commission', description: `Commission sur vente: ${reservation.annonceTitle}`, status: 'success', createdAt: Timestamp.now(), reference: reservation.id });
 
-                // Distribute revenue between creator (establishment) and escorts
-                const establishmentShare = reservation.escorts ? (netRevenue - (reservation.escorts.reduce((sum, e) => sum + (e.rate * (reservation.durationHours || 1)), 0))) : netRevenue;
-                const commissionOnEstablishment = establishmentShare * commissionRate;
-                const establishmentAmount = establishmentShare - commissionOnEstablishment;
-                
-                t.update(platformWalletRef, { balance: FieldValue.increment(commissionOnEstablishment), totalEarned: FieldValue.increment(commissionOnEstablishment) });
-                 const platformCommTxRef = platformWalletRef.collection('transactions').doc();
-                 t.set(platformCommTxRef, {
-                    amount: commissionOnEstablishment, type: 'commission', createdAt: Timestamp.now(),
-                    description: `Commission RDV: ${reservation.annonceTitle}`, status: 'success', reference: reservation.id
-                } as Omit<Transaction, 'id'>);
-                
-                const creatorWalletRef = db.collection('wallets').doc(reservation.creatorId);
-                t.update(creatorWalletRef, { balance: FieldValue.increment(establishmentAmount), totalEarned: FieldValue.increment(establishmentAmount) });
-                 const creatorCreditTxRef = creatorWalletRef.collection('transactions').doc();
-                 t.set(creatorCreditTxRef, {
-                    amount: establishmentAmount, type: 'credit', createdAt: Timestamp.now(),
-                    description: `Revenu RDV: ${reservation.annonceTitle}`, status: 'success', reference: reservation.id
-                } as Omit<Transaction, 'id'>);
-
-                if (reservation.escorts) {
-                    for(const escort of reservation.escorts) {
-                        const escortTotal = escort.rate * (reservation.durationHours || 1);
-                        const commissionOnEscort = escortTotal * commissionRate;
-                        const escortAmount = escortTotal - commissionOnEscort;
-
-                        t.update(platformWalletRef, { balance: FieldValue.increment(commissionOnEscort), totalEarned: FieldValue.increment(commissionOnEscort) });
-                        
-                        const escortWalletRef = db.collection('wallets').doc(escort.id);
-                        t.update(escortWalletRef, { balance: FieldValue.increment(escortAmount), totalEarned: FieldValue.increment(escortAmount) });
+                    const sellerTxRef = sellerWalletRef.collection('transactions').doc();
+                    t.set(sellerTxRef, { amount: sellerAmount, type: 'credit', description: `Vente: ${reservation.annonceTitle}`, status: 'success', createdAt: Timestamp.now(), reference: reservation.id });
+                    
+                    // First sale bonus logic
+                    if (!seller.hasMadeFirstSale && firstSaleBonus > 0) {
+                        t.update(sellerRef, {
+                            rewardPoints: FieldValue.increment(firstSaleBonus),
+                            hasMadeFirstSale: true,
+                        });
+                        const rewardTxRef = sellerWalletRef.collection('transactions').doc();
+                        t.set(rewardTxRef, { amount: firstSaleBonus, type: 'reward', description: `Bonus pour votre première vente !`, status: 'success', createdAt: Timestamp.now(), reference: reservation.id });
                     }
+
+                    return { message: "Livraison confirmée des deux côtés. La commande est terminée et les fonds ont été transférés." };
                 }
+
+            } else { // Logic for service/establishment booking
+                const allEscortsConfirmed = updatedReservation.escorts?.every(e => updatedReservation.escortConfirmations[e.id]?.presenceConfirmed) ?? true;
                 
-                return { message: "Présence confirmée. La réservation est terminée et les fonds ont été transférés." };
+                if (updatedReservation.creatorId) {
+                     allParticipantsConfirmed = updatedReservation.memberPresenceConfirmed && updatedReservation.establishmentPresenceConfirmed && allEscortsConfirmed;
+                } else {
+                     allParticipantsConfirmed = updatedReservation.memberPresenceConfirmed && allEscortsConfirmed;
+                }
+
+                if (allParticipantsConfirmed) {
+                    t.update(reservationRef, { status: 'completed' });
+                    
+                    // Release funds logic for services
+                    const settingsRef = db.collection('settings').doc('global');
+                    const settingsDoc = await t.get(settingsRef);
+                    const settings = settingsDoc.data() as Settings;
+                    const commissionRate = settings.platformCommissionRate || 0.20;
+
+                    const totalAmount = reservation.amount;
+                    const serviceFee = reservation.fee || 0;
+                    const netRevenue = totalAmount - serviceFee;
+
+                    const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
+                    if (serviceFee > 0) {
+                        t.update(platformWalletRef, { balance: FieldValue.increment(serviceFee), totalEarned: FieldValue.increment(serviceFee) });
+                        const platformFeeTxRef = platformWalletRef.collection('transactions').doc();
+                        t.set(platformFeeTxRef, { amount: serviceFee, type: 'commission', description: `Frais de service RDV: ${reservation.annonceTitle}`, status: 'success', reference: reservation.id });
+                    }
+
+                    const establishmentShare = reservation.escorts ? (netRevenue - (reservation.escorts.reduce((sum, e) => sum + (e.rate * (reservation.durationHours || 1)), 0))) : netRevenue;
+                    const commissionOnEstablishment = establishmentShare * commissionRate;
+                    const establishmentAmount = establishmentShare - commissionOnEstablishment;
+                    
+                    t.update(platformWalletRef, { balance: FieldValue.increment(commissionOnEstablishment), totalEarned: FieldValue.increment(commissionOnEstablishment) });
+                    const platformCommTxRef = platformWalletRef.collection('transactions').doc();
+                    t.set(platformCommTxRef, { amount: commissionOnEstablishment, type: 'commission', description: `Commission RDV: ${reservation.annonceTitle}`, status: 'success', reference: reservation.id });
+                    
+                    const creatorWalletRef = db.collection('wallets').doc(reservation.creatorId);
+                    t.update(creatorWalletRef, { balance: FieldValue.increment(establishmentAmount), totalEarned: FieldValue.increment(establishmentAmount) });
+                    const creatorCreditTxRef = creatorWalletRef.collection('transactions').doc();
+                    t.set(creatorCreditTxRef, { amount: establishmentAmount, type: 'credit', description: `Revenu RDV: ${reservation.annonceTitle}`, status: 'success', reference: reservation.id });
+
+                    if (reservation.escorts) {
+                        for(const escort of reservation.escorts) {
+                            const escortTotal = escort.rate * (reservation.durationHours || 1);
+                            const commissionOnEscort = escortTotal * commissionRate;
+                            const escortAmount = escortTotal - commissionOnEscort;
+
+                            t.update(platformWalletRef, { balance: FieldValue.increment(commissionOnEscort), totalEarned: FieldValue.increment(commissionOnEscort) });
+                            
+                            const escortWalletRef = db.collection('wallets').doc(escort.id);
+                            t.update(escortWalletRef, { balance: FieldValue.increment(escortAmount), totalEarned: FieldValue.increment(escortAmount) });
+                        }
+                    }
+                    
+                    return { message: "Présence confirmée. La réservation est terminée et les fonds ont été transférés." };
+                }
             }
             
-            return { message: "Présence confirmée. En attente des autres participants." };
+            return { message: "Confirmation enregistrée. En attente des autres participants." };
         });
         
         return NextResponse.json({ status: 'success', ...transactionResult });

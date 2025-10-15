@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
-import type { Reservation, ReservationStatus, Settings, Product, User } from '@/lib/types';
+import type { Reservation, ReservationStatus } from '@/lib/types';
 
 if (!getApps().length) {
     initializeApp({
@@ -17,8 +17,8 @@ export async function POST(request: Request) {
     try {
         const { reservationId, userId, newStatus } = await request.json() as { reservationId: string, userId: string, newStatus: ReservationStatus };
 
-        if (!reservationId || !userId || !newStatus || !['confirmed', 'cancelled', 'completed'].includes(newStatus)) {
-            return NextResponse.json({ status: 'error', message: 'Informations manquantes ou invalides.' }, { status: 400 });
+        if (!reservationId || !userId || !newStatus || !['confirmed', 'cancelled'].includes(newStatus)) {
+            return NextResponse.json({ status: 'error', message: 'Informations manquantes ou statut invalide.' }, { status: 400 });
         }
         
         const reservationRef = db.collection('reservations').doc(reservationId);
@@ -30,7 +30,6 @@ export async function POST(request: Request) {
             }
             const reservation = reservationDoc.data() as Reservation;
 
-            // Authorization checks
             const isMember = reservation.memberId === userId;
             const isCreator = reservation.creatorId === userId;
 
@@ -45,14 +44,13 @@ export async function POST(request: Request) {
                 t.update(reservationRef, { status: 'confirmed' });
 
             } else if (newStatus === 'cancelled') {
-                 if (reservation.status === 'completed') {
+                 if (reservation.status === 'completed' || reservation.status === 'cancelled') {
                     throw new Error("Cette réservation/commande ne peut plus être annulée.");
                  }
-                 // Refund logic
+                 
                  const memberWalletRef = db.collection('wallets').doc(reservation.memberId);
                  t.update(memberWalletRef, { balance: FieldValue.increment(reservation.amount) });
                  
-                 // Log refund transaction
                  const refundTxRef = memberWalletRef.collection('transactions').doc();
                  t.set(refundTxRef, {
                     amount: reservation.amount,
@@ -63,68 +61,12 @@ export async function POST(request: Request) {
                     reference: reservation.id
                  });
                  
-                 // Reclaim from escrow if applicable
-                 if(reservation.status === 'pending_delivery') {
+                 if(reservation.status === 'pending_delivery' || reservation.status === 'confirmed') {
                      const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
                      t.update(platformWalletRef, { escrowBalance: FieldValue.increment(-reservation.amount) });
                  }
 
                  t.update(reservationRef, { status: 'cancelled' });
-            } else if (newStatus === 'completed') {
-                if (!isMember) throw new Error("Seul le client peut confirmer la finalisation.");
-                if (reservation.type !== 'physical_product_order') throw new Error("Cette action n'est valable que pour les commandes de produits physiques.");
-                if (reservation.status !== 'pending_delivery') throw new Error("La commande doit être en attente de livraison pour être complétée.");
-
-                t.update(reservationRef, { status: 'completed' });
-                
-                // Release funds from escrow to seller
-                const settingsDoc = await t.get(db.collection('settings').doc('global'));
-                const settings = settingsDoc.data() as Settings;
-                const commissionRate = settings?.platformCommissionRate || 0.20;
-                const firstSaleBonus = settings?.rewards?.firstSaleBonus || 0;
-                
-                const productRef = db.collection('products').doc(reservation.annonceId);
-                const productDoc = await t.get(productRef);
-                const product = productDoc.data() as Product;
-
-                const sellerRef = db.collection('users').doc(reservation.creatorId);
-                const sellerDoc = await t.get(sellerRef);
-                const seller = sellerDoc.data() as User;
-                
-                const totalAmount = reservation.amount;
-                const commissionAmount = totalAmount * commissionRate;
-                const sellerAmount = totalAmount - commissionAmount;
-
-                // Move from escrow to platform and seller
-                const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
-                t.update(platformWalletRef, { 
-                    escrowBalance: FieldValue.increment(-totalAmount),
-                    balance: FieldValue.increment(commissionAmount),
-                    totalEarned: FieldValue.increment(commissionAmount)
-                });
-                const sellerWalletRef = db.collection('wallets').doc(reservation.creatorId);
-                t.update(sellerWalletRef, {
-                    balance: FieldValue.increment(sellerAmount),
-                    totalEarned: FieldValue.increment(sellerAmount)
-                });
-                
-                // Log transactions
-                const platformTxRef = platformWalletRef.collection('transactions').doc();
-                t.set(platformTxRef, { amount: commissionAmount, type: 'commission', description: `Commission sur vente: ${product.title}`, status: 'success', createdAt: Timestamp.now(), reference: reservation.id });
-
-                const sellerTxRef = sellerWalletRef.collection('transactions').doc();
-                t.set(sellerTxRef, { amount: sellerAmount, type: 'credit', description: `Vente: ${product.title}`, status: 'success', createdAt: Timestamp.now(), reference: reservation.id });
-                
-                // First sale bonus logic
-                if (!seller.hasMadeFirstSale && firstSaleBonus > 0) {
-                    t.update(sellerRef, {
-                        rewardPoints: FieldValue.increment(firstSaleBonus),
-                        hasMadeFirstSale: true,
-                    });
-                    const rewardTxRef = sellerWalletRef.collection('transactions').doc();
-                    t.set(rewardTxRef, { amount: firstSaleBonus, type: 'reward', description: `Bonus pour votre première vente !`, status: 'success', createdAt: Timestamp.now(), reference: reservation.id });
-                }
-
             }
         });
         
