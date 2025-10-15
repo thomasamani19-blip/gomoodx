@@ -66,7 +66,7 @@ function SuggestedProducts({ currentProductId }: { currentProductId: string }) {
                                 <div className="p-4">
                                     <h3 className="font-headline text-lg font-semibold truncate">{product.title}</h3>
                                     <div className="flex items-center gap-2 mt-2">
-                                        <p className="text-lg font-bold text-primary">{product.price ? `${product.price.toFixed(2)} €` : 'Gratuit'}</p>
+                                        <p className="text-lg font-bold text-primary">{product.price > 0 ? `${product.price.toFixed(2)} €` : 'Gratuit'}</p>
                                         {product.originalPrice && product.originalPrice > product.price && (
                                             <p className="text-sm text-muted-foreground line-through">{product.originalPrice.toFixed(2)} €</p>
                                         )}

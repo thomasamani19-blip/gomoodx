@@ -83,7 +83,7 @@ export default function BoutiquePage() {
                         <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
                         <div className="flex items-center justify-between mt-4">
                             <div className="flex items-baseline gap-2">
-                                <p className="text-lg font-bold text-primary">{product.price ? `${product.price.toFixed(2)} €` : 'Gratuit'}</p>
+                                <p className="text-lg font-bold text-primary">{product.price > 0 ? `${product.price.toFixed(2)} €` : 'Gratuit'}</p>
                                 {isOnSale && (
                                     <p className="text-sm text-muted-foreground line-through">{product.originalPrice?.toFixed(2)} €</p>
                                 )}
