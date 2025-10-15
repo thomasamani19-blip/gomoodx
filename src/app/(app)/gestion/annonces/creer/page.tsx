@@ -76,7 +76,7 @@ export default function CreerAnnoncePage() {
 
         } catch (error: any) {
             console.error("Erreur lors de la création de l'annonce :", error);
-            toast({ title: "Erreur", description: "Une erreur est survenue.", variant: "destructive" });
+            toast({ title: "Erreur", description: error.message, variant: "destructive" });
         } finally {
             setIsLoading(false);
         }

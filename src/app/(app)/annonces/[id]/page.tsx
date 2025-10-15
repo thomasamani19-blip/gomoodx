@@ -384,7 +384,7 @@ export default function AnnonceDetailPage({ params }: { params: { id: string } }
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
              <div className="absolute top-4 left-4 flex gap-2">
-                {isAvailableNow && (
+                {isAvailableNow && !isOnSale && (
                     <Badge className="bg-green-500 hover:bg-green-600 animate-pulse text-base shadow-lg">Disponible maintenant</Badge>
                 )}
                 {isOnSale && (

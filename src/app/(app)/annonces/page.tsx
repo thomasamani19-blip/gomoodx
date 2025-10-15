@@ -102,7 +102,7 @@ export default function AnnoncesPage() {
                      {annonce.isSponsored && (
                         <Badge variant="secondary" className="absolute top-2 right-2">À la une</Badge>
                      )}
-                     {isAvailableNow && (
+                     {isAvailableNow && !isOnSale && (
                         <Badge className="absolute top-2 left-2 bg-green-500 hover:bg-green-600 animate-pulse">Disponible</Badge>
                      )}
                      {isOnSale && (
