@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Menu, ShoppingBag } from 'lucide-react';
+import { Menu, ShoppingBag, Search } from 'lucide-react';
 import { GoMoodXLogo } from '@/components/GoMoodXLogo';
 import { useAuth } from '@/hooks/use-auth';
 import { ThemeSwitcher } from '../theme-switcher';
@@ -13,13 +13,14 @@ import { useCollection, useFirestore } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import type { CartItem } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '../ui/input';
+import { useRouter } from 'next/navigation';
 
 const navItems = [
   { label: 'Annonces', href: '/annonces' },
   { label: 'Boutique', href: '/boutique' },
   { label: 'Live', href: '/live' },
   { label: 'Blog', href: '/blog' },
-  { label: 'Recherche', href: '/recherche' },
 ];
 
 function CartIcon() {
@@ -54,6 +55,19 @@ function CartIcon() {
 export function Header() {
   const { user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const router = useRouter();
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const queryValue = formData.get('query');
+    const searchParams = new URLSearchParams();
+
+    if (queryValue) {
+      searchParams.set('q', queryValue.toString());
+    }
+    router.push(`/recherche?${searchParams.toString()}`);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -74,6 +88,10 @@ export function Header() {
         </nav>
 
         <div className="flex flex-1 items-center justify-end gap-2 md:gap-4">
+           <form onSubmit={handleSearch} className="relative hidden sm:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input name="query" type="search" placeholder="Rechercher..." className="pl-9" />
+           </form>
            <ThemeSwitcher />
            <CartIcon />
 
@@ -118,6 +136,13 @@ export function Header() {
                         {item.label}
                       </Link>
                     ))}
+                     <Link
+                        href="/recherche"
+                        className="text-lg font-medium transition-colors hover:text-primary"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Recherche
+                      </Link>
                   </nav>
                   <div className="mt-8 pt-8 border-t border-border/50">
                      {user ? (
