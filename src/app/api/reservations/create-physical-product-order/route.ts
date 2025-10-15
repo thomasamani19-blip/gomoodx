@@ -26,14 +26,15 @@ export async function POST(request: Request) {
         
         const reservationResult = await db.runTransaction(async (t) => {
             const memberWalletDoc = await t.get(memberWalletRef);
-            if (!memberWalletDoc.exists || (memberWalletDoc.data() as Wallet).balance < (await t.get(productRef)).data()?.price) {
-                throw new Error("Solde insuffisant ou portefeuille introuvable.");
-            }
             
             const productDoc = await t.get(productRef);
             if (!productDoc.exists) throw new Error("Produit introuvable.");
             const productData = productDoc.data()! as Product;
             const amount = productData.price;
+            
+            if (!memberWalletDoc.exists || (memberWalletDoc.data() as Wallet).balance < amount) {
+                throw new Error("Solde insuffisant ou portefeuille introuvable.");
+            }
 
             // Débiter le portefeuille du membre pour le montant total et placer en séquestre
             t.update(memberWalletRef, {
