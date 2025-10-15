@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -44,6 +45,7 @@ import {
   Banknote,
   AlertTriangle,
   DollarSign,
+  ShoppingCart,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -57,6 +59,7 @@ const clientNav = [
   { title: 'Mes Réservations', href: '/reservations', icon: CalendarCheck },
   { title: 'Favoris', href: '/favoris', icon: Heart },
   { title: 'Boutique', href: '/boutique', icon: ShoppingBag },
+  { title: 'Panier', href: '/panier', icon: ShoppingCart },
   { title: 'Live', href: '/live', icon: Clapperboard },
   { title: 'Blog', href: '/blog', icon: BookOpen },
   { title: 'Recherche', href: '/recherche', icon: Search },

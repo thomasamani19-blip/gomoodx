@@ -179,6 +179,7 @@ export interface User {
 export interface Wallet {
   id: string; // Same as user UID
   balance: number;
+  escrowBalance?: number;
   currency: 'XOF' | 'EUR' | 'USD';
   totalEarned: number;
   totalSpent: number;
@@ -243,7 +244,7 @@ export interface Review {
 
 // Reservation
 export type ReservationType = 'service' | 'establishment' | 'physical_product_order';
-export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'pending_delivery';
+export type ReservationStatus = 'pending' | 'pending_delivery' | 'confirmed' | 'cancelled' | 'completed';
 export type ConfirmationStatus = 'pending' | 'confirmed' | 'declined';
 
 export interface EscortConfirmation {
@@ -268,6 +269,7 @@ export interface Reservation {
     durationHours?: number | null; // Duration of the stay/service in hours
     location?: string;
     notes?: string;
+    quantity?: number;
     
     // For establishment reservations
     escorts?: { id: string; name: string, profileImage?: string, rate: number }[];
@@ -475,6 +477,17 @@ export interface Product {
         displayName: string;
         percentage: number;
     }[];
+}
+
+export interface CartItem {
+    id: string; // The product ID is the document ID in the subcollection
+    productId: string;
+    title: string;
+    price: number;
+    quantity: number;
+    imageUrl: string;
+    addedAt: Timestamp;
+    updatedAt?: Timestamp;
 }
 
 export interface BlogArticle {

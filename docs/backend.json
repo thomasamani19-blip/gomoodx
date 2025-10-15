@@ -92,6 +92,19 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "authorId", "content", "type", "createdAt"]
+    },
+    "CartItem": {
+      "title": "CartItem",
+      "description": "Représente un article dans le panier d'un utilisateur.",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "title": { "type": "string" },
+        "price": { "type": "number" },
+        "quantity": { "type": "number" },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "addedAt": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "auth": {
@@ -105,6 +118,11 @@
         "path": "/users/{userId}",
         "schema": { "$ref": "#/entities/User" },
         "description": "Stores all user profiles regardless of role."
+      },
+      {
+        "path": "/users/{userId}/cart/{productId}",
+        "schema": { "$ref": "#/entities/CartItem" },
+        "description": "Subcollection for user's shopping cart items."
       },
       {
         "path": "/posts/{postId}",

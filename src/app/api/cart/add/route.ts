@@ -2,7 +2,7 @@
 // /src/app/api/cart/add/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
-import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase-admin/firestore';
+import { getFirestore, doc, setDoc, serverTimestamp, getDoc } from 'firebase-admin/firestore';
 import type { Product } from '@/lib/types';
 
 if (!getApps().length) {
@@ -30,15 +30,20 @@ export async function POST(request: Request) {
         const product = productDoc.data() as Product;
         
         const cartItemRef = doc(db, 'users', userId, 'cart', productId);
+        const cartItemDoc = await cartItemRef.get();
+
+        const currentQuantity = cartItemDoc.exists() ? cartItemDoc.data()?.quantity : 0;
+        const newQuantity = currentQuantity + quantity;
         
         await setDoc(cartItemRef, {
             productId: productId,
             title: product.title,
             price: product.price,
             imageUrl: product.imageUrl,
-            quantity: quantity,
-            addedAt: serverTimestamp(),
-        }, { merge: true }); // Use merge to update quantity if item already in cart
+            quantity: newQuantity,
+            addedAt: cartItemDoc.exists() ? cartItemDoc.data()?.addedAt : serverTimestamp(),
+            updatedAt: serverTimestamp()
+        }, { merge: true });
 
         return NextResponse.json({ status: 'success', message: 'Produit ajouté au panier.' });
 

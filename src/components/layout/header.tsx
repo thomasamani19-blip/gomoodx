@@ -8,7 +8,11 @@ import { GoMoodXLogo } from '@/components/GoMoodXLogo';
 import { useAuth } from '@/hooks/use-auth';
 import { ThemeSwitcher } from '../theme-switcher';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection, query } from 'firebase/firestore';
+import type { CartItem } from '@/lib/types';
+import { Badge } from '@/components/ui/badge';
 
 const navItems = [
   { label: 'Annonces', href: '/annonces' },
@@ -17,6 +21,35 @@ const navItems = [
   { label: 'Blog', href: '/blog' },
   { label: 'Recherche', href: '/recherche' },
 ];
+
+function CartIcon() {
+    const { user } = useAuth();
+    const firestore = useFirestore();
+
+    const cartQuery = useMemo(() => {
+        if (!user || !firestore) return null;
+        return query(collection(firestore, 'users', user.id, 'cart'));
+    }, [user, firestore]);
+
+    const { data: cartItems } = useCollection<CartItem>(cartQuery);
+
+    const itemCount = useMemo(() => {
+        return cartItems?.reduce((total, item) => total + item.quantity, 0) || 0;
+    }, [cartItems]);
+
+
+    return (
+        <Button variant="ghost" size="icon" asChild>
+            <Link href="/panier" className="relative">
+                <ShoppingBag className="h-5 w-5" />
+                {itemCount > 0 && (
+                     <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 justify-center p-0">{itemCount}</Badge>
+                )}
+                <span className="sr-only">Panier</span>
+            </Link>
+        </Button>
+    )
+}
 
 export function Header() {
   const { user } = useAuth();
@@ -42,12 +75,7 @@ export function Header() {
 
         <div className="flex flex-1 items-center justify-end gap-2 md:gap-4">
            <ThemeSwitcher />
-            <Button variant="ghost" size="icon" asChild>
-                <Link href="/panier">
-                    <ShoppingBag className="h-5 w-5" />
-                    <span className="sr-only">Panier</span>
-                </Link>
-            </Button>
+           <CartIcon />
 
           {/* Auth buttons for desktop */}
           <div className="hidden md:flex items-center gap-2">
