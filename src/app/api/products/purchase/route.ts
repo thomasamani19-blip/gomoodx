@@ -1,4 +1,3 @@
-
 // /src/app/api/products/purchase/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -36,8 +35,8 @@ export async function POST(request: Request) {
             if (!memberWalletDoc.exists) throw new Error("Portefeuille du membre introuvable.");
             const memberWallet = memberWalletDoc.data() as Wallet;
             
-            const sellerRef = db.collection('users').doc(product.createdBy);
-            const sellerDoc = await t.get(sellerRef);
+            const mainSellerRef = db.collection('users').doc(product.createdBy);
+            const sellerDoc = await t.get(mainSellerRef);
             if (!sellerDoc.exists) throw new Error("Vendeur introuvable.");
             const seller = sellerDoc.data() as User;
 
@@ -121,13 +120,12 @@ export async function POST(request: Request) {
                 } as Omit<Transaction, 'id'>);
             }
             
-            // First sale bonus logic
+            // First sale bonus logic, awarded only to the main creator
             if (!seller.hasMadeFirstSale && firstSaleBonus > 0) {
-                t.update(sellerRef, {
+                t.update(mainSellerRef, {
                     rewardPoints: FieldValue.increment(firstSaleBonus),
                     hasMadeFirstSale: true,
                 });
-                // We'll add the reward to the main seller's wallet
                 const sellerWalletRef = db.collection('wallets').doc(product.createdBy);
                 const rewardTxRef = sellerWalletRef.collection('transactions').doc();
                 t.set(rewardTxRef, {

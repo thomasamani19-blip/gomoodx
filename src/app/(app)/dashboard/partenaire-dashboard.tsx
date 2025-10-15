@@ -6,7 +6,7 @@ import type { User, CreatorStats, MonthlyRevenue, Reservation } from "@/lib/type
 import PageHeader from "@/components/shared/page-header";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Building, ShoppingBag, Newspaper, DollarSign, PenSquare, UserCircle, GanttChart, Sparkles, BookText, Film, Bot, TrendingUp, BarChart, Calendar, CalendarCheck } from "lucide-react";
+import { Building, ShoppingBag, Newspaper, DollarSign, PenSquare, UserCircle, GanttChart, Sparkles, BookText, Film, Bot, TrendingUp, BarChart, Calendar, CalendarCheck, Users } from "lucide-react";
 import { useDoc, useFirestore, useCollection } from "@/firebase";
 import { useMemo } from "react";
 import { collection, doc, query, where, orderBy, limit } from "firebase/firestore";
@@ -172,7 +172,7 @@ function EstablishmentDashboard({ user }: { user: User }) {
                         </Button>
                          <Button asChild size="lg" className="h-full col-span-2" variant="outline">
                             <Link href="/profil">
-                                <Building className="h-6 w-6"/>
+                                <Building className="h-6 w-6 mr-2"/>
                                 <span>Modifier le Profil</span>
                             </Link>
                         </Button>
@@ -278,9 +278,9 @@ function ProducerDashboard({ user }: { user: User }) {
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-2 gap-4">
                     <Button asChild size="lg">
-                        <Link href="/gestion/produits/creer">
-                            <ShoppingBag className="mr-2 h-5 w-5" />
-                            Créer un Produit Collaboratif
+                        <Link href="/gestion/produits">
+                            <Users className="mr-2 h-5 w-5" />
+                            Gérer mes produits
                         </Link>
                     </Button>
                     <Button asChild size="lg" variant="secondary">

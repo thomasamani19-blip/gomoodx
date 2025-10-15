@@ -55,13 +55,21 @@ export async function POST(request: Request) {
         
         let revenueShares = [];
         if (isCollaborative && revenueSharesStr) {
-            revenueShares = JSON.parse(revenueSharesStr);
+            try {
+                revenueShares = JSON.parse(revenueSharesStr);
+                const totalPercentage = revenueShares.reduce((sum, share) => sum + (share.percentage || 0), 0);
+                if (totalPercentage !== 100) {
+                     throw new Error("La somme des pourcentages de revenus doit être de 100%.");
+                }
+            } catch(e) {
+                return NextResponse.json({ status: 'error', message: 'Format de partage des revenus invalide.' }, { status: 400 });
+            }
         }
 
         const newProduct: Omit<Product, 'id'> = {
             title,
             description,
-            price: productType === 'physique' ? 0 : price,
+            price: price,
             productType,
             imageUrl,
             createdBy: authorId,

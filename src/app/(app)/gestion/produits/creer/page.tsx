@@ -51,12 +51,6 @@ const productSchema = z.object({
 }, {
     message: "La somme des pourcentages doit être exactement 100%.",
     path: ["revenueShares"],
-}).refine(data => {
-    if (data.productType === 'physique') return data.price === 0;
-    return true;
-}, {
-    message: "Le prix des produits physiques est fixé à 0 et négocié par message.",
-    path: ["price"],
 });
 
 
@@ -183,8 +177,8 @@ export default function CreerProduitPage() {
                                 <div className="space-y-2">
                                     <Label>Type de produit</Label>
                                     <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4 pt-2">
-                                        <div className="flex items-center space-x-2"><RadioGroupItem value="digital" id="digital" /><Label htmlFor="digital">Contenu Digital</Label></div>
-                                        <div className="flex items-center space-x-2"><RadioGroupItem value="physique" id="physique" /><Label htmlFor="physique">Produit Physique</Label></div>
+                                        <RadioGroupItem value="digital" id="digital" /><Label htmlFor="digital">Contenu Digital</Label>
+                                        <RadioGroupItem value="physique" id="physique" /><Label htmlFor="physique">Produit Physique</Label>
                                     </RadioGroup>
                                 </div>
                             )}/>
@@ -192,7 +186,7 @@ export default function CreerProduitPage() {
                                 <Label htmlFor="price">Prix (€)</Label>
                                 <Input id="price" type="number" step="0.01" {...form.register('price')} disabled={productType === 'physique'} />
                                 {form.formState.errors.price && <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>}
-                                <p className="text-xs text-muted-foreground">{productType === 'digital' ? "Laissez à 0 pour un produit gratuit." : "Le prix est négocié par message."}</p>
+                                <p className="text-xs text-muted-foreground">{productType === 'digital' ? "Laissez à 0 pour un produit gratuit." : "Le prix des produits physiques est négocié par message."}</p>
                             </div>
                         </div>
 
