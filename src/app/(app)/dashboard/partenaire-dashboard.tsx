@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -277,9 +278,9 @@ function ProducerDashboard({ user }: { user: User }) {
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-2 gap-4">
                     <Button asChild size="lg">
-                        <Link href="/gestion/produits">
+                        <Link href="/gestion/produits/creer">
                             <ShoppingBag className="mr-2 h-5 w-5" />
-                            Gérer mes produits
+                            Créer un Produit Collaboratif
                         </Link>
                     </Button>
                     <Button asChild size="lg" variant="secondary">

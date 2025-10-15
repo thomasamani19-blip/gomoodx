@@ -36,7 +36,10 @@ const revenueShareSchema = z.object({
 const productSchema = z.object({
   title: z.string().min(5, "Le titre doit faire au moins 5 caractères."),
   description: z.string().min(20, "La description doit faire au moins 20 caractères."),
-  price: z.coerce.number().min(0, "Le prix ne peut pas être négatif."),
+  price: z.coerce.number().min(0, "Le prix ne peut pas être négatif.").refine(price => {
+    // This logic will be handled based on productType below, Zod needs a value.
+    return true;
+  }),
   productType: z.enum(['digital', 'physique'], { required_error: 'Veuillez sélectionner un type de produit.'}),
   image: z.any().refine(file => file instanceof File, 'Une image est requise.'),
   isCollaborative: z.boolean().default(false),
@@ -48,6 +51,12 @@ const productSchema = z.object({
 }, {
     message: "La somme des pourcentages doit être exactement 100%.",
     path: ["revenueShares"],
+}).refine(data => {
+    if (data.productType === 'physique') return data.price === 0;
+    return true;
+}, {
+    message: "Le prix des produits physiques est fixé à 0 et négocié par message.",
+    path: ["price"],
 });
 
 
@@ -61,7 +70,12 @@ export default function CreerProduitPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-    const escortesQuery = useMemo(() => firestore ? query(collection(firestore, 'users'), where('role', '==', 'escorte')) : null, [firestore]);
+    const isProducer = user?.role === 'partenaire' && user?.partnerType === 'producer';
+
+    const escortesQuery = useMemo(() => {
+        if (!firestore || !isProducer) return null;
+        return query(collection(firestore, 'users'), where('role', '==', 'escorte'));
+    }, [firestore, isProducer]);
     const { data: allEscortes, loading: escortesLoading } = useCollection<User>(escortesQuery);
 
     const form = useForm<ProductFormValues>({
@@ -79,12 +93,11 @@ export default function CreerProduitPage() {
         name: "revenueShares",
     });
     
-    // Set producer as the first revenue share participant on load
     useEffect(() => {
-        if(user && fields.length === 0) {
+        if(isProducer && user && fields.length === 0) {
             append({ userId: user.id, displayName: 'Moi (Producteur)', percentage: 100 });
         }
-    }, [user, fields.length, append]);
+    }, [user, fields.length, append, isProducer]);
 
 
     const productType = form.watch('productType');
@@ -121,7 +134,7 @@ export default function CreerProduitPage() {
             router.push('/gestion/produits');
         } catch (error: any) {
             console.error("Erreur:", error);
-            toast({ title: "Erreur", description: "Une erreur est survenue.", variant: "destructive" });
+            toast({ title: "Erreur", description: error.message, variant: "destructive" });
         } finally {
             setIsLoading(false);
         }
@@ -170,8 +183,8 @@ export default function CreerProduitPage() {
                                 <div className="space-y-2">
                                     <Label>Type de produit</Label>
                                     <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4 pt-2">
-                                        <RadioGroupItem value="digital" id="digital" /><Label htmlFor="digital">Contenu Digital</Label>
-                                        <RadioGroupItem value="physique" id="physique" /><Label htmlFor="physique">Produit Physique</Label>
+                                        <div className="flex items-center space-x-2"><RadioGroupItem value="digital" id="digital" /><Label htmlFor="digital">Contenu Digital</Label></div>
+                                        <div className="flex items-center space-x-2"><RadioGroupItem value="physique" id="physique" /><Label htmlFor="physique">Produit Physique</Label></div>
                                     </RadioGroup>
                                 </div>
                             )}/>
@@ -179,69 +192,72 @@ export default function CreerProduitPage() {
                                 <Label htmlFor="price">Prix (€)</Label>
                                 <Input id="price" type="number" step="0.01" {...form.register('price')} disabled={productType === 'physique'} />
                                 {form.formState.errors.price && <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>}
-                                <p className="text-xs text-muted-foreground">{productType === 'digital' ? "Laissez à 0 pour un produit gratuit." : "Le prix des produits physiques sera discuté par messagerie."}</p>
+                                <p className="text-xs text-muted-foreground">{productType === 'digital' ? "Laissez à 0 pour un produit gratuit." : "Le prix est négocié par message."}</p>
                             </div>
                         </div>
 
-                        <Separator/>
-                        
-                         <Controller
-                            name="isCollaborative"
-                            control={form.control}
-                            render={({ field }) => (
-                                <div className="flex items-center justify-between rounded-lg border p-4">
-                                    <div className="space-y-0.5">
-                                        <Label htmlFor="collaborative-switch" className="text-base flex items-center"><Users className="mr-2 h-4 w-4 text-primary"/> Contenu Collaboratif</Label>
-                                        <p className="text-sm text-muted-foreground">Activez pour partager les revenus avec d'autres créateurs.</p>
-                                    </div>
-                                    <Switch id="collaborative-switch" checked={field.value} onCheckedChange={field.onChange} />
-                                </div>
-                            )}
-                        />
-
-                        {isCollaborative && (
-                            <div className="space-y-4">
-                                <CardTitle>Partage des Revenus</CardTitle>
-                                <CardDescription>Ajoutez les escortes participantes et définissez leur pourcentage sur les ventes. Le total doit faire 100%.</CardDescription>
-                                
-                                {fields.map((field, index) => (
-                                    <div key={field.id} className="flex items-center gap-4 p-2 rounded-md border">
-                                        <p className="font-medium flex-1">{field.displayName}</p>
-                                        <div className="relative w-28">
-                                            <Input type="number" {...form.register(`revenueShares.${index}.percentage`)} className="pr-8" />
-                                            <Percent className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
+                        {isProducer && (
+                            <>
+                                <Separator/>
+                                <Controller
+                                    name="isCollaborative"
+                                    control={form.control}
+                                    render={({ field }) => (
+                                        <div className="flex items-center justify-between rounded-lg border p-4">
+                                            <div className="space-y-0.5">
+                                                <Label htmlFor="collaborative-switch" className="text-base flex items-center"><Users className="mr-2 h-4 w-4 text-primary"/> Contenu Collaboratif</Label>
+                                                <p className="text-sm text-muted-foreground">Activez pour partager les revenus avec d'autres créateurs.</p>
+                                            </div>
+                                            <Switch id="collaborative-switch" checked={field.value} onCheckedChange={field.onChange} />
                                         </div>
-                                        {field.userId !== user?.id && <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive"/></Button>}
+                                    )}
+                                />
+
+                                {isCollaborative && (
+                                    <div className="space-y-4">
+                                        <CardTitle>Partage des Revenus</CardTitle>
+                                        <CardDescription>Ajoutez les escortes participantes et définissez leur pourcentage sur les ventes. Le total doit faire 100%.</CardDescription>
+                                        
+                                        {fields.map((field, index) => (
+                                            <div key={field.id} className="flex items-center gap-4 p-2 rounded-md border">
+                                                <p className="font-medium flex-1">{field.displayName}</p>
+                                                <div className="relative w-28">
+                                                    <Input type="number" {...form.register(`revenueShares.${index}.percentage`)} className="pr-8" />
+                                                    <Percent className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
+                                                </div>
+                                                {field.userId !== user?.id && <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive"/></Button>}
+                                            </div>
+                                        ))}
+
+                                        <div className={cn("p-2 rounded-md font-bold text-right", totalPercentage === 100 ? "text-green-600" : "text-destructive")}>
+                                            Total: {totalPercentage} / 100 %
+                                        </div>
+                                        {form.formState.errors.revenueShares && <p className="text-sm text-destructive text-right">{form.formState.errors.revenueShares.message}</p>}
+
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button type="button" variant="outline" disabled={escortesLoading}><UserSearch className="mr-2 h-4 w-4" /> Ajouter une escorte</Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="p-0">
+                                                <Command>
+                                                    <CommandInput placeholder="Rechercher une escorte..." />
+                                                    <CommandList>
+                                                        <CommandEmpty>Aucune escorte trouvée.</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {allEscortes?.filter(escort => !fields.some(f => f.userId === escort.id)).map(escort => (
+                                                                <CommandItem key={escort.id} onSelect={() => append({ userId: escort.id, displayName: escort.displayName, percentage: 0 })}>
+                                                                    <Avatar className="mr-2 h-6 w-6"><AvatarImage src={escort.profileImage}/><AvatarFallback>{escort.displayName.charAt(0)}</AvatarFallback></Avatar>
+                                                                    {escort.displayName}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
                                     </div>
-                                ))}
-
-                                <div className={cn("p-2 rounded-md font-bold text-right", totalPercentage === 100 ? "text-green-600" : "text-destructive")}>
-                                    Total: {totalPercentage} / 100 %
-                                </div>
-                                {form.formState.errors.revenueShares && <p className="text-sm text-destructive text-right">{form.formState.errors.revenueShares.message}</p>}
-
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button type="button" variant="outline"><UserSearch className="mr-2 h-4 w-4" /> Ajouter une escorte</Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="p-0">
-                                        <Command>
-                                            <CommandInput placeholder="Rechercher une escorte..." />
-                                            <CommandList>
-                                                <CommandEmpty>Aucune escorte trouvée.</CommandEmpty>
-                                                <CommandGroup>
-                                                    {allEscortes?.filter(escort => !fields.some(f => f.userId === escort.id)).map(escort => (
-                                                        <CommandItem key={escort.id} onSelect={() => append({ userId: escort.id, displayName: escort.displayName, percentage: 0 })}>
-                                                             <Avatar className="mr-2 h-6 w-6"><AvatarImage src={escort.profileImage}/><AvatarFallback>{escort.displayName.charAt(0)}</AvatarFallback></Avatar>
-                                                            {escort.displayName}
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
+                                )}
+                            </>
                         )}
                     </CardContent>
                     <CardFooter>
