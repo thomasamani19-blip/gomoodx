@@ -109,7 +109,7 @@ export default function AdminSettingsPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Récompenses (en points)</CardTitle>
-                        <CardDescription>Définissez le nombre de points attribués pour chaque action clé des utilisateurs.</CardDescription>
+                        <CardDescription>Définissez le nombre de points attribués pour chaque action clé des utilisateurs. 100 points = 1€ (modifiable dans les paramètres financiers).</CardDescription>
                     </CardHeader>
                     <CardContent className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">

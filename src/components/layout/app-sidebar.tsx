@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -105,7 +104,7 @@ const adminNav = [
   { title: 'Modération Contenu', href: '/admin/moderation', icon: AlertTriangle },
   { title: 'Portefeuille Plateforme', href: '/admin/portefeuille', icon: Wallet },
   { title: 'Gestion des Retraits', href: '/admin/retraits', icon: Banknote },
-  { title: 'Gestion Abonnements', href: "/admin/abonnements", icon: Crown },
+  { title: 'Abonnements Plateforme', href: "/admin/abonnements", icon: Crown },
   { title: 'Paramètres Financiers', href: '/admin/parametres-financiers', icon: DollarSign },
   { title: 'Paramètres Récompenses', href: '/admin/parametres', icon: Settings },
   { title: "Fil d'actualité", href: '/feed', icon: Newspaper },

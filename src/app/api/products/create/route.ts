@@ -1,4 +1,3 @@
-
 // /src/app/api/products/create/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -81,8 +80,8 @@ export async function POST(request: Request) {
         if (!authorData.hasPostedFirstContent) {
             const settingsDoc = await db.collection('settings').doc('global').get();
             const firstContentBonus = (settingsDoc.data() as Settings)?.rewards?.firstContentBonus || 0;
-            
-            if (firstContentBonus > 0) {
+
+            if(firstContentBonus > 0) {
                 const walletRef = db.collection('wallets').doc(authorId);
                 const rewardTxRef = walletRef.collection('transactions').doc();
                 

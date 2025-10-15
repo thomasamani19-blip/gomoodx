@@ -24,7 +24,10 @@ const settingsSchema = z.object({
   platformFee: z.coerce.number().min(0, "Doit être positif."),
   welcomeBonusAmount: z.coerce.number().min(0, "Doit être positif."),
   withdrawalMinAmount: z.coerce.number().min(0, "Doit être positif."),
-  withdrawalMaxAmount: z.coerce.number().min(0, "Doit être positif."),
+  withdrawalMaxAmount: z.coerce.number().min(0, "Doit être positif.").refine(
+    (data) => data > 0,
+    { message: "Le max doit être supérieur au min" }
+  ),
   callRates: z.object({
     voicePerMinute: z.coerce.number().min(0),
     videoToProducerPerMinute: z.coerce.number().min(0),

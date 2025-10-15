@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import type { User, Wallet, PartnerRequest } from "@/lib/types";
 import PageHeader from "@/components/shared/page-header";
 import { useCollection, useCollectionGroup, useDoc, useFirestore } from "@/firebase";
 import { collection, query, where, doc, collectionGroup } from "firebase/firestore";
-import { DollarSign, Users, ShieldCheck, Handshake, Bot, AlertTriangle, Banknote } from "lucide-react";
+import { DollarSign, Users, ShieldCheck, Handshake, Bot, AlertTriangle, Banknote, Crown, Settings } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo, useEffect, useState } from "react";
@@ -103,7 +102,7 @@ export default function AdminDashboard({ user }: { user: User }) {
       
       <AdminAISummary />
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
             title="Revenus Plateforme"
             value={platformWallet ? `${platformWallet.balance.toFixed(2)} €` : '0.00 €'}
@@ -144,6 +143,20 @@ export default function AdminDashboard({ user }: { user: User }) {
             value={pendingPartners?.length || 0}
             icon={Handshake}
             href="/admin/demandes-partenaires"
+            loading={loading}
+        />
+        <StatCard 
+            title="Abonnements Plateforme"
+            value="Gérer"
+            icon={Crown}
+            href="/admin/abonnements"
+            loading={loading}
+        />
+        <StatCard 
+            title="Paramètres Généraux"
+            value="Configurer"
+            icon={Settings}
+            href="/admin/parametres-financiers"
             loading={loading}
         />
       </div>
