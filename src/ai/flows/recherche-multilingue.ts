@@ -38,18 +38,19 @@ const ResultatRechercheSchema = z.object({
 export const RechercheMultilingueOutputSchema = z.array(ResultatRechercheSchema).describe("Un tableau de résultats de recherche traduits dans la langue cible.");
 export type RechercheMultilingueOutput = z.infer<typeof RechercheMultilingueOutputSchema>;
 
+const SearchEntitiesSchema = z.object({
+    keywords: z.string().optional().describe("Le mot-clé principal ou le sujet de la recherche."),
+    location: z.string().optional().describe("La ville, le pays ou le lieu mentionné dans la recherche."),
+    type: z.enum(['profil', 'contenu', '']).optional().describe("Le type de chose recherchée (profil de personne ou contenu comme un service/produit)."),
+    role: z.enum(['escorte', 'partenaire', '']).optional().describe("Si la recherche concerne un type de profil spécifique."),
+    category: z.string().optional().describe("Si la recherche concerne une catégorie spécifique de service ou de produit."),
+});
 
 const rechercherProfilsEtContenuTool = ai.defineTool(
   {
     name: 'rechercherProfilsEtContenu',
     description: "Recherche des profils d'escortes et de partenaires, ainsi que des annonces et des produits, en fonction de critères de recherche. Cet outil est la seule source de données.",
-    inputSchema: z.object({
-      query: z.string().optional(),
-      types: z.array(z.enum(['profil', 'contenu'])).optional(),
-      priceMin: z.number().optional(),
-      priceMax: z.number().optional(),
-      location: z.string().optional(),
-    }),
+    inputSchema: SearchEntitiesSchema,
     outputSchema: RechercheMultilingueOutputSchema,
   },
   async (input) => {
@@ -66,17 +67,19 @@ const rechercheMultilingueFlow = ai.defineFlow(
       outputSchema: RechercheMultilingueOutputSchema,
     },
     async (input) => {
-        const { query, types, priceMin, priceMax, location } = input;
+        const { query, types, priceMin, priceMax, location, langueCible, langueSource } = input;
         
-        // Si la langue source et cible sont les mêmes, pas besoin de traduction par l'IA.
-        // On effectue une recherche directe.
-        if (input.langueSource === input.langueCible) {
-            return await searchFirestore({ query, types, priceMin, priceMax, location });
+        // Si la langue source et cible sont les mêmes et que la requête est simple, on fait une recherche directe.
+        if (langueSource === langueCible && !query) {
+             return await searchFirestore({ query, types, priceMin, priceMax, location });
         }
 
-        // Si les langues sont différentes, on utilise le flow avec l'IA pour la traduction.
+        // Sinon, on utilise le flow avec l'IA pour interpréter la requête et traduire les résultats.
         const llmResponse = await ai.generate({
-            prompt: `Tu es un assistant de recherche multilingue. Utilise l'outil 'rechercherProfilsEtContenu' pour trouver les résultats pertinents en fonction des critères de l'utilisateur. Ensuite, traduis le titre et la description de chaque résultat dans la langue cible spécifiée. Conserve l'URL, l'URL de l'image, le prix, et le type d'origine.
+            prompt: `Tu es un assistant de recherche multilingue.
+            1. Analyse la requête de l'utilisateur: "${query}". Extrais-en les entités clés (mots-clés, lieu, catégorie, type de profil recherché).
+            2. Utilise l'outil 'rechercherProfilsEtContenu' avec ces entités pour trouver les résultats pertinents. Prends aussi en compte les filtres fournis.
+            3. Si la langue cible est différente de la langue source, traduis le titre et la description de chaque résultat dans la langue cible spécifiée. Conserve l'URL, l'URL de l'image, le prix, et le type d'origine.
             
             Requête: "${query}"
             Filtres:
@@ -84,8 +87,8 @@ const rechercheMultilingueFlow = ai.defineFlow(
              - Prix Min: ${priceMin}
              - Prix Max: ${priceMax}
              - Localisation: ${location}
-            Langue source: ${input.langueSource}
-            Langue cible: ${input.langueCible}
+            Langue source: ${langueSource}
+            Langue cible: ${langueCible}
             
             IMPORTANT: N'invente jamais de résultats. Utilise uniquement les données fournies par l'outil. Si l'outil ne renvoie aucun résultat, renvoie un tableau vide.`,
             model: 'googleai/gemini-1.5-flash',
@@ -105,7 +108,7 @@ const rechercheMultilingueFlow = ai.defineFlow(
         
         const toolRequests = llmResponse.toolRequests;
         if (toolRequests && toolRequests.length > 0 && toolRequests[0].tool.name === 'rechercherProfilsEtContenu') {
-          const toolInput = toolRequests[0].input as typeof input;
+          const toolInput = toolRequests[0].input as Partial<RechercheMultilingueInput>;
           const fallbackResults = await searchFirestore(toolInput);
           return fallbackResults;
         }
