@@ -164,11 +164,15 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     const isPhysicalProductOrder = reservation.type === 'physical_product_order';
     
     const mainActionButtons = () => {
-        if (reservation.status === 'pending' || reservation.status === 'pending_delivery') {
+        if (reservation.status === 'pending' || reservation.status === 'pending_delivery' || reservation.status === 'confirmed') {
             if (isCurrentUserTheMember) {
-                return <Button variant="destructive" onClick={() => handleStatusUpdate('cancelled')} disabled={isUpdatingStatus}>
-                    {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null} Annuler {isPhysicalProductOrder ? 'la commande' : 'la réservation'}
-                </Button>
+                return (
+                     <Button asChild variant="destructive">
+                        <Link href={`/messagerie?contact=${otherParty.id}&cancel_request=true`}>
+                           Demander l'annulation
+                        </Link>
+                    </Button>
+                )
             }
             if (isCurrentUserTheCreator) {
                 return (
@@ -176,7 +180,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                          <Button variant="destructive" onClick={() => handleStatusUpdate('cancelled')} disabled={isUpdatingStatus}>
                             {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <X />} {isPhysicalProductOrder ? 'Annuler (stock épuisé)' : 'Refuser'}
                         </Button>
-                        {!isPhysicalProductOrder &&
+                        {reservation.status === 'pending' && !isPhysicalProductOrder &&
                             <Button onClick={() => handleStatusUpdate('confirmed')} disabled={isUpdatingStatus}>
                                 {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check />} Confirmer
                             </Button>
