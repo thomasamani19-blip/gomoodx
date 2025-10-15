@@ -55,6 +55,8 @@ const rechercherProfilsEtContenuTool = ai.defineTool(
   },
   async (input) => {
     console.log(`Recherche Firestore pour:`, input);
+    // On passe l'input complet de la recherche (y compris les filtres de l'utilisateur)
+    // à la fonction searchFirestore, pas seulement les entités extraites par l'IA.
     return await searchFirestore(input);
   }
 );
@@ -69,32 +71,33 @@ const rechercheMultilingueFlow = ai.defineFlow(
     async (input) => {
         const { query, types, priceMin, priceMax, location, langueCible, langueSource } = input;
         
-        // Si la langue source et cible sont les mêmes et que la requête est simple, on fait une recherche directe.
+        // Si la langue source et cible sont les mêmes et qu'il n'y a pas de requête textuelle (uniquement des filtres), 
+        // on peut faire une recherche directe.
         if (langueSource === langueCible && !query) {
-             return await searchFirestore({ query, types, priceMin, priceMax, location });
+             return await searchFirestore({ types, priceMin, priceMax, location });
         }
 
-        // Sinon, on utilise le flow avec l'IA pour interpréter la requête et traduire les résultats.
+        // Sinon, on utilise le flow avec l'IA pour interpréter la requête et traduire les résultats si besoin.
         const llmResponse = await ai.generate({
-            prompt: `Tu es un assistant de recherche multilingue.
+            prompt: `Tu es un assistant de recherche multilingue expert.
             1. Analyse la requête de l'utilisateur: "${query}". Extrais-en les entités clés (mots-clés, lieu, catégorie, type de profil recherché).
-            2. Utilise l'outil 'rechercherProfilsEtContenu' avec ces entités pour trouver les résultats pertinents. Prends aussi en compte les filtres fournis.
-            3. Si la langue cible est différente de la langue source, traduis le titre et la description de chaque résultat dans la langue cible spécifiée. Conserve l'URL, l'URL de l'image, le prix, et le type d'origine.
+            2. Utilise l'outil 'rechercherProfilsEtContenu' avec ces entités pour trouver les résultats pertinents. L'outil prendra en compte les filtres supplémentaires fournis par l'utilisateur.
+            3. Si la langue cible ('${langueCible}') est différente de la langue source ('${langueSource}'), traduis le titre et la description de chaque résultat dans la langue cible. Conserve l'URL, l'URL de l'image, le prix, et le type d'origine. Si les langues sont identiques, ne traduis rien.
             
-            Requête: "${query}"
-            Filtres:
-             - Types: ${types?.join(', ')}
-             - Prix Min: ${priceMin}
-             - Prix Max: ${priceMax}
-             - Localisation: ${location}
-            Langue source: ${langueSource}
-            Langue cible: ${langueCible}
-            
-            IMPORTANT: N'invente jamais de résultats. Utilise uniquement les données fournies par l'outil. Si l'outil ne renvoie aucun résultat, renvoie un tableau vide.`,
+            IMPORTANT: N'invente jamais de résultats. Utilise uniquement les données fournies par l'outil 'rechercherProfilsEtContenu'. Si l'outil ne renvoie aucun résultat, renvoie un tableau vide.`,
             model: 'googleai/gemini-1.5-flash',
             tools: [rechercherProfilsEtContenuTool],
-            output: {
-                schema: RechercheMultilingueOutputSchema
+            toolConfig: {
+              // Force l'IA à toujours utiliser l'outil pour obtenir les données
+              mode: 'tool', 
+              tool: { name: 'rechercherProfilsEtContenu' }
+            },
+            context: {
+              // Fournir le contexte des filtres de l'utilisateur à l'outil
+              types,
+              priceMin,
+              priceMax,
+              location,
             }
         });
         
@@ -109,7 +112,7 @@ const rechercheMultilingueFlow = ai.defineFlow(
         const toolRequests = llmResponse.toolRequests;
         if (toolRequests && toolRequests.length > 0 && toolRequests[0].tool.name === 'rechercherProfilsEtContenu') {
           const toolInput = toolRequests[0].input as Partial<RechercheMultilingueInput>;
-          const fallbackResults = await searchFirestore(toolInput);
+          const fallbackResults = await searchFirestore({ ...toolInput, ...input }); // Merge AI input with original user filters
           return fallbackResults;
         }
         

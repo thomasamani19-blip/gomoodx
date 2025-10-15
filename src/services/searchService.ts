@@ -92,41 +92,68 @@ export async function searchFirestore(searchInput: SearchInput): Promise<SearchR
 
         // --- 2. Search Content (Services and Products) ---
         if (types.includes('contenu') || type === 'contenu') {
-            const contentConditions = [];
+            const contentConditions: any[] = [];
             if(category) contentConditions.push(where('category', '==', category));
             if(location) contentConditions.push(where('location', '==', location));
             if(priceMin && priceMin > 0) contentConditions.push(where('price', '>=', priceMin));
             if(priceMax && priceMax < 5000) contentConditions.push(where('price', '<=', priceMax));
 
             // Search Services (Annonces)
-            const servicesQuery = query(collection(db, 'services'), ...contentConditions, limit(searchLimit));
-            const servicesSnapshot = await getDocs(servicesQuery);
-            servicesSnapshot.forEach(doc => {
-                const annonce = doc.data() as Annonce;
-                results.push({
-                    type: 'contenu',
-                    titre: annonce.title,
-                    description: annonce.description,
-                    url: `/annonces/${doc.id}`,
-                    imageUrl: annonce.imageUrl,
-                    price: annonce.price
+            if (contentConditions.length > 0) {
+                const servicesQuery = query(collection(db, 'services'), and(...contentConditions), limit(searchLimit));
+                const servicesSnapshot = await getDocs(servicesQuery);
+                servicesSnapshot.forEach(doc => {
+                    const annonce = doc.data() as Annonce;
+                    results.push({
+                        type: 'contenu',
+                        titre: annonce.title,
+                        description: annonce.description,
+                        url: `/annonces/${doc.id}`,
+                        imageUrl: annonce.imageUrl,
+                        price: annonce.price
+                    });
                 });
-            });
 
-            // Search Products
-            const productsQuery = query(collection(db, 'products'), ...contentConditions, limit(searchLimit));
-            const productsSnapshot = await getDocs(productsQuery);
-            productsSnapshot.forEach(doc => {
-                const product = doc.data() as Product;
-                results.push({
-                    type: 'contenu',
-                    titre: product.title,
-                    description: product.description,
-                    url: `/boutique/${doc.id}`,
-                    imageUrl: product.imageUrl,
-                    price: product.price
+                // Search Products
+                const productsQuery = query(collection(db, 'products'), and(...contentConditions), limit(searchLimit));
+                const productsSnapshot = await getDocs(productsQuery);
+                productsSnapshot.forEach(doc => {
+                    const product = doc.data() as Product;
+                    results.push({
+                        type: 'contenu',
+                        titre: product.title,
+                        description: product.description,
+                        url: `/boutique/${doc.id}`,
+                        imageUrl: product.imageUrl,
+                        price: product.price
+                    });
                 });
-            });
+            } else {
+                 const servicesSnapshot = await getDocs(query(collection(db, 'services'), limit(searchLimit)));
+                 servicesSnapshot.forEach(doc => {
+                    const annonce = doc.data() as Annonce;
+                    results.push({
+                        type: 'contenu',
+                        titre: annonce.title,
+                        description: annonce.description,
+                        url: `/annonces/${doc.id}`,
+                        imageUrl: annonce.imageUrl,
+                        price: annonce.price
+                    });
+                });
+                 const productsSnapshot = await getDocs(query(collection(db, 'products'), limit(searchLimit)));
+                 productsSnapshot.forEach(doc => {
+                    const product = doc.data() as Product;
+                    results.push({
+                        type: 'contenu',
+                        titre: product.title,
+                        description: product.description,
+                        url: `/boutique/${doc.id}`,
+                        imageUrl: product.imageUrl,
+                        price: product.price
+                    });
+                });
+            }
         }
         
     } catch (error) {
