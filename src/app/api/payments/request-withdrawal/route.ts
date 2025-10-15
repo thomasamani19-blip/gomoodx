@@ -43,8 +43,8 @@ export async function POST(request: Request) {
             
             const settingsDoc = await t.get(settingsRef);
             const settings = settingsDoc.data() as Settings;
-            const minAmount = settings.withdrawalMinAmount || 50;
-            const maxAmount = settings.withdrawalMaxAmount || 5000;
+            const minAmount = settings?.withdrawalMinAmount || 50;
+            const maxAmount = settings?.withdrawalMaxAmount || 5000;
 
             if (amount < minAmount) {
                 throw new Error(`Le montant minimum de retrait est de ${minAmount.toFixed(2)}€.`);
