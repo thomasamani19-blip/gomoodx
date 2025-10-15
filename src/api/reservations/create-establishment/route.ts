@@ -1,9 +1,9 @@
 
-// /src/app/api/reservations/create-escort/route.ts
+// /src/app/api/reservations/create-establishment/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
-import type { Reservation, Wallet, Transaction, User, Settings } from '@/lib/types';
+import type { Reservation, Wallet, Transaction, User, Settings, EscortConfirmation } from '@/lib/types';
 
 if (!getApps().length) {
     initializeApp({
@@ -16,13 +16,14 @@ const PLATFORM_WALLET_ID = 'platform_wallet';
 
 export async function POST(request: Request) {
     try {
-        const { memberId, creatorId, reservationDate, durationHours, location, notes, amount, travelArrangement, travelFee } = await request.json();
+        const { memberId, annonceId, reservationDate, durationHours, escorts, amount, roomType, notes } = await request.json();
 
-        if (!memberId || !creatorId || !reservationDate || !durationHours || !amount) {
+        if (!memberId || !annonceId || !reservationDate || !durationHours || !amount) {
             return NextResponse.json({ status: 'error', message: 'Informations de réservation manquantes.' }, { status: 400 });
         }
 
         const memberWalletRef = db.collection('wallets').doc(memberId);
+        const annonceRef = db.collection('services').doc(annonceId);
         
         const reservationResult = await db.runTransaction(async (t) => {
             const memberWalletDoc = await t.get(memberWalletRef);
@@ -30,6 +31,10 @@ export async function POST(request: Request) {
                 throw new Error("Solde insuffisant ou portefeuille introuvable.");
             }
             
+            const annonceDoc = await t.get(annonceRef);
+            if (!annonceDoc.exists) throw new Error("Annonce introuvable.");
+            const annonceData = annonceDoc.data()!;
+
             const settingsDoc = await t.get(db.collection('settings').doc('global'));
             const platformFee = (settingsDoc.data() as Settings)?.platformFee || 0;
 
@@ -39,8 +44,9 @@ export async function POST(request: Request) {
                 totalSpent: FieldValue.increment(amount)
             });
 
-             const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
-             t.update(platformWalletRef, {
+            // Placer les fonds dans le compte de séquestre de la plateforme
+            const platformWalletRef = db.collection('wallets').doc(PLATFORM_WALLET_ID);
+            t.update(platformWalletRef, {
                 escrowBalance: FieldValue.increment(amount)
             });
 
@@ -49,30 +55,43 @@ export async function POST(request: Request) {
             t.set(debitTxRef, {
                 amount,
                 type: 'debit',
-                description: `Paiement réservation`,
+                description: `Paiement réservation: ${annonceData.title}`,
                 status: 'pending_escrow',
                 createdAt: Timestamp.now(),
                 reference: debitTxRef.id
             } as Omit<Transaction, 'id' | 'path'>);
+            
 
             // Créer la réservation
             const reservationRef = db.collection('reservations').doc();
             
-            const newReservation: Omit<Reservation, 'id' | 'escortConfirmations' | 'memberPresenceConfirmed' | 'establishmentPresenceConfirmed' | 'escorts'> = {
+            const escortConfirmations: { [key: string]: EscortConfirmation } = {};
+            if (escorts && escorts.length > 0) {
+                escorts.forEach((escort: {id: string}) => {
+                    escortConfirmations[escort.id] = { status: 'pending' };
+                });
+            }
+
+            const newReservation: Omit<Reservation, 'id'> = {
                 memberId,
-                creatorId,
-                annonceId: '', // Pas d'annonce spécifique pour un RDV direct
-                annonceTitle: `Rendez-vous avec ${creatorId}`,
+                creatorId: annonceData.createdBy,
+                annonceId,
+                annonceTitle: annonceData.title,
                 amount,
                 fee: platformFee,
                 status: 'pending',
+                type: 'establishment',
                 createdAt: Timestamp.now(),
                 reservationDate: Timestamp.fromDate(new Date(reservationDate)),
                 durationHours,
-                location,
+                location: annonceData.location,
                 notes,
-                travelArrangement: travelArrangement,
-                travelFee: travelFee || 0,
+                roomType,
+                escorts,
+                establishmentConfirmed: false,
+                escortConfirmations,
+                memberPresenceConfirmed: false,
+                establishmentPresenceConfirmed: false,
             };
             t.set(reservationRef, newReservation);
 
@@ -82,7 +101,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ status: 'success', ...reservationResult });
 
     } catch (error: any) {
-        console.error("Erreur lors de la création de la réservation:", error);
+        console.error("Erreur lors de la création de la réservation d'établissement:", error);
         return NextResponse.json({ status: 'error', message: error.message || "Une erreur interne est survenue." }, { status: 500 });
     }
 }

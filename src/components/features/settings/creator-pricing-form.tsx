@@ -12,7 +12,7 @@ import { useFirestore } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { Loader2, Save, DollarSign } from 'lucide-react';
+import { Loader2, Save, DollarSign, Car } from 'lucide-react';
 import PageHeader from '@/components/shared/page-header';
 import type { User, CreatorRates } from '@/lib/types';
 
@@ -23,6 +23,7 @@ const formSchema = z.object({
   escortFullDay: z.coerce.number().min(0, "Le tarif doit être positif.").optional(),
   escortOvernight: z.coerce.number().min(0, "Le tarif doit être positif.").optional(),
   videoCallPerMinute: z.coerce.number().min(0, "Le tarif doit être positif.").optional(),
+  travelFee: z.coerce.number().min(0, "Les frais doivent être positifs.").optional(),
 });
 
 type PricingFormValues = z.infer<typeof formSchema>;
@@ -44,6 +45,7 @@ export function CreatorPricingForm({ user }: CreatorPricingFormProps) {
             escortFullDay: 0,
             escortOvernight: 0,
             videoCallPerMinute: 0,
+            travelFee: 0,
         },
     });
 
@@ -119,14 +121,24 @@ export function CreatorPricingForm({ user }: CreatorPricingFormProps) {
                                 {form.formState.errors.escortOvernight && <p className="text-sm text-destructive">{form.formState.errors.escortOvernight.message}</p>}
                             </div>
                         </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="videoCallPerMinute">Tarif des appels vidéo par minute (€)</Label>
-                            <div className="relative">
-                                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input id="videoCallPerMinute" type="number" step="0.5" className="pl-8" {...form.register('videoCallPerMinute')} placeholder="5" />
+                         <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="videoCallPerMinute">Tarif des appels vidéo par minute (€)</Label>
+                                <div className="relative">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input id="videoCallPerMinute" type="number" step="0.5" className="pl-8" {...form.register('videoCallPerMinute')} placeholder="5" />
+                                </div>
+                                {form.formState.errors.videoCallPerMinute && <p className="text-sm text-destructive">{form.formState.errors.videoCallPerMinute.message}</p>}
                             </div>
-                            {form.formState.errors.videoCallPerMinute && <p className="text-sm text-destructive">{form.formState.errors.videoCallPerMinute.message}</p>}
-                        </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="travelFee">Frais de déplacement (€)</Label>
+                                <div className="relative">
+                                    <Car className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input id="travelFee" type="number" step="5" className="pl-8" {...form.register('travelFee')} placeholder="50" />
+                                </div>
+                                {form.formState.errors.travelFee && <p className="text-sm text-destructive">{form.formState.errors.travelFee.message}</p>}
+                            </div>
+                         </div>
                     </CardContent>
                     
                     <CardFooter className="border-t pt-6">

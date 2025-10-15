@@ -102,9 +102,10 @@ export interface CreatorRates {
     videoCallPerMinute?: number;
     voiceCallPerMinute?: number;
     escortPerHour?: number;
-    escortHalfDay?: number; // Nouveau
-    escortFullDay?: number; // Nouveau
+    escortHalfDay?: number;
+    escortFullDay?: number;
     escortOvernight?: number;
+    travelFee?: number;
 }
 
 export interface BankDetails {
@@ -274,7 +275,7 @@ export interface Reservation {
     quantity?: number;
     
     // For establishment reservations
-    escorts?: { id: string; name: string, profileImage?: string, rate: number }[];
+    escorts?: { id: string; name: string, profileImage?: string, rate: number, travelFee?: number }[];
     establishmentConfirmed?: boolean;
     establishmentConfirmedAt?: Timestamp;
     roomType?: string;
@@ -285,6 +286,8 @@ export interface Reservation {
     // On-site presence confirmation
     memberPresenceConfirmed: boolean;
     establishmentPresenceConfirmed: boolean; // Final confirmation by establishment for their bookings
+    travelArrangement?: 'client_travels' | 'creator_travels';
+    travelFee?: number;
 }
 
 // Purchase
