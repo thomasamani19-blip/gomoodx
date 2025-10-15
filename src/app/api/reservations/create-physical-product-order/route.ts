@@ -1,4 +1,3 @@
-
 // /src/app/api/reservations/create-physical-product-order/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
