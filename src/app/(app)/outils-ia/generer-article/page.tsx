@@ -9,20 +9,22 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import PageHeader from '@/components/shared/page-header';
 import { genererArticleBlog, type GenererArticleBlogOutput } from '@/ai/flows/generer-article-blog';
-import { Loader2, Wand2, Save, Copy, Star } from 'lucide-react';
+import { Loader2, Wand2, Save, Copy, Star, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
 import { useFirestore } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import type { BlogArticle } from '@/lib/types';
+
 
 export default function GenererArticlePage() {
   const [result, setResult] = useState<GenererArticleBlogOutput | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isPremium, setIsPremium] = useState(false);
+  const [accessLevel, setAccessLevel] = useState<BlogArticle['accessLevel']>('public');
   const [price, setPrice] = useState(5);
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
@@ -79,8 +81,8 @@ export default function GenererArticlePage() {
             date: serverTimestamp(),
             imageUrl: `https://picsum.photos/seed/${Date.now()}/800/600`,
             imageHint: 'abstract background',
-            isPremium: isPremium,
-            price: isPremium ? price : 0,
+            accessLevel: accessLevel,
+            price: accessLevel === 'premium' ? price : 0,
         });
         toast({ title: "Article Enregistré !", description: "Votre article a été ajouté à votre blog."});
         router.push('/gestion/articles');
@@ -159,15 +161,24 @@ export default function GenererArticlePage() {
                         </Button>
                     </div>
                      <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                            <Switch id="premium-article" checked={isPremium} onCheckedChange={setIsPremium} />
-                            <Label htmlFor="premium-article" className="flex items-center gap-1">
-                                <Star className="h-4 w-4 text-primary" />
-                                Premium (Payant)
-                            </Label>
-                        </div>
-                         {isPremium && (
+                         <RadioGroup
+                            value={accessLevel}
+                            onValueChange={(v) => setAccessLevel(v as BlogArticle['accessLevel'])}
+                            className="flex items-center gap-2 rounded-lg bg-muted p-1"
+                        >
+                            <RadioGroupItem value="public" id="public" className="sr-only" />
+                            <Label htmlFor="public" className="px-2 py-1 text-xs rounded-md cursor-pointer data-[state=checked]:bg-background data-[state=checked]:shadow">Public</Label>
+
+                            <RadioGroupItem value="premium" id="premium" className="sr-only" />
+                            <Label htmlFor="premium" className="px-2 py-1 text-xs rounded-md cursor-pointer data-[state=checked]:bg-background data-[state=checked]:shadow">Premium</Label>
+
+                            <RadioGroupItem value="subscribers_only" id="subscribers_only" className="sr-only" />
+                            <Label htmlFor="subscribers_only" className="px-2 py-1 text-xs rounded-md cursor-pointer data-[state=checked]:bg-background data-[state=checked]:shadow">Abonnés</Label>
+                        </RadioGroup>
+
+                         {accessLevel === 'premium' && (
                             <div className="flex items-center gap-2">
+                                <DollarSign className="h-4 w-4 text-muted-foreground" />
                                 <Input 
                                     type="number" 
                                     value={price}
@@ -201,3 +212,4 @@ export default function GenererArticlePage() {
     </div>
   );
 }
+
