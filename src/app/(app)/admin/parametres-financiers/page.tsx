@@ -193,7 +193,7 @@ export default function AdminFinancialSettingsPage() {
                     </Card>
                      <Card>
                         <CardHeader>
-                            <CardTitle>Retraits</CardTitle>
+                            <CardTitle>Retraits Créateurs & Partenaires</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
                            <div className="space-y-2">
