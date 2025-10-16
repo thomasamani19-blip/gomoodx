@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
@@ -11,12 +12,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 
 const managementTools = [
-    { title: "Gérer mes annonces", description: "Modifiez vos services, prix et disponibilités.", href: "/gestion/annonces", icon: Newspaper },
-    { title: "Gérer mes produits", description: "Ajoutez ou mettez à jour les articles de votre boutique.", href: "/gestion/produits", icon: ShoppingBag },
-    { title: "Gérer mes articles", description: "Rédigez et publiez de nouveaux articles de blog.", href: "/gestion/articles", icon: Newspaper },
-    { title: "Gérer les abonnements", description: "Définissez vos niveaux d'abonnement pour les fans.", href: "/gestion/abonnement", icon: Star },
-    { title: "Gérer les lives", description: "Planifiez et gérez vos sessions de live streaming.", href: "/gestion/lives", icon: Video },
-    { title: "Gérer mes tarifs", description: "Définissez vos prix pour les rencontres et appels.", href: "/gestion/tarifs", icon: DollarSign },
+    { title: "Gérer mes annonces", description: "Modifiez vos services, prix et disponibilités.", href: "/gestion/annonces", icon: Newspaper, roles: ['escorte'] },
+    { title: "Gérer mes produits", description: "Ajoutez ou mettez à jour les articles de votre boutique.", href: "/gestion/produits", icon: ShoppingBag, roles: ['escorte', 'partenaire'] },
+    { title: "Gérer mes articles", description: "Rédigez et publiez de nouveaux articles de blog.", href: "/gestion/articles", icon: Newspaper, roles: ['escorte', 'partenaire'] },
+    { title: "Gérer les abonnements", description: "Définissez vos niveaux d'abonnement pour les fans.", href: "/gestion/abonnement", icon: Star, roles: ['escorte'] },
+    { title: "Gérer les lives", description: "Planifiez et gérez vos sessions de live streaming.", href: "/gestion/lives", icon: Video, roles: ['escorte', 'partenaire'] },
+    { title: "Gérer mes tarifs", description: "Définissez vos prix pour les rencontres et appels.", href: "/gestion/tarifs", icon: DollarSign, roles: ['escorte', 'partenaire'] },
 ];
 
 export default function GestionPage() {
@@ -36,10 +37,12 @@ export default function GestionPage() {
         )
     }
 
-    if (!user || user.role !== 'escorte') {
+    if (!user || (user.role !== 'escorte' && user.role !== 'partenaire')) {
         router.push('/dashboard');
         return null;
     }
+
+    const availableTools = managementTools.filter(tool => tool.roles.includes(user.role));
     
     return (
         <div>
@@ -52,7 +55,7 @@ export default function GestionPage() {
                     <CardTitle>Mes Outils de Gestion</CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-6">
-                    {managementTools.map((tool) => (
+                    {availableTools.map((tool) => (
                         <Link key={tool.title} href={tool.href} className="flex items-center justify-between space-x-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
                             <div className="flex-1 space-y-1">
                                 <p className="text-sm font-medium leading-none flex items-center">

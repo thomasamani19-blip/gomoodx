@@ -228,8 +228,6 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
     const isProducer = user.role === 'partenaire' && user.partnerType === 'producer';
     
     const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null, isFree?: boolean, price?: number }>({ show: false, type: null, isFree: false, price: 0 });
-    const [showContactPassDialog, setShowContactPassDialog] = useState(false);
-    const [isBuyingPass, setIsBuyingPass] = useState(false);
     
     const [subscriptionDialog, setSubscriptionDialog] = useState<{ open: boolean, tier: SubscriptionTier | null }>({ open: false, tier: null });
     const [subscriptionDuration, setSubscriptionDuration] = useState(1);
@@ -396,9 +394,9 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
         let totalPrice = tier.price * subscriptionDuration;
         let discount = 0;
         
-        if (d.duration === 3) discount = tier?.discounts?.quarterly || 0;
-        else if (d.duration === 6) discount = tier?.discounts?.semiAnnual || 0;
-        else if (d.duration === 12) discount = tier?.discounts?.annual || 0;
+        if (subscriptionDuration === 3) discount = tier?.discounts?.quarterly || 0;
+        else if (subscriptionDuration === 6) discount = tier?.discounts?.semiAnnual || 0;
+        else if (subscriptionDuration === 12) discount = tier?.discounts?.annual || 0;
         
         if (discount > 0) {
             totalPrice = totalPrice * (1 - discount / 100);
