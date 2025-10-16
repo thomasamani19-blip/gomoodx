@@ -481,6 +481,8 @@ export interface Product {
     createdAt: Timestamp;
     productType: ProductType;
     accessLevel?: AccessLevel;
+    quantity?: number;
+    initialQuantity?: number;
     isSponsored?: boolean;
     sponsorshipExpiresAt?: Timestamp;
     moderationStatus: ModerationStatus;

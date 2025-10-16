@@ -62,7 +62,7 @@ export async function POST(request: Request) {
             reference: mainDebitTxRef.id
         });
 
-        // 2. Create a reservation for each physical product
+        // 2. Create a reservation for each physical product and update stock
         for (const item of cartItems) {
             const productRef = db.collection('products').doc(item.productId);
             const productDoc = await productRef.get();
@@ -71,6 +71,14 @@ export async function POST(request: Request) {
 
             // We only create reservations for physical products from the cart for now.
             if (productData.productType === 'physique') {
+                
+                // Stock management
+                const currentQuantity = productData.quantity ?? 0;
+                if (currentQuantity < item.quantity) {
+                    throw new Error(`Stock insuffisant pour le produit "${productData.title}".`);
+                }
+                batch.update(productRef, { quantity: FieldValue.increment(-item.quantity) });
+                
                 const reservationRef = db.collection('reservations').doc();
                 batch.set(reservationRef, {
                     memberId: userId,

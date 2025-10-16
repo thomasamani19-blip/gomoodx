@@ -30,6 +30,14 @@ export async function POST(request: Request) {
             if (!productDoc.exists) throw new Error("Produit introuvable.");
             const productData = productDoc.data()! as Product;
             const amount = productData.price;
+
+            // Stock check
+            if (productData.productType === 'physique') {
+                const currentQuantity = productData.quantity ?? 0;
+                if (currentQuantity < 1) {
+                    throw new Error(`Le produit "${productData.title}" est en rupture de stock.`);
+                }
+            }
             
             if (!memberWalletDoc.exists || (memberWalletDoc.data() as Wallet).balance < amount) {
                 throw new Error("Solde insuffisant ou portefeuille introuvable.");
@@ -74,8 +82,14 @@ export async function POST(request: Request) {
                 type: 'physical_product_order',
                 createdAt: Timestamp.now(),
                 reservationDate: Timestamp.now(), // Use current date for order time
+                quantity: 1, // Direct purchase is always for 1 item
             };
             t.set(reservationRef, newReservation);
+            
+            // Decrement stock if physical
+            if (productData.productType === 'physique') {
+                t.update(productRef, { quantity: FieldValue.increment(-1) });
+            }
 
             return { reservationId: reservationRef.id, message: "Commande passée avec succès. En attente de livraison." };
         });

@@ -1,5 +1,3 @@
-
-
 // /src/app/api/products/create/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -28,6 +26,7 @@ export async function POST(request: Request) {
         const price = parseFloat(formData.get('price') as string);
         const originalPrice = formData.get('originalPrice') ? parseFloat(formData.get('originalPrice') as string) : undefined;
         const productType = formData.get('productType') as ProductType;
+        const quantity = formData.get('quantity') ? parseInt(formData.get('quantity') as string, 10) : undefined;
         const imageFile = formData.get('image') as File | null;
         const isCollaborative = formData.get('isCollaborative') === 'true';
         const revenueSharesStr = formData.get('revenueShares') as string | null;
@@ -69,7 +68,7 @@ export async function POST(request: Request) {
             }
         }
 
-        const newProduct: Omit<Product, 'id'> = {
+        const newProductData: Omit<Product, 'id'> = {
             title,
             description,
             price: productType === 'physique' ? price : price,
@@ -83,10 +82,15 @@ export async function POST(request: Request) {
             moderationStatus: moderationResult.status,
             moderationReason: moderationResult.raison,
         };
+
+        if (productType === 'physique' && quantity !== undefined && quantity > 0) {
+            newProductData.quantity = quantity;
+            newProductData.initialQuantity = quantity;
+        }
         
         const batch = db.batch();
         const productRef = db.collection('products').doc();
-        batch.set(productRef, newProduct);
+        batch.set(productRef, newProductData);
 
         // First content bonus logic
         if (!authorData.hasPostedFirstContent) {
