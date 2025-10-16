@@ -52,6 +52,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     const router = useRouter();
 
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+    const [updatingEscortId, setUpdatingEscortId] = useState<string | null>(null);
 
     const reservationRef = useMemo(() => firestore ? doc(firestore, 'reservations', params.id) : null, [firestore, params.id]);
     const { data: reservation, loading: reservationLoading } = useDoc<Reservation>(reservationRef);
@@ -95,14 +96,15 @@ export default function ReservationDetailPage({ params }: { params: { id: string
         }
     };
     
-    const handlePresenceConfirm = async () => {
+    const handlePresenceConfirm = async (escortId?: string) => {
         if (!currentUser || !reservation) return;
         setIsUpdatingStatus(true);
+        if(escortId) setUpdatingEscortId(escortId);
         try {
             const response = await fetch('/api/reservations/confirm-presence', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reservationId: reservation.id, userId: currentUser.id })
+                body: JSON.stringify({ reservationId: reservation.id, userId: currentUser.id, escortIdToConfirm: escortId })
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.message);
@@ -112,6 +114,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
             toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
         } finally {
             setIsUpdatingStatus(false);
+            if(escortId) setUpdatingEscortId(null);
         }
     };
     
@@ -311,12 +314,19 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                      <span className="font-semibold">{isCurrentUserTheCreator ? (isPhysicalProductOrder ? 'Votre confirmation d\'expédition' : 'Votre confirmation de présence') : (isPhysicalProductOrder ? 'Confirmation du vendeur' : 'Confirmation du créateur')}</span>
                                     {creatorHasConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
                                 </div>
-                                {reservation.escorts?.map(escort => {
+                                {reservation.escorts?.filter(e => reservation.escortConfirmations[e.id]?.status === 'confirmed').map(escort => {
                                     const hasConfirmed = reservation.escortConfirmations[escort.id]?.presenceConfirmed;
                                     return (
                                          <div key={escort.id} className={cn("flex items-center justify-between p-3 rounded-lg", hasConfirmed ? "bg-green-500/10 text-green-700" : "bg-muted")}>
                                             <span className="font-semibold">Présence de {escort.name}</span>
-                                            {hasConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
+                                            <div className="flex items-center gap-2">
+                                                {isCurrentUserTheCreator && !hasConfirmed &&
+                                                    <Button size="sm" variant="ghost" onClick={() => handlePresenceConfirm(escort.id)} disabled={updatingEscortId === escort.id}>
+                                                        {updatingEscortId === escort.id ? <Loader2 className="h-4 w-4 animate-spin"/> : "Confirmer"}
+                                                    </Button>
+                                                }
+                                                {hasConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
+                                            </div>
                                         </div>
                                     )
                                 })}
@@ -325,8 +335,8 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                 {!currentUserHasConfirmed ? (
                                     <>
                                         <p className="font-medium">{confirmationQuestion}</p>
-                                        <Button onClick={handlePresenceConfirm} disabled={isUpdatingStatus}>
-                                            {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4" />}
+                                        <Button onClick={() => handlePresenceConfirm()} disabled={isUpdatingStatus}>
+                                            {isUpdatingStatus && !updatingEscortId ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4" />}
                                             Oui, je confirme
                                         </Button>
                                     </>

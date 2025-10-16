@@ -15,7 +15,7 @@ const PLATFORM_WALLET_ID = 'platform_wallet';
 
 export async function POST(request: Request) {
     try {
-        const { reservationId, userId } = await request.json();
+        const { reservationId, userId, escortIdToConfirm } = await request.json();
 
         if (!reservationId || !userId) {
             return NextResponse.json({ status: 'error', message: 'Informations manquantes.' }, { status: 400 });
@@ -48,8 +48,15 @@ export async function POST(request: Request) {
             }
 
             if (isCreator) {
-                if (reservation.establishmentPresenceConfirmed) throw new Error("Vous avez déjà confirmé votre présence/livraison.");
-                t.update(reservationRef, { establishmentPresenceConfirmed: true });
+                // If an escortIdToConfirm is provided, this is the establishment confirming an escort's presence
+                if (escortIdToConfirm) {
+                    if (reservation.escortConfirmations[escortIdToConfirm]?.presenceConfirmed) throw new Error("La présence de cette escorte a déjà été confirmée.");
+                    const updatePath = `escortConfirmations.${escortIdToConfirm}.presenceConfirmed`;
+                    t.update(reservationRef, { [updatePath]: true });
+                } else { // This is the establishment confirming the MEMBER's presence
+                    if (reservation.establishmentPresenceConfirmed) throw new Error("Vous avez déjà confirmé la présence du client.");
+                    t.update(reservationRef, { establishmentPresenceConfirmed: true });
+                }
             }
             
             if (isInvitedEscort) {
@@ -62,7 +69,9 @@ export async function POST(request: Request) {
             const updatedReservationDoc = await t.get(reservationRef); // Re-fetch to get updated data within transaction
             const updatedReservation = updatedReservationDoc.data() as Reservation;
 
-            const allEscortsConfirmed = updatedReservation.escorts?.every(e => updatedReservation.escortConfirmations[e.id]?.presenceConfirmed) ?? true;
+            const confirmedAndParticipatingEscorts = updatedReservation.escorts?.filter(e => updatedReservation.escortConfirmations[e.id]?.status === 'confirmed') || [];
+            const allPresentEscortsConfirmed = confirmedAndParticipatingEscorts.every(e => updatedReservation.escortConfirmations[e.id]?.presenceConfirmed) ?? true;
+            
             const creatorConfirmed = updatedReservation.establishmentPresenceConfirmed;
             const memberConfirmed = updatedReservation.memberPresenceConfirmed;
 
@@ -119,7 +128,7 @@ export async function POST(request: Request) {
                 }
 
             } else { // Logic for service/establishment booking
-                if (memberConfirmed && creatorConfirmed && allEscortsConfirmed) {
+                if (memberConfirmed && creatorConfirmed && allPresentEscortsConfirmed) {
                     t.update(reservationRef, { status: 'completed' });
                     
                     // Release funds from escrow
