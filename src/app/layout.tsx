@@ -8,6 +8,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/hooks/use-auth';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import CallListener from '@/components/layout/call-listener';
+import { AuraCanvas } from '@/components/layout/aura-canvas';
 
 
 const ptSans = PT_Sans({ 
@@ -36,13 +37,16 @@ export default function RootLayout({
       <body className={`${ptSans.variable} ${playfair.variable}`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >
           <FirebaseClientProvider>
             <AuthProvider>
-                {children}
+                <AuraCanvas />
+                <div className="relative z-10">
+                  {children}
+                </div>
                 <Toaster />
                 <CallListener />
             </AuthProvider>

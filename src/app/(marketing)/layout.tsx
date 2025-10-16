@@ -8,10 +8,10 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <div className="bg-gold-pulse">
       <Header />
       <main>{children}</main>
       <Footer />
-    </>
+    </div>
   );
 }

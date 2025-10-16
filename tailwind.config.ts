@@ -78,6 +78,14 @@ export default {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
+      backgroundImage: {
+        'gradient-gold': 'linear-gradient(90deg, #FFD700, #E6BE8A, #B8860B)',
+        'gradient-neon': 'linear-gradient(135deg, #FF6FD8 0%, #3813C2 100%)',
+      },
+      boxShadow: {
+        glow: "0 0 25px hsl(var(--accent) / 0.6)",
+        neon: "0 0 25px rgba(255, 0, 150, 0.8)",
+      },
       keyframes: {
         'accordion-down': {
           from: {

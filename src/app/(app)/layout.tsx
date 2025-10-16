@@ -12,7 +12,7 @@ export default function AppLayout({
 }) {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full bg-gold-pulse">
         <AppSidebar />
         <div className="flex flex-col flex-1 bg-muted/30">
           <AppHeader />
