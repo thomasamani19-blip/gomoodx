@@ -187,7 +187,7 @@ export default function AbonnementPage() {
                 }),
             });
             const result = await response.json();
-            if (result.status === 'success') {
+            if (response.ok) {
                 toast({ title: 'Abonnement réussi !', description: `Vous êtes maintenant abonné au plan ${subscriptionDialog.plan.name}.` });
                 router.refresh();
             } else {

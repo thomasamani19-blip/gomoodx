@@ -1,8 +1,7 @@
-
 // /src/app/api/admin/update-subscription-settings/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
-import { getFirestore, updateDoc, doc } from 'firebase-admin/firestore';
+import { getFirestore, setDoc, doc } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import type { Settings } from '@/lib/types';
 
@@ -29,7 +28,7 @@ export async function POST(request: Request) {
              return NextResponse.json({ status: 'error', message: 'Permissions insuffisantes.' }, { status: 403 });
         }
 
-        const newSettings = await request.json() as Partial<Settings>;
+        const newSettings = await request.json() as Partial<Pick<Settings, 'platformPlans'>>;
 
         if (!newSettings.platformPlans) {
             return NextResponse.json({ status: 'error', message: 'Données de plans manquantes.' }, { status: 400 });
@@ -37,9 +36,10 @@ export async function POST(request: Request) {
         
         const settingsRef = doc(db, 'settings', 'global');
         
-        await updateDoc(settingsRef, {
+        // Use setDoc with merge to only update the platformPlans field
+        await setDoc(settingsRef, {
             platformPlans: newSettings.platformPlans
-        });
+        }, { merge: true });
 
         return NextResponse.json({
             status: 'success', 
