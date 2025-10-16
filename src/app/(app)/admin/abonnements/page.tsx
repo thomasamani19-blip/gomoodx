@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm, Controller } from 'react-hook-form';
@@ -76,7 +75,7 @@ export default function AdminAbonnementsPage() {
             const transformedPlans: any = {};
             for (const key in settings.platformPlans) {
                 const planKey = key as PlatformSubscriptionType;
-                if(planKey !== 'gratuit') {
+                if(planKey !== 'gratuit' && settings.platformPlans[planKey]) {
                     transformedPlans[planKey] = {
                         ...settings.platformPlans[planKey],
                         features: settings.platformPlans[planKey]?.features?.join('\n') || ''
@@ -85,7 +84,7 @@ export default function AdminAbonnementsPage() {
             }
             form.reset({ platformPlans: { ...defaultPlans, ...transformedPlans } });
         }
-    }, [settings, form]);
+    }, [settings, form, defaultPlans]);
     
     const onSubmit = async (data: SettingsFormValues) => {
         if (!firebaseUser) {
