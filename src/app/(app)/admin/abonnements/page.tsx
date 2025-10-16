@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm, Controller } from 'react-hook-form';
@@ -133,7 +132,7 @@ export default function AdminAbonnementsPage() {
                                     <Label>Prix par mois (€)</Label>
                                     <div className="relative">
                                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input type="number" className="pl-8" {...form.register(`platformPlans.${planId}.price`)} />
+                                        <Input type="number" step="0.01" className="pl-8" {...form.register(`platformPlans.${planId}.price`)} />
                                     </div>
                                     {form.formState.errors.platformPlans?.[planId]?.price && <p className="text-sm text-destructive">{form.formState.errors.platformPlans[planId]?.price?.message}</p>}
                                 </div>
@@ -143,11 +142,16 @@ export default function AdminAbonnementsPage() {
                                      {form.formState.errors.platformPlans?.[planId]?.description && <p className="text-sm text-destructive">{form.formState.errors.platformPlans[planId]?.description?.message}</p>}
                                 </div>
                                  <div className="flex items-center space-x-2">
-                                    <Switch
-                                        id={`popular-${planId}`}
-                                        {...form.register(`platformPlans.${planId}.isPopular`)}
-                                        checked={form.watch(`platformPlans.${planId}.isPopular`)}
-                                        onCheckedChange={(checked) => form.setValue(`platformPlans.${planId}.isPopular`, checked)}
+                                    <Controller
+                                      control={form.control}
+                                      name={`platformPlans.${planId}.isPopular`}
+                                      render={({ field }) => (
+                                        <Switch
+                                            id={`popular-${planId}`}
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                      )}
                                     />
                                     <Label htmlFor={`popular-${planId}`}>Marquer comme "Populaire"</Label>
                                 </div>

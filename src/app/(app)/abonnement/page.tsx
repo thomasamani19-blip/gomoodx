@@ -173,7 +173,7 @@ export default function AbonnementPage() {
     };
 
     const handleSubscription = async () => {
-        if (!user || !subscriptionDialog.plan) return;
+        if (!user || !subscriptionDialog.plan || subscriptionDialog.plan.id === 'gratuit') return;
         setIsSubscribing(true);
 
         try {

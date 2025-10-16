@@ -1,7 +1,7 @@
 // /src/app/api/admin/update-settings/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
-import { getFirestore, updateDoc, doc } from 'firebase-admin/firestore';
+import { getFirestore, setDoc, doc } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import type { Settings } from '@/lib/types';
 
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
         // 3. Update the document in Firestore
         const settingsRef = doc(db, 'settings', 'global');
         
-        await updateDoc(settingsRef, newSettings, { merge: true });
+        await setDoc(settingsRef, newSettings, { merge: true });
 
 
         return NextResponse.json({
