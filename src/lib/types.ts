@@ -502,6 +502,7 @@ export interface CartItem {
     updatedAt?: Timestamp;
 }
 
+
 export interface BlogArticle {
     id: string;
     title: string;
