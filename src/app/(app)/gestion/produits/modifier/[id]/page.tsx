@@ -1,5 +1,4 @@
 
-
 'use-client';
 
 import { useForm, Controller } from 'react-hook-form';
@@ -31,6 +30,7 @@ const productSchema = z.object({
   price: z.coerce.number().min(0, "Le prix ne peut pas être négatif."),
   originalPrice: z.coerce.number().optional(),
   productType: z.enum(['digital', 'physique'], { required_error: 'Veuillez sélectionner un type de produit.'}),
+  quantity: z.coerce.number().optional(),
   image: z.any().optional(),
 });
 
@@ -63,6 +63,7 @@ export default function ModifierProduitPage({ params }: { params: { id: string }
                 price: product.price,
                 originalPrice: product.originalPrice,
                 productType: product.productType,
+                quantity: product.quantity,
             });
             setImagePreview(product.imageUrl);
         }
@@ -88,8 +89,8 @@ export default function ModifierProduitPage({ params }: { params: { id: string }
                 const imagePath = `products/${user.id}/${Date.now()}_${imageFile.name}`;
                 imageUrl = await uploadFile(storage, imagePath, imageFile);
             }
-
-            await updateDoc(doc(firestore, 'products', params.id), {
+            
+            const updatedData: Partial<Product> = {
                 title: data.title,
                 description: data.description,
                 price: data.price,
@@ -97,7 +98,13 @@ export default function ModifierProduitPage({ params }: { params: { id: string }
                 productType: data.productType as ProductType,
                 imageUrl: imageUrl,
                 updatedAt: serverTimestamp(),
-            });
+            };
+
+            if (data.productType === 'physique') {
+                updatedData.quantity = data.quantity;
+            }
+
+            await updateDoc(doc(firestore, 'products', params.id), updatedData);
 
             toast({ title: "Produit modifié !", description: "Votre produit a été mis à jour." });
             router.push('/gestion/produits');
@@ -212,23 +219,30 @@ export default function ModifierProduitPage({ params }: { params: { id: string }
                                     </div>
                                 )}
                             />
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="price">Prix de vente (€)</Label>
-                                    <div className="relative">
-                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input id="price" type="number" step="0.01" {...register('price')} className="pl-8" />
-                                    </div>
-                                    {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
+                        </div>
+                        
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                             <div className="space-y-2">
+                                <Label htmlFor="price">Prix de vente (€)</Label>
+                                <div className="relative">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input id="price" type="number" step="0.01" {...register('price')} className="pl-8" />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="originalPrice">Prix original (barré)</Label>
-                                     <div className="relative">
-                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input id="originalPrice" type="number" step="0.01" {...register('originalPrice')} placeholder="Optionnel" className="pl-8" />
-                                    </div>
+                                {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="originalPrice">Prix original (barré)</Label>
+                                 <div className="relative">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input id="originalPrice" type="number" step="0.01" {...register('originalPrice')} placeholder="Optionnel" className="pl-8" />
                                 </div>
                             </div>
+                            {productType === 'physique' && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="quantity">Quantité en stock</Label>
+                                    <Input id="quantity" type="number" {...register('quantity')} placeholder="Ex: 10" />
+                                </div>
+                            )}
                         </div>
 
                     </CardContent>

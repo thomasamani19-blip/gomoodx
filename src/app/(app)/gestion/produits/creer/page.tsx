@@ -37,11 +37,11 @@ const productSchema = z.object({
   title: z.string().min(5, "Le titre doit faire au moins 5 caractères."),
   description: z.string().min(20, "La description doit faire au moins 20 caractères."),
   price: z.coerce.number().min(0, "Le prix ne peut pas être négatif.").refine(price => {
-    // This logic will be handled based on productType below, Zod needs a value.
     return true;
   }),
   originalPrice: z.coerce.number().optional(),
   productType: z.enum(['digital', 'physique'], { required_error: 'Veuillez sélectionner un type de produit.'}),
+  quantity: z.coerce.number().optional(),
   image: z.any().refine(file => file instanceof File, 'Une image est requise.'),
   isCollaborative: z.boolean().default(false),
   revenueShares: z.array(revenueShareSchema).optional(),
@@ -110,6 +110,9 @@ export default function CreerProduitPage() {
             formData.append('originalPrice', data.originalPrice.toString());
         }
         formData.append('productType', data.productType);
+        if (data.productType === 'physique' && data.quantity) {
+          formData.append('quantity', data.quantity.toString());
+        }
         formData.append('image', data.image);
         formData.append('authorId', user.id);
         formData.append('isCollaborative', String(data.isCollaborative));
@@ -186,23 +189,30 @@ export default function CreerProduitPage() {
                                     </RadioGroup>
                                 </div>
                             )}/>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="price">Prix de vente (€)</Label>
-                                    <div className="relative">
-                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input id="price" type="number" step="0.01" {...form.register('price')} className="pl-8" />
-                                    </div>
-                                    {form.formState.errors.price && <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>}
+                        </div>
+                        
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                             <div className="space-y-2">
+                                <Label htmlFor="price">Prix de vente (€)</Label>
+                                <div className="relative">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input id="price" type="number" step="0.01" {...form.register('price')} className="pl-8" />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="originalPrice">Prix original (barré)</Label>
-                                     <div className="relative">
-                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input id="originalPrice" type="number" step="0.01" {...form.register('originalPrice')} placeholder="Optionnel" className="pl-8" />
-                                    </div>
+                                {form.formState.errors.price && <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>}
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="originalPrice">Prix original (barré)</Label>
+                                 <div className="relative">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input id="originalPrice" type="number" step="0.01" {...form.register('originalPrice')} placeholder="Optionnel" className="pl-8" />
                                 </div>
                             </div>
+                            {productType === 'physique' && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="quantity">Quantité en stock</Label>
+                                    <Input id="quantity" type="number" {...form.register('quantity')} placeholder="Ex: 10" />
+                                </div>
+                            )}
                         </div>
 
                         {isProducer && (
