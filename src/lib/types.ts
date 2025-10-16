@@ -161,7 +161,6 @@ export interface User {
     minutesUsed: number;
     lastReset: Timestamp;
   };
-  unlockedContacts?: string[]; // Array of seller UIDs for which contact has been purchased
   creatorSubscriptions?: { // For members subscribing to creators
     [creatorId: string]: {
       tierId: string;
@@ -435,9 +434,6 @@ export interface Settings {
     callRates?: {
         voicePerMinute: number;
         videoToProducerPerMinute: number;
-    };
-    passContact?: {
-        price: number;
     };
     platformCommissionRate?: number;
     platformFee?: number; // Fixed service fee for bookings

@@ -62,9 +62,6 @@ function MessagerieContent() {
     const [recentContacts, setRecentContacts] = useState<{ contact: User; lastMessage: Message }[]>([]);
     const [contactsLoading, setContactsLoading] = useState(true);
     const [callConfirmation, setCallConfirmation] = useState<{ show: boolean; type: CallType | null, isFree?: boolean, price?: number }>({ show: false, type: null, isFree: false, price: 0 });
-    const [isContactUnlocked, setIsContactUnlocked] = useState(false);
-    const [isCheckingUnlock, setIsCheckingUnlock] = useState(false);
-    const [hasActiveReservation, setHasActiveReservation] = useState(false);
     const [isSendingMessage, setIsSendingMessage] = useState(false);
 
     const contactIdFromUrl = searchParams.get('contact');
@@ -183,22 +180,6 @@ function MessagerieContent() {
         fetchContacts();
     }, [user, firestore, contactIdFromUrl]);
 
-    // Check if contact is unlocked via Pass or active reservation
-    useEffect(() => {
-        if (!user || !selectedContact || !firestore) {
-            setIsContactUnlocked(false);
-            setHasActiveReservation(false);
-            return;
-        };
-
-        setIsCheckingUnlock(true);
-
-        // All messaging is free now, no need for complex checks
-        setIsContactUnlocked(true);
-        setIsCheckingUnlock(false);
-        
-    }, [user, selectedContact, firestore]);
-
     // 2. Listen to messages for the selected contact in real-time
     const activeMessagesQuery = useMemo(() => {
         if (!user || !selectedContact || !firestore) return null;
@@ -247,15 +228,6 @@ function MessagerieContent() {
         e.preventDefault();
         if (!newMessage.trim() || !user || !selectedContact || !firestore) return;
         
-        if (!isContactUnlocked) {
-            toast({
-                title: "Accès non autorisé",
-                description: "Vous devez débloquer ce contact pour envoyer un message.",
-                variant: "destructive"
-            });
-            return;
-        }
-        
         setIsSendingMessage(true);
 
         try {
@@ -288,11 +260,7 @@ function MessagerieContent() {
         let price = 0;
         let isFree = false;
         
-        if (type === 'voice' && hasActiveReservation) {
-            isFree = true;
-        } else if (type === 'video') {
-            price = selectedContact?.rates?.videoCallPerMinute || 0;
-        } else if (type === 'voice') {
+        if (type === 'voice' && user.dailyVoiceCallQuota) {
             const FREE_QUOTA_MINUTES = 60; 
             const lastReset = user.dailyVoiceCallQuota?.lastReset.toDate();
             const now = new Date();
@@ -307,6 +275,8 @@ function MessagerieContent() {
             } else {
                 price = globalSettings?.callRates?.voicePerMinute || 0;
             }
+        } else if (type === 'video') {
+            price = selectedContact?.rates?.videoCallPerMinute || 0;
         }
         
         setCallConfirmation({ show: true, type, isFree, price });
