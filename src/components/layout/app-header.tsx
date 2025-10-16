@@ -36,7 +36,7 @@ const planNames: Record<PlatformSubscriptionType, string> = {
 export function AppHeader() {
   const { user, logout } = useAuth();
   const isMobile = useIsMobile();
-  const isCreatorPremium = user?.role === 'escorte' && user?.subscription?.status === 'active';
+  const isCreatorPremium = (user?.role === 'escorte' || user?.role === 'partenaire') && user?.subscription?.status === 'active';
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6">

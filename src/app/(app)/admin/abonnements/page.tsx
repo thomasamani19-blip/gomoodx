@@ -97,7 +97,7 @@ export default function AdminAbonnementsPage() {
         const transformedData = { ...data };
         for (const key in transformedData.platformPlans) {
             const planKey = key as keyof typeof transformedData.platformPlans;
-            transformedData.platformPlans[planKey].features = (transformedData.platformPlans[planKey].features as unknown as string)
+            (transformedData.platformPlans[planKey] as any).features = (transformedData.platformPlans[planKey].features as unknown as string)
                 .split('\n')
                 .map(f => f.trim())
                 .filter(f => f);

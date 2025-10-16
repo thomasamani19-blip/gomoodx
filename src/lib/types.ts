@@ -169,6 +169,13 @@ export interface User {
   bankDetails?: BankDetails;
 }
 
+export interface UserSubscription {
+    type: PlatformSubscriptionType;
+    status: SubscriptionStatus;
+    startDate: Timestamp;
+    endDate: Timestamp;
+}
+
 // Wallet
 export interface Wallet {
   id: string; // Same as user UID
@@ -440,7 +447,7 @@ export interface Settings {
       referralBonus: number;
     };
     platformPlans?: {
-        [key in Exclude<PlatformSubscriptionType, 'gratuit'>]: Omit<PlatformPlan, 'id'>
+        [key in Exclude<PlatformSubscriptionType, 'gratuit'>]?: Omit<PlatformPlan, 'id'>
     }
 }
 
