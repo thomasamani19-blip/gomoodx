@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -387,7 +386,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                             )}
                              {reservation.status !== 'cancelled' && (
                                 <Button asChild variant="outline">
-                                    <Link href="/contact">
+                                    <Link href="/support">
                                         <ShieldQuestion className="mr-2 h-4 w-4" /> Signaler un problème
                                     </Link>
                                 </Button>

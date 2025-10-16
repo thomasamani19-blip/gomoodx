@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -46,6 +45,7 @@ import {
   AlertTriangle,
   DollarSign,
   ShoppingCart,
+  LifeBuoy,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -104,6 +104,7 @@ const adminNav = [
   { title: 'Demandes Partenaires', href: '/admin/demandes-partenaires', icon: FileText },
   { title: 'Vérifications Identité', href: '/admin/verifications', icon: ShieldCheck },
   { title: 'Modération Contenu', href: '/admin/moderation', icon: AlertTriangle },
+  { title: 'Tickets de Support', href: '/admin/support', icon: LifeBuoy },
   { title: 'Portefeuille Plateforme', href: '/admin/portefeuille', icon: Wallet },
   { title: 'Gestion des Retraits', href: '/admin/retraits', icon: Banknote },
   { title: 'Abonnements Plateforme', href: "/admin/abonnements", icon: Crown },
@@ -171,7 +172,7 @@ export function AppSidebar() {
       case 'administrateur':
         return renderNavItems(adminNav);
       case 'moderator':
-        return renderNavItems(adminNav.filter(i => ['/dashboard', '/admin/verifications', '/admin/moderation', '/feed'].includes(i.href)));
+        return renderNavItems(adminNav.filter(i => ['/dashboard', '/admin/verifications', '/admin/moderation', '/admin/support', '/feed'].includes(i.href)));
       default:
         // Default to client view to avoid blank screen
         return renderNavItems(clientNav);
@@ -192,9 +193,9 @@ export function AppSidebar() {
           <SidebarFooter>
             <SidebarMenu>
                  <SidebarMenuItem>
-                    <Link href="/a-propos" passHref legacyBehavior>
-                    <SidebarMenuButton tooltip="À propos" isActive={pathname.startsWith('/a-propos')} asChild>
-                        <a><Info /><span>À propos</span></a>
+                    <Link href="/support" passHref legacyBehavior>
+                    <SidebarMenuButton tooltip="Support" isActive={pathname.startsWith('/support')} asChild>
+                        <a><LifeBuoy /><span>Support</span></a>
                     </SidebarMenuButton>
                     </Link>
                 </SidebarMenuItem>
