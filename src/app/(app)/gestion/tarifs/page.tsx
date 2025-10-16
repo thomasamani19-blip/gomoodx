@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -5,16 +6,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/shared/page-header';
 import { EstablishmentPricingForm } from '@/components/features/settings/establishment-pricing-form';
 import { CreatorPricingForm } from '@/components/features/settings/creator-pricing-form';
+import { useRouter } from 'next/navigation';
 
 export default function GestionTarifsPage() {
     const { user, loading: authLoading } = useAuth();
+    const router = useRouter();
     
     if (authLoading) {
         return <Skeleton className="h-96 w-full" />;
     }
     
     if (!user) {
-        return <PageHeader title="Accès non autorisé" description="Vous devez être connecté pour accéder à cette page." />;
+        router.push('/connexion');
+        return null;
     }
 
     if (user.role === 'partenaire' && user.partnerType === 'establishment') {
