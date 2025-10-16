@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useDoc, useCollection, useFirestore } from '@/firebase';
 import type { Annonce, User, EstablishmentPricing } from '@/lib/types';
-import { doc, collection, query, where, orderBy } from 'firebase/firestore';
+import { doc, collection, query, where, getDocs } from 'firebase/firestore';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,32 +13,32 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, Loader2, Users, Calendar as CalendarIcon, Check, Clock, Timer, BedDouble } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Users, Calendar as CalendarIcon, Check, Clock, Timer, BedDouble, UserPlus, XCircle } from 'lucide-react';
 import { fr } from 'date-fns/locale';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
+import Link from 'next/link';
 
 type RoomType = keyof EstablishmentPricing['roomTypes'];
 
-export default function ReserverAnnoncePage({ params }: { params: { id: string } }) {
+function ReserverAnnonceContent({ params }: { params: { id: string } }) {
     const { user, loading: authLoading } = useAuth();
     const firestore = useFirestore();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
 
     const [step, setStep] = useState(1);
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [selectedTime, setSelectedTime] = useState('19:00');
     const [durationHours, setDurationHours] = useState(2);
-    const [selectedEscorts, setSelectedEscorts] = useState<User[]>([]);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedEscortIds, setSelectedEscortIds] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     const [selectedRoomType, setSelectedRoomType] = useState<RoomType>('standard');
@@ -50,11 +50,21 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
     const establishmentRef = useMemo(() => (annonce && firestore) ? doc(firestore, 'users', annonce.createdBy) : null, [annonce, firestore]);
     const { data: establishment, loading: establishmentLoading } = useDoc<User>(establishmentRef);
 
-    const escortsQuery = useMemo(() => firestore ? query(collection(firestore, 'users'), where('role', '==', 'escorte'), orderBy('displayName')) : null, [firestore]);
-    const { data: allEscorts, loading: escortsLoading } = useCollection<User>(escortsQuery);
+    const selectedEscortsQuery = useMemo(() => {
+        if (!firestore || selectedEscortIds.length === 0) return null;
+        return query(collection(firestore, 'users'), where('__name__', 'in', selectedEscortIds));
+    }, [firestore, selectedEscortIds]);
+    const { data: selectedEscorts, loading: selectedEscortsLoading } = useCollection<User>(selectedEscortsQuery);
     
-    const loading = authLoading || annonceLoading || escortsLoading || establishmentLoading;
+    const loading = authLoading || annonceLoading || establishmentLoading || selectedEscortsLoading;
     const pricing = establishment?.establishmentSettings?.pricing;
+
+    useEffect(() => {
+        const selectedIds = searchParams.get('selected');
+        if (selectedIds) {
+            setSelectedEscortIds(selectedIds.split(','));
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (pricing && durationHours > 0) {
@@ -63,38 +73,15 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
             
             const roomCost = durationHours * roomPricePerHour + roomSupplement;
             
-            const escortsCost = selectedEscorts.reduce((total, escort) => {
+            const escortsCost = selectedEscorts?.reduce((total, escort) => {
                 const escortRate = escort.rates?.escortPerHour || 0;
                 return total + (escortRate * durationHours);
-            }, 0);
+            }, 0) || 0;
             
             const calculatedPrice = roomCost + escortsCost;
             setTotalPrice(calculatedPrice);
         }
     }, [pricing, durationHours, selectedRoomType, selectedEscorts]);
-
-
-    const filteredEscorts = useMemo(() => {
-        if (!allEscorts) return [];
-        return allEscorts.filter(escort =>
-            escort.displayName.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [allEscorts, searchTerm]);
-
-    const handleToggleEscort = (escort: User) => {
-        setSelectedEscorts(prev => {
-            const isSelected = prev.some(e => e.id === escort.id);
-            if (isSelected) {
-                return prev.filter(e => e.id !== escort.id);
-            } else {
-                if (prev.length >= 6) {
-                    toast({ title: "Limite atteinte", description: "Vous ne pouvez sélectionner que 6 accompagnateurs maximum.", variant: "destructive" });
-                    return prev;
-                }
-                return [...prev, escort];
-            }
-        });
-    };
 
     const handleSubmit = async () => {
         if (!user || !annonce || !selectedDate || !pricing) {
@@ -116,7 +103,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                     annonceId: annonce.id,
                     reservationDate: reservationDateTime.toISOString(),
                     durationHours: durationHours,
-                    escorts: selectedEscorts.map(e => ({ id: e.id, name: e.displayName, profileImage: e.profileImage, rate: e.rates?.escortPerHour || 0 })),
+                    escorts: selectedEscorts?.map(e => ({ id: e.id, name: e.displayName, profileImage: e.profileImage, rate: e.rates?.escortPerHour || 0 })) || [],
                     amount: totalPrice,
                     roomType: selectedRoomType,
                     notes: '', // Add notes if needed
@@ -144,7 +131,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
     const baseRoomPrice = pricing?.basePricePerHour || 0;
     const roomSupplement = pricing?.roomTypes[selectedRoomType]?.enabled ? (pricing?.roomTypes[selectedRoomType]?.supplement || 0) : 0;
     const roomCost = durationHours * baseRoomPrice + roomSupplement;
-    const escortsCost = selectedEscorts.reduce((total, escort) => total + ((escort.rates?.escortPerHour || 0) * durationHours), 0);
+    const escortsCost = selectedEscorts?.reduce((total, escort) => total + ((escort.rates?.escortPerHour || 0) * durationHours), 0) || 0;
 
     return (
         <div>
@@ -191,40 +178,34 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/> Étape 2: Choisissez vos accompagnateurs (Optionnel)</CardTitle>
                             <CardDescription>Invitez des escortes pour vous accompagner. Le coût est calculé selon leur tarif horaire.</CardDescription>
-                            <Input placeholder="Rechercher une escorte..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                         </CardHeader>
                         <CardContent>
-                             <ScrollArea className="h-72">
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                {filteredEscorts.map(escort => (
-                                    <div key={escort.id} className="relative">
-                                        <RadioGroupItem
-                                            value={escort.id}
-                                            id={`escort-${escort.id}`}
-                                            className="peer sr-only"
-                                            checked={selectedEscorts.some(e => e.id === escort.id)}
-                                            onClick={() => handleToggleEscort(escort)}
-                                        />
-                                        <Label htmlFor={`escort-${escort.id}`} className={cn(
-                                            "block rounded-lg overflow-hidden border-2 transition-all cursor-pointer",
-                                            "peer-aria-checked:border-primary"
-                                        )}>
-                                            <div className="relative aspect-square">
-                                                <Image src={escort.profileImage || `https://picsum.photos/seed/${escort.id}/200`} alt={escort.displayName} fill className="object-cover" />
-                                                 <div className="absolute bottom-0 left-0 right-0 p-1 bg-black/50 text-white text-xs text-center font-bold">
-                                                    {(escort.rates?.escortPerHour || 0).toFixed(0)}€/h
-                                                 </div>
+                             {selectedEscorts && selectedEscorts.length > 0 ? (
+                                <div className="space-y-2">
+                                    {selectedEscorts.map(escort => (
+                                        <div key={escort.id} className="flex items-center justify-between p-2 bg-muted rounded-md">
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="h-8 w-8"><AvatarImage src={escort.profileImage} /><AvatarFallback>{escort.displayName.charAt(0)}</AvatarFallback></Avatar>
+                                                <span className="text-sm font-medium">{escort.displayName}</span>
                                             </div>
-                                            <p className="p-2 text-center text-sm font-medium bg-muted truncate">{escort.displayName}</p>
-                                        </Label>
-                                    </div>
-                                ))}
+                                            <span className="text-sm">{(escort.rates?.escortPerHour || 0).toFixed(0)}€/h</span>
+                                        </div>
+                                    ))}
                                 </div>
-                            </ScrollArea>
+                             ) : (
+                                <p className="text-sm text-muted-foreground text-center py-4">Aucun accompagnateur sélectionné.</p>
+                             )}
                         </CardContent>
-                         <CardFooter className="flex md:hidden justify-between">
-                            <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="mr-2 h-4 w-4"/> Précédent</Button>
-                            <Button onClick={() => setStep(3)}>Suivant <ArrowRight className="ml-2 h-4 w-4"/></Button>
+                        <CardFooter className="flex-col gap-2 items-start md:flex-row md:justify-between">
+                            <Button asChild>
+                                <Link href={`/reservations/selection-escorte?redirect=/annonces/${params.id}/reserver&selected=${selectedEscortIds.join(',')}`}>
+                                    <UserPlus className="mr-2 h-4 w-4" /> Modifier ou Ajouter
+                                </Link>
+                            </Button>
+                            <div className="flex md:hidden w-full justify-between">
+                                <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="mr-2 h-4 w-4"/> Précédent</Button>
+                                <Button onClick={() => setStep(3)}>Suivant <ArrowRight className="ml-2 h-4 w-4"/></Button>
+                            </div>
                         </CardFooter>
                     </Card>
                 </div>
@@ -251,7 +232,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                                         <span>{roomSupplement.toFixed(2)} €</span>
                                     </div>
                                 )}
-                                {selectedEscorts.length > 0 && (
+                                {selectedEscorts && selectedEscorts.length > 0 && (
                                     <div className="flex justify-between text-sm text-muted-foreground">
                                         <span>Accompagnateurs ({selectedEscorts.length})</span>
                                         <span>{escortsCost.toFixed(2)} €</span>
@@ -275,5 +256,13 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function ReserverAnnoncePage({ params }: { params: { id: string } }) {
+    return (
+        <Suspense fallback={<div><Skeleton className="w-full h-96"/></div>}>
+            <ReserverAnnonceContent params={params} />
+        </Suspense>
     )
 }
