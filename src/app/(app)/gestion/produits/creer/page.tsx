@@ -36,9 +36,7 @@ const revenueShareSchema = z.object({
 const productSchema = z.object({
   title: z.string().min(5, "Le titre doit faire au moins 5 caractères."),
   description: z.string().min(20, "La description doit faire au moins 20 caractères."),
-  price: z.coerce.number().min(0, "Le prix ne peut pas être négatif.").refine(price => {
-    return true;
-  }),
+  price: z.coerce.number().min(0, "Le prix ne peut pas être négatif."),
   originalPrice: z.coerce.number().optional(),
   productType: z.enum(['digital', 'physique'], { required_error: 'Veuillez sélectionner un type de produit.'}),
   quantity: z.coerce.number().optional(),

@@ -71,7 +71,7 @@ export async function POST(request: Request) {
         const newProductData: Omit<Product, 'id'> = {
             title,
             description,
-            price: price,
+            price,
             originalPrice,
             productType,
             imageUrl,
