@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { User, CreatorStats, Reservation } from "@/lib/types";
 import PageHeader from "@/components/shared/page-header";
-import Link from "next/link";
+import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Building, ShoppingBag, Newspaper, DollarSign, PenSquare, UserCircle, GanttChart, Sparkles, BookText, Film, Bot, TrendingUp, BarChart, Calendar, CalendarCheck, Users } from "lucide-react";
 import { useDoc, useFirestore, useCollection } from "@/firebase";

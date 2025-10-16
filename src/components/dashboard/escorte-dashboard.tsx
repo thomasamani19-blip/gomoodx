@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { User as UserIcon, BookText, PenSquare, Sparkles, ShoppingBag, Newspaper, Bot, Film, GanttChart, Zap } from "lucide-react";
 import Link from 'next/link';
-import type { User, CreatorStats, MonthlyRevenue, Annonce, Product } from "@/lib/types";
+import type { User, CreatorStats, Annonce, Product } from "@/lib/types";
 import PageHeader from "../shared/page-header";
 import { useDoc, useFirestore, useCollection } from "@/firebase";
 import { Skeleton } from "../ui/skeleton";
@@ -30,25 +30,6 @@ import {
 
 const SPONSOR_COST = 10;
 const AVAILABLE_NOW_COST = 5;
-
-const chartData: MonthlyRevenue[] = [
-  { month: 'Jan', revenue: 1860 },
-  { month: 'Fev', revenue: 3050 },
-  { month: 'Mar', revenue: 2370 },
-  { month: 'Avr', revenue: 730 },
-  { month: 'Mai', revenue: 2090 },
-  { month: 'Juin', revenue: 2140 },
-];
-
-const profileViewsData = [
-    { date: '01/06', views: 120 },
-    { date: '02/06', views: 180 },
-    { date: '03/06', views: 150 },
-    { date: '04/06', views: 210 },
-    { date: '05/06', views: 190 },
-    { date: '06/06', views: 250 },
-    { date: '07/06', views: 220 },
-];
 
 const chartConfig = {
   revenue: {
@@ -269,7 +250,7 @@ export default function EscorteDashboard({ user }: { user: User }) {
             <ChartContainer config={chartConfig}>
               <ResponsiveContainer width="100%" height={250}>
                 {statsLoading ? <Skeleton className="w-full h-full" /> : 
-                <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <AreaChart data={stats?.revenueHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid vertical={false} />
                   <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
                   <YAxis tickLine={false} axisLine={false} />
@@ -290,7 +271,7 @@ export default function EscorteDashboard({ user }: { user: User }) {
              <ChartContainer config={chartConfig}>
                  <ResponsiveContainer width="100%" height={250}>
                    {statsLoading ? <Skeleton className="w-full h-full" /> : 
-                    <BarChart data={profileViewsData}>
+                    <BarChart data={stats?.viewsHistory}>
                         <CartesianGrid vertical={false} />
                         <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
                         <YAxis tickLine={false} axisLine={false} />

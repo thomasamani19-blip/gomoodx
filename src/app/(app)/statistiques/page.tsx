@@ -1,7 +1,7 @@
 
 'use client';
-import { AreaChart, BarChart as BarChartIcon, FileSearch, TrendingUp, Users } from 'lucide-react';
-import { Area, Bar, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { TrendingUp, Users, BarChart as BarChartIcon, FileSearch, LineChart } from 'lucide-react';
+import { Area, Bar, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis, Line, ComposedChart } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import PageHeader from '@/components/shared/page-header';
@@ -24,6 +24,10 @@ const chartConfig = {
    views: {
     label: 'Vues',
     color: 'hsl(var(--primary))',
+  },
+  sales: {
+    label: 'Ventes',
+    color: 'hsl(var(--accent))'
   }
 };
 
@@ -76,6 +80,7 @@ const StatsPage = () => {
     const revenueHistory = useMemo(() => stats?.revenueHistory || [], [stats]);
     const viewsHistory = useMemo(() => stats?.viewsHistory || [], [stats]);
     const subscribersHistory = useMemo(() => stats?.subscribersHistory || [], [stats]);
+    const salesHistory = useMemo(() => stats?.salesHistory || [], [stats]);
 
   return (
     <div>
@@ -112,7 +117,7 @@ const StatsPage = () => {
         />
       </div>
 
-      <div className="grid gap-8 md:grid-cols-2">
+      <div className="grid gap-8 md:grid-cols-1">
          <Card>
           <CardHeader>
             <CardTitle>Revenus Mensuels</CardTitle>
@@ -122,13 +127,14 @@ const StatsPage = () => {
             <ChartContainer config={chartConfig}>
               <ResponsiveContainer width="100%" height={300}>
                 {loading ? <Skeleton className="w-full h-full" /> : 
-                <BarChart data={revenueHistory}>
+                <ComposedChart data={revenueHistory}>
                   <CartesianGrid vertical={false} />
                   <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
                   <YAxis tickLine={false} axisLine={false} unit="€" />
                   <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
                   <Bar dataKey="revenue" fill="var(--color-revenue)" radius={8} />
-                </BarChart>}
+                   <Line type="monotone" dataKey="revenue" stroke="var(--color-revenue)" strokeWidth={2} dot={false} />
+                </ComposedChart>}
               </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
@@ -156,7 +162,7 @@ const StatsPage = () => {
           </CardContent>
         </Card>
         
-        <Card className="md:col-span-2">
+        <Card>
           <CardHeader>
             <CardTitle>Vues de Profil (7 derniers jours)</CardTitle>
             <CardDescription>Évolution journalière des visites sur votre profil.</CardDescription>
@@ -165,16 +171,35 @@ const StatsPage = () => {
              <ChartContainer config={{ views: { label: 'Vues', color: 'hsl(var(--primary))' } }}>
                  <ResponsiveContainer width="100%" height={300}>
                    {loading ? <Skeleton className="w-full h-full" /> : 
-                    <AreaChart data={viewsHistory}>
+                    <Area data={viewsHistory} type="monotone" dataKey="views" stroke="var(--color-views)" fill="var(--color-views)" fillOpacity={0.3}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" />
                         <YAxis />
                         <Tooltip content={<ChartTooltipContent indicator='line'/>} />
-                        <Area type="monotone" dataKey="views" stroke="var(--color-views)" fill="var(--color-views)" fillOpacity={0.3} />
-                    </AreaChart>}
+                    </Area>}
                 </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
+        </Card>
+
+         <Card>
+            <CardHeader>
+                <CardTitle>Ventes de Contenu (7 derniers jours)</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <ChartContainer config={chartConfig}>
+                    <ResponsiveContainer width="100%" height={300}>
+                    {loading ? <Skeleton className="w-full h-full" /> : 
+                    <RechartsBarChart data={salesHistory}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
+                        <YAxis tickLine={false} axisLine={false} />
+                        <Tooltip content={<ChartTooltipContent indicator='line'/>} />
+                        <Bar dataKey="sales" fill="var(--color-sales)" radius={4} />
+                    </RechartsBarChart>}
+                    </ResponsiveContainer>
+                </ChartContainer>
+            </CardContent>
         </Card>
       </div>
     </div>
