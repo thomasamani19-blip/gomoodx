@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
-import type { Reservation, ReservationStatus, Wallet } from '@/lib/types';
+import type { Reservation, ReservationStatus, Wallet, Product } from '@/lib/types';
 
 if (!getApps().length) {
     initializeApp({
@@ -73,6 +73,12 @@ export async function POST(request: Request) {
                             t.update(platformWalletRef, { escrowBalance: FieldValue.increment(-reservation.amount) });
                         }
                      }
+                 }
+                 
+                 // If it was a physical product order, restock the item
+                 if (reservation.type === 'physical_product_order') {
+                     const productRef = db.collection('products').doc(reservation.annonceId);
+                     t.update(productRef, { quantity: FieldValue.increment(reservation.quantity || 1) });
                  }
 
                  t.update(reservationRef, { status: 'cancelled' });

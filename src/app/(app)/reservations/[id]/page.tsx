@@ -38,7 +38,7 @@ const statusTextMap = {
     completed: 'Terminée',
 };
 
-const confirmationStatusTextMap = {
+const confirmationStatusTextMap: Record<ConfirmationStatus, string> = {
     pending: 'En attente',
     confirmed: 'Confirmé',
     declined: 'Refusé',
@@ -75,7 +75,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     
     const isUserAllowedToView = isCurrentUserTheMember || isCurrentUserTheCreator || isCurrentUserAnInvitedEscort;
 
-    const handleStatusUpdate = async (newStatus: ConfirmationStatus | ReservationStatus) => {
+    const handleStatusUpdate = async (newStatus: ReservationStatus) => {
         if (!currentUser || !reservation) return;
         setIsUpdatingStatus(true);
         try {
@@ -172,14 +172,10 @@ export default function ReservationDetailPage({ params }: { params: { id: string
         );
     }
     
-    if (!isUserAllowedToView) {
-        return <PageHeader title="Accès non autorisé" description="Vous n'êtes pas autorisé à voir cette réservation." />;
+    if (!reservation || !otherParty || !isUserAllowedToView) {
+        return <PageHeader title="Accès non autorisé ou réservation introuvable" />;
     }
     
-    if (!reservation || !otherParty) {
-        return <PageHeader title="Réservation introuvable" description="Cette réservation n'existe pas." />;
-    }
-
     const isPhysicalProductOrder = reservation.type === 'physical_product_order';
     
     const mainActionButtons = () => {
