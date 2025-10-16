@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, Suspense, useEffect } from 'react';
@@ -37,7 +36,7 @@ function SelectionEscorteContent() {
     const searchParams = useSearchParams();
 
     const reservationUrl = searchParams.get('redirect');
-    const initialSelection = searchParams.get('selected')?.split(',') || [];
+    const initialSelection = searchParams.get('selected')?.split(',').filter(id => id) || [];
     
     const [selectedEscortIds, setSelectedEscortIds] = useState<string[]>(initialSelection);
     const [searchTerm, setSearchTerm] = useState('');
@@ -102,7 +101,7 @@ function SelectionEscorteContent() {
     }
 
     return (
-        <div>
+        <div className="pb-24">
             <PageHeader title="Sélectionner des Accompagnateurs" description="Choisissez une ou plusieurs personnes pour vous accompagner." />
 
             <Card className="mb-8 p-4 sticky top-16 z-20 bg-background/80 backdrop-blur-sm">
@@ -155,4 +154,3 @@ export default function SelectionEscortePage() {
         </Suspense>
     );
 }
-

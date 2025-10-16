@@ -60,10 +60,9 @@ function ReserverAnnonceContent({ params }: { params: { id: string } }) {
     const pricing = establishment?.establishmentSettings?.pricing;
 
     useEffect(() => {
-        const selectedIds = searchParams.get('selected');
-        if (selectedIds) {
-            setSelectedEscortIds(selectedIds.split(','));
-        }
+        const selectedIdsParam = searchParams.get('selected');
+        const selectedIds = selectedIdsParam ? selectedIdsParam.split(',').filter(id => id) : [];
+        setSelectedEscortIds(selectedIds);
     }, [searchParams]);
 
     useEffect(() => {
