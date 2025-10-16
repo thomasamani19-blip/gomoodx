@@ -287,8 +287,8 @@ export interface Reservation {
       [escortId: string]: EscortConfirmation;
     };
     // On-site presence confirmation
-    memberPresenceConfirmed: boolean;
-    establishmentPresenceConfirmed: boolean; // Final confirmation by establishment for their bookings
+    memberPresenceConfirmed?: boolean;
+    establishmentPresenceConfirmed?: boolean; // Final confirmation by establishment for their bookings
     travelArrangement?: TravelArrangement;
     travelFee?: number;
 }
