@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Lock, ArrowRight } from 'lucide-react';
+import { Loader2, Lock, ArrowRight, Star } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -113,7 +113,7 @@ export default function ArticlePage({ params }: { params: { id: string } }) {
   const { data: author, loading: authorLoading } = useDoc<User>(authorRef);
 
   const purchaseQuery = useMemo(() => {
-    if (!firestore || !currentUser || !article || !article.isPremium) return null;
+    if (!firestore || !currentUser || !article || article.accessLevel !== 'premium') return null;
     return query(
         collection(firestore, 'purchases'),
         where('memberId', '==', currentUser.id),
@@ -125,10 +125,26 @@ export default function ArticlePage({ params }: { params: { id: string } }) {
   const { data: purchases, loading: purchasesLoading } = useCollection<Purchase>(purchaseQuery);
 
   const hasPurchased = useMemo(() => purchases && purchases.length > 0, [purchases]);
+  const isSubscribed = useMemo(() => !!(currentUser && article && currentUser.creatorSubscriptions?.[article.authorId]?.status === 'active'), [currentUser, article]);
 
-  const loading = articleLoading || authorLoading || authLoading || (article?.isPremium ? purchasesLoading : false);
+  const loading = articleLoading || authorLoading || authLoading || (article?.accessLevel === 'premium' ? purchasesLoading : false);
   
-  const isPremiumAndNotPurchased = article?.isPremium && !hasPurchased && currentUser?.id !== article?.authorId;
+  const canViewContent = useMemo(() => {
+    if (!article || !currentUser) return article?.accessLevel === 'public';
+    if (currentUser.id === article.authorId) return true;
+    switch (article.accessLevel) {
+        case 'public':
+            return true;
+        case 'subscribers_only':
+            return isSubscribed;
+        case 'premium':
+            return hasPurchased;
+        default:
+            return false;
+    }
+  }, [article, currentUser, isSubscribed, hasPurchased]);
+  
+  const isContentLocked = !canViewContent;
 
   const handlePurchase = async () => {
     if (!currentUser || !article) {
@@ -235,13 +251,23 @@ export default function ArticlePage({ params }: { params: { id: string } }) {
 
         <Card>
             <CardContent className="pt-6 relative">
-                <Markdown content={article.content} truncate={isPremiumAndNotPurchased} />
-                {isPremiumAndNotPurchased && (
+                <Markdown content={article.content} truncate={isContentLocked} />
+                {isContentLocked && (
                     <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-card to-transparent flex flex-col items-center justify-end p-8">
-                        <Button onClick={() => setShowPurchaseDialog(true)} size="lg">
-                            <Lock className="mr-2 h-4 w-4"/>
-                            Acheter pour lire la suite ({article.price?.toFixed(2)}€)
-                        </Button>
+                        {article.accessLevel === 'premium' && (
+                             <Button onClick={() => setShowPurchaseDialog(true)} size="lg">
+                                <Lock className="mr-2 h-4 w-4"/>
+                                Acheter pour lire la suite ({article.price?.toFixed(2)}€)
+                            </Button>
+                        )}
+                        {article.accessLevel === 'subscribers_only' && (
+                             <Button asChild size="lg">
+                                <Link href={`/profil/${article.authorId}`}>
+                                    <Star className="mr-2 h-4 w-4"/>
+                                    S'abonner pour lire la suite
+                                </Link>
+                            </Button>
+                        )}
                     </div>
                 )}
             </CardContent>

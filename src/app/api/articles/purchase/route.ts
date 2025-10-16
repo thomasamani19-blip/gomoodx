@@ -33,7 +33,7 @@ export async function POST(request: Request) {
             const article = articleDoc.data() as BlogArticle;
             
             const articlePrice = article.price || 0;
-            if (!article.isPremium || articlePrice <= 0) {
+            if (article.accessLevel !== 'premium' || articlePrice <= 0) {
                  throw new Error("Cet article n'est pas payant.");
             }
 

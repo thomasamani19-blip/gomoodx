@@ -15,19 +15,19 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Loader2, Save, Upload, Star } from 'lucide-react';
+import { Loader2, Save, Upload, Star, DollarSign } from 'lucide-react';
 import PageHeader from '@/components/shared/page-header';
 import { uploadFile } from '@/lib/storage';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { BlogArticle } from '@/lib/types';
-import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const articleSchema = z.object({
   title: z.string().min(5, "Le titre doit faire au moins 5 caractères."),
   content: z.string().min(50, "L'article doit contenir au moins 50 caractères."),
   image: z.any().optional(),
-  isPremium: z.boolean().default(false),
+  accessLevel: z.enum(['public', 'premium', 'subscribers_only']).default('public'),
   price: z.coerce.number().min(0).optional(),
 });
 
@@ -49,19 +49,19 @@ export default function ModifierArticlePage({ params }: { params: { id: string }
     const { register, handleSubmit, control, formState: { errors }, watch, setValue, reset } = useForm<ArticleFormValues>({
         resolver: zodResolver(articleSchema),
         defaultValues: {
-            isPremium: false,
+            accessLevel: 'public',
             price: 0,
         }
     });
     
-    const isPremium = watch('isPremium');
+    const accessLevel = watch('accessLevel');
 
     useEffect(() => {
         if (article) {
             reset({
                 title: article.title,
                 content: article.content,
-                isPremium: article.isPremium || false,
+                accessLevel: article.accessLevel || 'public',
                 price: article.price || 0,
             });
             setImagePreview(article.imageUrl);
@@ -89,8 +89,8 @@ export default function ModifierArticlePage({ params }: { params: { id: string }
                 content: data.content,
                 imageUrl: imageUrl,
                 updatedAt: serverTimestamp(),
-                isPremium: data.isPremium,
-                price: data.isPremium ? data.price : 0,
+                accessLevel: data.accessLevel,
+                price: data.accessLevel === 'premium' ? data.price : 0,
             });
 
             toast({ title: "Article modifié !", description: "Votre article a été mis à jour." });
@@ -142,31 +142,35 @@ export default function ModifierArticlePage({ params }: { params: { id: string }
                 <Card>
                     <CardContent className="pt-6 grid gap-6">
                         <Controller
-                            name="isPremium"
+                            name="accessLevel"
                             control={control}
                             render={({ field }) => (
-                                <div className="flex items-center justify-between rounded-lg border p-4">
-                                    <div className="space-y-0.5">
-                                        <Label htmlFor="premium-switch" className="text-base flex items-center">
-                                            <Star className="mr-2 h-4 w-4 text-primary" />
-                                            Article Payant
-                                        </Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            Rendre cet article payant à l'achat pour tous les utilisateurs.
-                                        </p>
-                                    </div>
-                                    <Switch
-                                        id="premium-switch"
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                    />
+                                <div className="space-y-3 rounded-lg border p-4">
+                                     <Label className="text-base">Niveau d'accès</Label>
+                                    <RadioGroup onValueChange={field.onChange} value={field.value} className="grid sm:grid-cols-3 gap-2">
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="public" id="public" />
+                                            <Label htmlFor="public">Public (Gratuit)</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="premium" id="premium" />
+                                            <Label htmlFor="premium">Premium (Payant)</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="subscribers_only" id="subscribers_only" />
+                                            <Label htmlFor="subscribers_only">Abonnés Uniquement</Label>
+                                        </div>
+                                    </RadioGroup>
                                 </div>
                             )}
                         />
-                        {isPremium && (
+                        {accessLevel === 'premium' && (
                             <div className="space-y-2">
                                 <Label htmlFor="price">Prix de l'article (€)</Label>
-                                <Input id="price" type="number" step="0.5" {...register('price')} />
+                                <div className="relative">
+                                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                     <Input id="price" type="number" step="0.5" {...register('price')} className="pl-8" />
+                                </div>
                                 {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
                             </div>
                         )}

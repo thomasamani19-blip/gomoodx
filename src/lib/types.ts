@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 // Main User Roles
@@ -347,6 +348,7 @@ export interface Call {
 // Live Session
 export type LiveStatus = 'live' | 'ended' | 'scheduled';
 export type LiveType = 'ai' | 'creator';
+export type AccessLevel = 'public' | 'premium' | 'subscribers_only';
 
 
 export interface LiveSession {
@@ -355,7 +357,8 @@ export interface LiveSession {
     title: string;
     description: string;
     streamUrl?: string;
-    isPublic: boolean;
+    isPublic: boolean; // Deprecated, use accessLevel
+    accessLevel: AccessLevel;
     startTime: Timestamp;
     endTime?: Timestamp;
     viewersCount: number;
@@ -477,6 +480,7 @@ export interface Product {
     createdBy: string; // creator or partner UID
     createdAt: Timestamp;
     productType: ProductType;
+    accessLevel?: AccessLevel;
     isSponsored?: boolean;
     sponsorshipExpiresAt?: Timestamp;
     moderationStatus: ModerationStatus;
@@ -510,7 +514,7 @@ export interface BlogArticle {
     updatedAt?: Timestamp;
     authorId: string;
     authorName?: string;
-    isPremium?: boolean;
+    accessLevel: AccessLevel;
     price?: number;
 }
 
