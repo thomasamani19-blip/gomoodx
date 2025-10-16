@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -47,6 +46,7 @@ import {
   DollarSign,
   ShoppingCart,
   LifeBuoy,
+  Gift,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -161,6 +161,13 @@ export function AppSidebar() {
         return (
             <>
                 {renderNavItems(escorteNav)}
+                 <SidebarMenuItem>
+                    <Link href="/parrainage" passHref legacyBehavior>
+                    <SidebarMenuButton tooltip="Parrainage" isActive={pathname.startsWith('/parrainage')} asChild>
+                        <a><Gift /><span>Parrainage</span></a>
+                    </SidebarMenuButton>
+                    </Link>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                     <span className="p-2 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">Outils IA</span>
                 </SidebarMenuItem>
@@ -168,7 +175,18 @@ export function AppSidebar() {
             </>
         )
       case 'partenaire':
-        return renderNavItems(partenaireNav);
+        return (
+             <>
+                {renderNavItems(partenaireNav)}
+                 <SidebarMenuItem>
+                    <Link href="/parrainage" passHref legacyBehavior>
+                    <SidebarMenuButton tooltip="Parrainage" isActive={pathname.startsWith('/parrainage')} asChild>
+                        <a><Gift /><span>Parrainage</span></a>
+                    </SidebarMenuButton>
+                    </Link>
+                </SidebarMenuItem>
+            </>
+        )
       case 'founder':
       case 'administrateur':
         return renderNavItems(adminNav);

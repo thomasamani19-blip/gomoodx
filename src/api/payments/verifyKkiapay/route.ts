@@ -1,3 +1,4 @@
+
 // /src/app/api/payments/verifyKkiapay/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -128,7 +129,7 @@ export async function POST(request: Request) {
                   status: 'success',
                   createdAt: FieldValue.serverTimestamp(),
                   reference: userId, // Reference to the user who made the deposit
-                } as Omit<Transaction, 'id' | 'path'>);
+                });
             }
         }
         

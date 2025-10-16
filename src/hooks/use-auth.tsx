@@ -116,32 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const q = query(collection(firestore, 'users'), where('referralCode', '==', referralCode.toUpperCase()), limit(1));
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
-            const referrerDoc = querySnapshot.docs[0];
-            const settingsDoc = await getDoc(doc(firestore, 'settings', 'global'));
-            const referralBonus = (settingsDoc.data() as Settings)?.rewards?.referralBonus || 0;
-
-            referrerId = referrerDoc.id;
-            const referrerRef = doc(firestore, 'users', referrerId);
-            
-            if (referralBonus > 0) {
-                 batch.update(referrerRef, { 
-                    referralsCount: increment(1),
-                    rewardPoints: increment(referralBonus),
-                 });
-                 // Log transaction for referrer
-                 const referrerWalletRef = collection(firestore, 'wallets', referrerId, 'transactions');
-                 batch.set(doc(referrerWalletRef), {
-                     amount: referralBonus,
-                     type: 'reward',
-                     description: `Bonus de parrainage - Nouvel utilisateur: ${profileData.displayName}`,
-                     status: 'success',
-                     createdAt: serverTimestamp()
-                 });
-
-            } else {
-                 batch.update(referrerRef, { referralsCount: increment(1) });
-            }
-
+            referrerId = querySnapshot.docs[0].id;
         } else {
             console.warn(`Referral code "${referralCode}" not found.`);
         }
