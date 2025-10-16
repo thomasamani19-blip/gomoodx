@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import type { User, Wallet, PartnerRequest } from "@/lib/types";
 import PageHeader from "@/components/shared/page-header";
 import { useCollection, useCollectionGroup, useDoc, useFirestore } from "@/firebase";
 import { collection, query, where, doc, collectionGroup } from "firebase/firestore";
-import { DollarSign, Users, ShieldCheck, Handshake, Bot, AlertTriangle, Banknote, Crown, Settings } from "lucide-react";
+import { DollarSign, Users, ShieldCheck, Handshake, Bot, AlertTriangle, Banknote, Crown, Settings, LifeBuoy } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo, useEffect, useState } from "react";
@@ -89,9 +90,12 @@ export default function AdminDashboard({ user }: { user: User }) {
   const pendingWithdrawalsQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'transactions'), where('type', '==', 'withdrawal'), where('status', '==', 'pending')) : null, [firestore]);
   const { data: pendingWithdrawals, loading: withdrawalsLoading } = useCollectionGroup(pendingWithdrawalsQuery);
 
+  const pendingTicketsQuery = useMemo(() => firestore ? query(collection(firestore, 'supportTickets'), where('status', '==', 'open')) : null, [firestore]);
+  const { data: pendingTickets, loading: ticketsLoading } = useCollection(pendingTicketsQuery);
+
   const totalContentToModerate = (pendingPosts?.length || 0) + (pendingProducts?.length || 0) + (pendingServices?.length || 0);
 
-  const loading = walletLoading || usersLoading || verificationsLoading || partnersLoading || postsModLoading || productsModLoading || servicesModLoading || withdrawalsLoading;
+  const loading = walletLoading || usersLoading || verificationsLoading || partnersLoading || postsModLoading || productsModLoading || servicesModLoading || withdrawalsLoading || ticketsLoading;
 
   return (
     <div className="space-y-8">
@@ -143,6 +147,13 @@ export default function AdminDashboard({ user }: { user: User }) {
             value={pendingPartners?.length || 0}
             icon={Handshake}
             href="/admin/demandes-partenaires"
+            loading={loading}
+        />
+         <StatCard 
+            title="Tickets de support"
+            value={pendingTickets?.length || 0}
+            icon={LifeBuoy}
+            href="/admin/support"
             loading={loading}
         />
         <StatCard 

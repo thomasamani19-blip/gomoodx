@@ -1,7 +1,8 @@
+
 // /src/app/api/admin/update-settings/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
-import { getFirestore, updateDoc, doc, setDoc } from 'firebase-admin/firestore';
+import { getFirestore, setDoc, doc } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import type { Settings } from '@/lib/types';
 
