@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Phone, ShieldQuestion, Calendar, Tag, CreditCard, User as UserIcon, Users, Timer, BedDouble, Clock, HelpCircle, Check, X, Building, MapPin, Loader2, Info, Package, Truck } from 'lucide-react';
+import { MessageSquare, Phone, ShieldQuestion, Calendar, Tag, CreditCard, User as UserIcon, Users, Timer, BedDouble, Clock, HelpCircle, Check, X, Building, MapPin, Loader2, Info, Package, Truck, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -132,6 +132,25 @@ export default function ReservationDetailPage({ params }: { params: { id: string
              toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
         } finally {
             setIsUpdatingStatus(false);
+        }
+    }
+    
+    const handleRemoveEscort = async (escortId: string) => {
+        if (!currentUser || !reservation) return;
+        setIsUpdatingStatus(true);
+        try {
+            const response = await fetch('/api/reservations/update-escort-invitation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reservationId: reservation.id, memberId: currentUser.id, escortIdToRemove: escortId })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message);
+            toast({ title: "Invitation annulée", description: result.message });
+        } catch (error: any) {
+             toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+        } finally {
+             setIsUpdatingStatus(false);
         }
     }
 
@@ -343,7 +362,10 @@ export default function ReservationDetailPage({ params }: { params: { id: string
 
                     {reservation.escorts && reservation.escorts.length > 0 && (
                         <Card>
-                            <CardHeader><CardTitle>Escortes Invitées</CardTitle></CardHeader>
+                            <CardHeader>
+                                <CardTitle>Escortes Invitées</CardTitle>
+                                {isCurrentUserTheCreator && <CardDescription>Ceci est une réservation de groupe.</CardDescription>}
+                            </CardHeader>
                             <CardContent className="space-y-3">
                                 {reservation.escorts.map(escort => {
                                     const status = reservation.escortConfirmations[escort.id]?.status || 'pending';
@@ -355,7 +377,14 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                                 <Avatar className="h-8 w-8"><AvatarImage src={escort.profileImage} /><AvatarFallback>{escort.name.charAt(0)}</AvatarFallback></Avatar>
                                                 <span className="text-sm font-medium">{escort.name} {isSelf && '(Vous)'}</span>
                                             </Link>
-                                            <Badge variant={status === 'confirmed' ? 'default' : status === 'declined' ? 'destructive' : 'outline'}>{confirmationStatusTextMap[status]}</Badge>
+                                             <div className="flex items-center gap-2">
+                                                <Badge variant={status === 'confirmed' ? 'default' : status === 'declined' ? 'destructive' : 'outline'}>{confirmationStatusTextMap[status]}</Badge>
+                                                {isCurrentUserTheMember && status === 'pending' && (
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleRemoveEscort(escort.id)} disabled={isUpdatingStatus}>
+                                                        {isUpdatingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
                                     )
                                 })}
