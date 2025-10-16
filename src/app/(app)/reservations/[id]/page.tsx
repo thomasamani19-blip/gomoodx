@@ -30,7 +30,7 @@ const statusVariantMap = {
     completed: 'secondary',
 } as const;
 
-const statusTextMap = {
+const statusTextMap: { [key in ReservationStatus]: string } = {
     pending: 'En attente',
     pending_delivery: 'En attente de livraison',
     confirmed: 'Confirmée',
@@ -131,7 +131,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
         } catch (error: any) {
              toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
         } finally {
-            setIsUpdatingStatus(false);
+             setIsUpdatingStatus(false);
         }
     }
     
@@ -296,7 +296,10 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                      {(reservation.status === 'confirmed' || reservation.status === 'pending_delivery') && (
                          <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><Truck className="h-5 w-5" /> Confirmation Mutuelle</CardTitle>
+                                <CardTitle className="flex items-center gap-2">
+                                    {isPhysicalProductOrder ? <Truck className="h-5 w-5" /> : <Check className="h-5 w-5" />}
+                                    Confirmation Mutuelle
+                                </CardTitle>
                                 <CardDescription>Chaque partie doit confirmer l'échange pour finaliser la transaction.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">

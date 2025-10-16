@@ -62,9 +62,13 @@ export async function POST(request: Request) {
             const updatedReservationDoc = await t.get(reservationRef); // Re-fetch to get updated data within transaction
             const updatedReservation = updatedReservationDoc.data() as Reservation;
 
+            const allEscortsConfirmed = updatedReservation.escorts?.every(e => updatedReservation.escortConfirmations[e.id]?.presenceConfirmed) ?? true;
+            const creatorConfirmed = updatedReservation.establishmentPresenceConfirmed;
+            const memberConfirmed = updatedReservation.memberPresenceConfirmed;
+
             // Logic for a physical product order
             if (updatedReservation.type === 'physical_product_order') {
-                if (updatedReservation.memberPresenceConfirmed && updatedReservation.establishmentPresenceConfirmed) {
+                if (memberConfirmed && creatorConfirmed) {
                      // Both buyer and seller confirmed, release funds
                     t.update(reservationRef, { status: 'completed' });
                     
@@ -115,10 +119,7 @@ export async function POST(request: Request) {
                 }
 
             } else { // Logic for service/establishment booking
-                const allEscortsConfirmed = updatedReservation.escorts?.every(e => updatedReservation.escortConfirmations[e.id]?.presenceConfirmed) ?? true;
-                const creatorConfirmed = reservation.creatorId ? updatedReservation.establishmentPresenceConfirmed : true;
-
-                if (updatedReservation.memberPresenceConfirmed && creatorConfirmed && allEscortsConfirmed) {
+                if (memberConfirmed && creatorConfirmed && allEscortsConfirmed) {
                     t.update(reservationRef, { status: 'completed' });
                     
                     // Release funds from escrow
