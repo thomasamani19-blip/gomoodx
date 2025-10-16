@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-const statusVariantMap = {
+const statusVariantMap: Record<ReservationStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
     pending: 'outline',
     pending_delivery: 'outline',
     confirmed: 'default',
@@ -308,7 +308,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                     {memberHasConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
                                 </div>
                                 <div className={cn("flex items-center justify-between p-3 rounded-lg", creatorHasConfirmed ? "bg-green-500/10 text-green-700" : "bg-muted")}>
-                                     <span className="font-semibold">{isCurrentUserTheCreator ? 'Votre confirmation de livraison' : 'Confirmation du vendeur'}</span>
+                                     <span className="font-semibold">{isCurrentUserTheCreator ? (isPhysicalProductOrder ? 'Votre confirmation d\'expédition' : 'Votre confirmation de présence') : (isPhysicalProductOrder ? 'Confirmation du vendeur' : 'Confirmation du créateur')}</span>
                                     {creatorHasConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
                                 </div>
                                 {reservation.escorts?.map(escort => {
