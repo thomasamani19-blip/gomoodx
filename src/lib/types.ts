@@ -1,4 +1,3 @@
-
 import type { Timestamp } from 'firebase/firestore';
 
 // Main User Roles
@@ -167,6 +166,7 @@ export interface User {
   hasPostedFirstContent?: boolean;
   hasCompletedProfile?: boolean;
   bankDetails?: BankDetails;
+  unlockedContacts?: string[];
 }
 
 export interface UserSubscription {
@@ -190,7 +190,7 @@ export interface Wallet {
 }
 
 // Transaction (subcollection of Wallet)
-export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'call_fee' | 'platform_fee' | 'commission' | 'points_conversion' | 'subscription_fee' | 'live_ticket' | 'article_purchase';
+export type TransactionType = 'deposit' | 'withdrawal' | 'reward' | 'purchase' | 'credit' | 'debit' | 'call_fee' | 'platform_fee' | 'commission' | 'points_conversion' | 'subscription_fee' | 'live_ticket' | 'article_purchase' | 'contact_pass';
 
 export type TransactionStatus = 'pending' | 'pending_escrow' | 'success' | 'failed';
 
@@ -292,7 +292,7 @@ export interface Reservation {
 }
 
 // Purchase
-export type PurchaseContentType = 'product' | 'article' | 'live_ticket';
+export type PurchaseContentType = 'product' | 'article' | 'live_ticket' | 'contact_pass';
 export type PurchaseStatus = 'completed' | 'refunded';
 
 export interface Purchase {
@@ -448,7 +448,10 @@ export interface Settings {
     };
     platformPlans?: {
         [key in Exclude<PlatformSubscriptionType, 'gratuit'>]?: Omit<PlatformPlan, 'id'>
-    }
+    };
+    passContact?: {
+        price: number;
+    };
 }
 
 // AI Assistant Log
@@ -557,3 +560,5 @@ export interface PartnerRequest {
 
 // API Payloads
 export type ContentType = 'service' | 'product';
+
+    

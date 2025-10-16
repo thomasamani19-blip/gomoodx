@@ -25,8 +25,16 @@ const settingsSchema = z.object({
   welcomeBonusAmount: z.coerce.number().min(0, "Doit être positif."),
   withdrawalMinAmount: z.coerce.number().min(0, "Doit être positif."),
   withdrawalMaxAmount: z.coerce.number().min(0, "Doit être positif.").refine(
-    (data) => data > 0,
-    { message: "Le max doit être supérieur au min" }
+    (value, ctx) => {
+        const minAmount = ctx.path.includes('withdrawalMaxAmount') ? value > (ctx.formState.values as any).withdrawalMinAmount : true;
+        if (!minAmount) {
+            ctx.addIssue({
+                code: 'custom',
+                message: "Le max doit être supérieur au min."
+            });
+        }
+        return minAmount;
+    }
   ),
   callRates: z.object({
     voicePerMinute: z.coerce.number().min(0),
@@ -74,7 +82,7 @@ export default function AdminFinancialSettingsPage() {
     useEffect(() => {
         if (settings) {
             form.reset({
-                platformCommissionRate: (settings.platformCommissionRate || 0) * 100, // Convert to percentage for display
+                platformCommissionRate: (settings.platformCommissionRate || 0.20) * 100, // Convert to percentage for display
                 platformFee: settings.platformFee || 20,
                 welcomeBonusAmount: settings.welcomeBonusAmount || 5,
                 withdrawalMinAmount: settings.withdrawalMinAmount || 50,
@@ -215,3 +223,5 @@ export default function AdminFinancialSettingsPage() {
         </div>
     );
 }
+
+    
