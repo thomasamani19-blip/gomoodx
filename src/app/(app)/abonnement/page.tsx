@@ -53,7 +53,7 @@ const PlanCard = ({ plan, onSubscribe, isCurrentPlan }: { plan: PlatformPlan, on
             </ul>
         </CardContent>
         <CardFooter>
-            <Button className="w-full" variant={plan.isPopular ? 'default' : 'secondary'} disabled={isCurrentPlan} onClick={() => onSubscribe(plan)}>
+            <Button className="w-full" variant={plan.isPopular ? "default" : "secondary"} disabled={isCurrentPlan} onClick={() => onSubscribe(plan)}>
                 {isCurrentPlan ? 'Plan Actuel' : 'Choisir ce plan'}
             </Button>
         </CardFooter>

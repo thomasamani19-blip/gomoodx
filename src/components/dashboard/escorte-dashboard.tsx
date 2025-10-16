@@ -202,6 +202,9 @@ export default function EscorteDashboard({ user }: { user: User }) {
     const statsRef = useMemo(() => user && firestore ? doc(firestore, `/creators/${user.id}/stats/main`) : null, [user, firestore]);
     const { data: stats, loading: statsLoading } = useDoc<CreatorStats>(statsRef);
 
+    const revenueHistory = useMemo(() => stats?.revenueHistory || [], [stats]);
+    const viewsHistory = useMemo(() => stats?.viewsHistory || [], [stats]);
+
   return (
     <div className="space-y-8">
         <PageHeader
@@ -250,7 +253,7 @@ export default function EscorteDashboard({ user }: { user: User }) {
             <ChartContainer config={chartConfig}>
               <ResponsiveContainer width="100%" height={250}>
                 {statsLoading ? <Skeleton className="w-full h-full" /> : 
-                <AreaChart data={stats?.revenueHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <AreaChart data={revenueHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid vertical={false} />
                   <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
                   <YAxis tickLine={false} axisLine={false} />
@@ -271,7 +274,7 @@ export default function EscorteDashboard({ user }: { user: User }) {
              <ChartContainer config={chartConfig}>
                  <ResponsiveContainer width="100%" height={250}>
                    {statsLoading ? <Skeleton className="w-full h-full" /> : 
-                    <BarChart data={stats?.viewsHistory}>
+                    <BarChart data={viewsHistory}>
                         <CartesianGrid vertical={false} />
                         <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
                         <YAxis tickLine={false} axisLine={false} />

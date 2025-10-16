@@ -94,13 +94,16 @@ export default function AdminAbonnementsPage() {
         }
         setIsLoading(true);
 
-        const transformedData = { ...data };
-        for (const key in transformedData.platformPlans) {
-            const planKey = key as keyof typeof transformedData.platformPlans;
-            (transformedData.platformPlans[planKey] as any).features = (transformedData.platformPlans[planKey].features as unknown as string)
-                .split('\n')
-                .map(f => f.trim())
-                .filter(f => f);
+        const transformedData: any = { platformPlans: {} };
+        for (const key in data.platformPlans) {
+            const planKey = key as keyof typeof data.platformPlans;
+            transformedData.platformPlans[planKey] = {
+                ...data.platformPlans[planKey],
+                features: (data.platformPlans[planKey].features as unknown as string)
+                    .split('\n')
+                    .map(f => f.trim())
+                    .filter(f => f)
+            };
         }
 
         try {

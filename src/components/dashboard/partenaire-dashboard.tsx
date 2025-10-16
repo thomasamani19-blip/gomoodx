@@ -2,16 +2,16 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import type { User, CreatorStats, MonthlyRevenue, Reservation } from "@/lib/types";
+import type { User, CreatorStats, Reservation } from "@/lib/types";
 import PageHeader from "../shared/page-header";
-import Link from "next/link";
+import Link from 'next/link';
 import { Button } from "../ui/button";
-import { Building, ShoppingBag, Newspaper, DollarSign, PenSquare, UserCircle, GanttChart, Sparkles, BookText, Film, Bot, TrendingUp, BarChart, Calendar, CalendarCheck } from "lucide-react";
+import { Building, ShoppingBag, Newspaper, DollarSign, PenSquare, UserCircle, GanttChart, Sparkles, BookText, Film, Bot, TrendingUp, BarChart, Calendar, CalendarCheck, Users } from "lucide-react";
 import { useDoc, useFirestore, useCollection } from "@/firebase";
 import { useMemo } from "react";
 import { collection, doc, query, where, orderBy, limit } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
-import { AreaChart as RechartsAreaChart, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Area, ResponsiveContainer } from 'recharts';
+import { AreaChart, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Area, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart";
 import { format } from "date-fns";
 import { fr } from 'date-fns/locale';
@@ -188,8 +188,8 @@ function ProducerDashboard({ user }: { user: User }) {
     const statsRef = useMemo(() => user && firestore ? doc(firestore, `/creators/${user.id}/stats/main`) : null, [user, firestore]);
     const { data: stats, loading: statsLoading } = useDoc<CreatorStats>(statsRef);
 
-    const revenueHistory = stats?.revenueHistory || [];
-    const salesHistory = stats?.salesHistory || [];
+    const revenueHistory = useMemo(() => stats?.revenueHistory || [], [stats]);
+    const salesHistory = useMemo(() => stats?.salesHistory || [], [stats]);
 
     return (
         <div className="space-y-8">
