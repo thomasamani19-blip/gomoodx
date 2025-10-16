@@ -87,23 +87,20 @@
 }
 
 @layer components {
-    .fade-in {
-        animation: fadeIn 1s ease-in-out forwards;
+    .bg-gold-pulse {
+      background: radial-gradient(circle at 30% 30%, hsl(var(--accent) / 0.2), transparent 70%);
+      animation: pulseGold 6s ease-in-out infinite alternate;
     }
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    @keyframes pulseGold {
+      0% { background: radial-gradient(circle at 30% 30%, hsl(var(--accent) / 0.2), transparent 70%); }
+      100% { background: radial-gradient(circle at 70% 70%, hsl(var(--accent) / 0.35), transparent 70%); }
     }
+
     .halo {
         position: relative;
         display: inline-block;
     }
+
     .halo::before {
         content: "";
         position: absolute;
@@ -114,6 +111,7 @@
         border-radius: 50%;
         animation: haloPulse 4s ease-in-out infinite;
     }
+
     @keyframes haloPulse {
         0%, 100% {
             transform: scale(1);
@@ -123,13 +121,5 @@
             transform: scale(1.2);
             opacity: 1;
         }
-    }
-    .bg-gold-pulse {
-      background: radial-gradient(circle at 30% 30%, hsl(var(--accent) / 0.2), transparent 70%);
-      animation: pulseGold 6s ease-in-out infinite alternate;
-    }
-    @keyframes pulseGold {
-      0% { background: radial-gradient(circle at 30% 30%, hsl(var(--accent) / 0.2), transparent 70%); }
-      100% { background: radial-gradient(circle at 70% 70%, hsl(var(--accent) / 0.35), transparent 70%); }
     }
 }

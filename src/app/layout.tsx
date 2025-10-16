@@ -1,4 +1,3 @@
-
 import type { Metadata } from 'next';
 import { PT_Sans } from 'next/font/google';
 import { Playfair_Display } from 'next/font/google';
