@@ -81,7 +81,7 @@ const partenaireNav = [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
     { title: "Fil d'actualité", href: '/feed', icon: Newspaper },
     { title: 'Profil Partenaire', href: '/profil', icon: Building },
-    { title: 'Gérer mes Tarifs', href: '/gestion/tarifs', icon: DollarSign },
+    { title: 'Gérer les Tarifs', href: '/gestion/tarifs', icon: DollarSign },
     { title: 'Gérer les Lives', href: '/gestion/lives', icon: Video },
     { title: 'Mes Réservations', href: '/reservations', icon: CalendarCheck },
     { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
