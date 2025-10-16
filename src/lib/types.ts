@@ -415,7 +415,9 @@ export interface SupportTicket {
     message: string;
     status: SupportTicketStatus;
     createdAt: Timestamp;
+    relatedId?: string | null;
     adminResponse?: string;
+    resolvedAt?: Timestamp;
 }
 
 // Global Settings

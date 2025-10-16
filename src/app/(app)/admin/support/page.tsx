@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -7,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useAuth } from '@/hooks/use-auth';
 import { useCollection, useFirestore, useDoc } from '@/firebase';
 import type { SupportTicket, User } from '@/lib/types';
-import { collection, query, orderBy, where, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, where, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
@@ -19,6 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
 
 
 const UserCell = ({ userId }: { userId: string }) => {
@@ -52,7 +54,7 @@ const TicketTable = ({ tickets, loading, onSelectTicket }: { tickets: SupportTic
                         <TableRow key={ticket.id} onClick={() => onSelectTicket(ticket)} className="cursor-pointer">
                             <TableCell className="font-semibold">{ticket.subject}</TableCell>
                             <TableCell><UserCell userId={ticket.userId} /></TableCell>
-                            <TableCell>{formatDistanceToNow(ticket.createdAt.toDate(), { locale: fr, addSuffix: true })}</TableCell>
+                            <TableCell>{ticket.createdAt ? formatDistanceToNow(ticket.createdAt.toDate(), { locale: fr, addSuffix: true }) : 'N/A'}</TableCell>
                             <TableCell className="text-right">
                                 <Button variant="ghost" size="sm">Voir</Button>
                             </TableCell>
@@ -80,8 +82,8 @@ export default function AdminSupportPage() {
     const openTicketsQuery = useMemo(() => firestore ? query(collection(firestore, 'supportTickets'), where('status', '==', 'open'), orderBy('createdAt', 'desc')) : null, [firestore]);
     const closedTicketsQuery = useMemo(() => firestore ? query(collection(firestore, 'supportTickets'), where('status', 'in', ['resolved', 'closed']), orderBy('createdAt', 'desc')) : null, [firestore]);
 
-    const { data: openTickets, loading: openTicketsLoading } = useCollection<SupportTicket>(openTicketsQuery);
-    const { data: closedTickets, loading: closedTicketsLoading } = useCollection<SupportTicket>(closedTicketsQuery);
+    const { data: openTickets, loading: openTicketsLoading, setData: setOpenTickets } = useCollection<SupportTicket>(openTicketsQuery);
+    const { data: closedTickets, loading: closedTicketsLoading, setData: setClosedTickets } = useCollection<SupportTicket>(closedTicketsQuery);
 
     const handleUpdateStatus = async (status: 'resolved' | 'closed') => {
         if (!selectedTicket || !firestore) return;
@@ -93,16 +95,31 @@ export default function AdminSupportPage() {
                 adminResponse: response || 'Ticket résolu sans réponse.',
                 resolvedAt: serverTimestamp()
             });
+
+            // Optimistic UI update
+            setOpenTickets(prev => prev?.filter(t => t.id !== selectedTicket.id) || null);
+            setClosedTickets(prev => prev ? [{...selectedTicket, status, adminResponse: response }, ...prev] : [{...selectedTicket, status, adminResponse: response }]);
+            
             toast({ title: 'Ticket mis à jour' });
             setSelectedTicket(null);
             setResponse('');
         } catch (error) {
-            toast({ title: 'Erreur', variant: 'destructive'});
+            toast({ title: 'Erreur', description: 'Impossible de mettre à jour le ticket.', variant: 'destructive'});
         } finally {
             setIsResponding(false);
         }
     };
     
+    // Authorization check
+    useEffect(() => {
+        if (!authLoading && (!user || !['founder', 'administrateur', 'moderator'].includes(user.role))) {
+            toast({ title: 'Accès non autorisé', variant: 'destructive' });
+            router.push('/dashboard');
+        }
+    }, [user, authLoading, router, toast]);
+
+    const loading = authLoading || openTicketsLoading || closedTicketsLoading;
+
     return (
         <div>
             <PageHeader title="Support Technique" description="Gérez les tickets de support ouverts par les utilisateurs." />
@@ -112,11 +129,11 @@ export default function AdminSupportPage() {
                         <TabsTrigger value="open">Tickets Ouverts <Badge variant="destructive" className="ml-2">{openTickets?.length || 0}</Badge></TabsTrigger>
                         <TabsTrigger value="closed">Tickets Fermés</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="open">
-                        <TicketTable tickets={openTickets} loading={openTicketsLoading} onSelectTicket={setSelectedTicket} />
+                    <TabsContent value="open" className="pt-4">
+                        <TicketTable tickets={openTickets} loading={loading} onSelectTicket={setSelectedTicket} />
                     </TabsContent>
-                    <TabsContent value="closed">
-                         <TicketTable tickets={closedTickets} loading={closedTicketsLoading} onSelectTicket={setSelectedTicket} />
+                    <TabsContent value="closed" className="pt-4">
+                         <TicketTable tickets={closedTickets} loading={loading} onSelectTicket={setSelectedTicket} />
                     </TabsContent>
                 </Tabs>
             </Card>
