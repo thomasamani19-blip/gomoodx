@@ -100,7 +100,6 @@ export interface EstablishmentPricing {
 
 export interface CreatorRates {
     videoCallPerMinute?: number;
-    voiceCallPerMinute?: number;
     escortPerHour?: number;
     escortHalfDay?: number; // For 4 hours
     escortFullDay?: number; // For 8 hours
