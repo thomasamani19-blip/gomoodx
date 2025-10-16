@@ -2,11 +2,10 @@
 'use client';
 import { AreaChart, BarChart, FileSearch, TrendingUp, Users } from 'lucide-react';
 import { Area, Bar, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import PageHeader from '@/components/shared/page-header';
-import type { CreatorStats, MonthlyRevenue } from '@/lib/types';
+import type { CreatorStats } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
 import { useDoc, useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,50 +13,20 @@ import { doc } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { LineChart, Line } from 'recharts';
 
-
-const chartData: MonthlyRevenue[] = [
-  { month: 'Jan', revenue: 1860 },
-  { month: 'Fev', revenue: 3050 },
-  { month: 'Mar', revenue: 2370 },
-  { month: 'Avr', revenue: 730 },
-  { month: 'Mai', revenue: 2090 },
-  { month: 'Juin', revenue: 2140 },
-];
-
 const chartConfig = {
   revenue: {
-    label: 'Revenus',
+    label: 'Revenus (€)',
     color: 'hsl(var(--primary))',
   },
   subscribers: {
     label: 'Abonnés',
-    color: 'hsl(var(--secondary))',
+    color: 'hsl(var(--accent))',
   },
    views: {
     label: 'Vues',
     color: 'hsl(var(--primary))',
   }
 };
-
-const newSubscribersData = [
-  { date: '01/06', new: 5 },
-  { date: '02/06', new: 7 },
-  { date: '03/06', new: 4 },
-  { date: '04/06', new: 9 },
-  { date: '05/06', new: 6 },
-  { date: '06/06', new: 11 },
-  { date: '07/06', new: 8 },
-];
-
-const profileViewsData = [
-    { date: '01/06', views: 120 },
-    { date: '02/06', views: 180 },
-    { date: '03/06', views: 150 },
-    { date: '04/06', views: 210 },
-    { date: '05/06', views: 190 },
-    { date: '06/06', views: 250 },
-    { date: '07/06', views: 220 },
-];
 
 const StatCard = ({ title, value, change, icon: Icon, loading }: { title: string, value: string, change: string, icon: React.ElementType, loading: boolean}) => {
     if (loading) {
@@ -102,8 +71,12 @@ const StatsPage = () => {
     }, [user, firestore]);
     
     const { data: stats, loading: statsLoading } = useDoc<CreatorStats>(statsRef);
-
+    
     const loading = authLoading || statsLoading;
+    
+    const revenueHistory = useMemo(() => stats?.revenueHistory || [], [stats]);
+    const viewsHistory = useMemo(() => stats?.viewsHistory || [], [stats]);
+    const subscribersHistory = useMemo(() => stats?.subscribersHistory || [], [stats]);
 
   return (
     <div>
@@ -150,10 +123,10 @@ const StatsPage = () => {
             <ChartContainer config={chartConfig}>
               <ResponsiveContainer width="100%" height={300}>
                 {loading ? <Skeleton className="w-full h-full" /> : 
-                <BarChart data={chartData}>
+                <BarChart data={revenueHistory}>
                   <CartesianGrid vertical={false} />
                   <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
-                  <YAxis tickLine={false} axisLine={false} />
+                  <YAxis tickLine={false} axisLine={false} unit="€" />
                   <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
                   <Bar dataKey="revenue" fill="var(--color-revenue)" radius={8} />
                 </BarChart>}
@@ -171,7 +144,7 @@ const StatsPage = () => {
              <ChartContainer config={chartConfig}>
                  <ResponsiveContainer width="100%" height={300}>
                     {loading ? <Skeleton className="w-full h-full" /> : 
-                    <LineChart data={newSubscribersData}>
+                    <LineChart data={subscribersHistory}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" />
                         <YAxis />
@@ -193,7 +166,7 @@ const StatsPage = () => {
              <ChartContainer config={{ views: { label: 'Vues', color: 'hsl(var(--primary))' } }}>
                  <ResponsiveContainer width="100%" height={300}>
                    {loading ? <Skeleton className="w-full h-full" /> : 
-                    <AreaChart data={profileViewsData}>
+                    <AreaChart data={viewsHistory}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" />
                         <YAxis />

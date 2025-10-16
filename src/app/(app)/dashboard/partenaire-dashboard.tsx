@@ -1,7 +1,8 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import type { User, CreatorStats, MonthlyRevenue, Reservation } from "@/lib/types";
+import type { User, CreatorStats, Reservation } from "@/lib/types";
 import PageHeader from "@/components/shared/page-header";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -170,7 +171,7 @@ function EstablishmentDashboard({ user }: { user: User }) {
                             </Link>
                         </Button>
                          <Button asChild size="lg" className="h-full col-span-2" variant="outline">
-                            <Link href="/profil">
+                            <Link href="/gestion/etablissement" className="flex-col gap-2">
                                 <Building className="h-6 w-6 mr-2"/>
                                 <span>Modifier le Profil</span>
                             </Link>
@@ -187,8 +188,8 @@ function ProducerDashboard({ user }: { user: User }) {
     const statsRef = useMemo(() => user && firestore ? doc(firestore, `/creators/${user.id}/stats/main`) : null, [user, firestore]);
     const { data: stats, loading: statsLoading } = useDoc<CreatorStats>(statsRef);
 
-    const revenueHistory = stats?.revenueHistory || [];
-    const salesHistory = stats?.salesHistory || [];
+    const revenueHistory = useMemo(() => stats?.revenueHistory || [], [stats]);
+    const salesHistory = useMemo(() => stats?.salesHistory || [], [stats]);
 
     return (
         <div className="space-y-8">

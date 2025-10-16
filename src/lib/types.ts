@@ -520,21 +520,23 @@ export interface BlogArticle {
     price?: number;
 }
 
+export type MonthlyRevenue = { month: string; revenue: number };
+export type DailyViews = { date: string; views: number };
+export type DailySubscribers = { date: string; new: number };
+export type DailySales = { date: string; sales: number };
+
 export type CreatorStats = {
     monthlyRevenue?: { value: number; change: number };
     newSubscribers?: { value: number; change: number };
     profileViews?: { value: number; change: number };
     engagementRate?: { value: number; change: number };
-    rewardPoints?: { value: number; change: number };
     contentSales?: { value: number; change: number };
-    revenueHistory?: { month: string; revenue: number }[];
-    salesHistory?: { date: string; sales: number }[];
+    revenueHistory?: MonthlyRevenue[];
+    viewsHistory?: DailyViews[];
+    subscribersHistory?: DailySubscribers[];
+    salesHistory?: DailySales[];
 }
 
-export type MonthlyRevenue = {
-    month: string;
-    revenue: number;
-}
 
 export interface PartnerRequest {
     id: string;
