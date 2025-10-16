@@ -35,7 +35,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ status: 'error', message: 'Données du formulaire invalides ou manquantes.' }, { status: 400 });
         }
         
-        const authorRef = db.collection('users').doc(authorId);
+        const authorRef = doc(db, 'users', authorId);
         const authorDoc = await authorRef.get();
         if (!authorDoc.exists) {
             return NextResponse.json({ status: 'error', message: 'Auteur inconnu.' }, { status: 404 });
