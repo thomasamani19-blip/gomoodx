@@ -42,13 +42,6 @@ export interface SubscriptionSettings {
 
 export type PlatformSubscriptionType = 'gratuit' | 'essential' | 'advanced' | 'premium' | 'elite';
 
-export interface UserSubscription {
-    type: PlatformSubscriptionType;
-    status: "active" | "inactive" | "cancelled";
-    startDate: Timestamp;
-    endDate: Timestamp;
-}
-
 export interface PlatformPlan {
   id: PlatformSubscriptionType;
   name: string;
@@ -447,7 +440,7 @@ export interface Settings {
       referralBonus: number;
     };
     platformPlans?: {
-        [key in Exclude<PlatformSubscriptionType, 'gratuit'>]: Omit<PlatformPlan, 'id' | 'features'>
+        [key in Exclude<PlatformSubscriptionType, 'gratuit'>]: Omit<PlatformPlan, 'id'>
     }
 }
 

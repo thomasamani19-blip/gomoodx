@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import PageHeader from '@/components/shared/page-header';
-import { Check, Star, Loader2, X } from 'lucide-react';
+import { Check, Star, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -22,115 +22,44 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import type { Settings, PlatformPlan, PlatformSubscriptionType } from '@/lib/types';
 import { useDoc, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
+const PlanCard = ({ plan, onSubscribe, isCurrentPlan }: { plan: PlatformPlan, onSubscribe: (plan: PlatformPlan) => void, isCurrentPlan: boolean }) => (
+    <Card className={cn("flex flex-col", plan.isPopular ? "border-primary ring-2 ring-primary" : "")}>
+        {plan.isPopular && <Badge className="absolute -top-3 left-1/2 -translate-x-1/2" variant="secondary">Populaire</Badge>}
+        <CardHeader className="text-center items-center">
+            <CardTitle className="font-headline text-3xl">{plan.name}</CardTitle>
+             <CardDescription>{plan.description}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex-1 space-y-4">
+            <div className="text-center">
+                {plan.price > 0 ? (
+                    <p><span className="text-4xl font-bold">{plan.price.toFixed(2)}€</span><span className="text-muted-foreground">/mois</span></p>
+                ) : (
+                    <p className="text-4xl font-bold">Gratuit</p>
+                )}
+            </div>
+            <ul className="space-y-3 text-sm">
+                {plan.features?.map((feature, i) => (
+                    <li key={i} className="flex items-start">
+                        <Check className="h-4 w-4 mr-2 mt-1 flex-shrink-0 text-green-500" />
+                        <span>{feature}</span>
+                    </li>
+                ))}
+            </ul>
+        </CardContent>
+        <CardFooter>
+            <Button className="w-full" variant={plan.isPopular ? 'default' : 'secondary'} disabled={isCurrentPlan} onClick={() => onSubscribe(plan)}>
+                {isCurrentPlan ? 'Plan Actuel' : 'Choisir ce plan'}
+            </Button>
+        </CardFooter>
+    </Card>
+);
 
-interface Feature {
-    text: string;
-    gratuit: boolean | string;
-    essential: boolean | string;
-    advanced: boolean | string;
-    premium: boolean | string;
-    elite: boolean | string;
-    tooltip?: string;
-}
-
-const features: Feature[] = [
-    {
-        text: 'Commission sur les ventes',
-        gratuit: '20%',
-        essential: '18%',
-        advanced: '15%',
-        premium: '10%',
-        elite: '5%',
-        tooltip: 'Le pourcentage prélevé par la plateforme sur vos revenus (ventes de contenu, abonnements fan, etc.).'
-    },
-    {
-        text: 'Activer les abonnements Fan',
-        gratuit: false,
-        essential: true,
-        advanced: true,
-        premium: true,
-        elite: true,
-        tooltip: 'Permet à vos fans de souscrire à des abonnements payants à votre profil.'
-    },
-    {
-        text: 'Sponsorisations Offertes / mois',
-        gratuit: '0',
-        essential: '0',
-        advanced: '2',
-        premium: '5',
-        elite: '10',
-        tooltip: 'Mettez en avant vos annonces ou produits gratuitement chaque mois. Sponsorisation payante possible à tout moment.'
-    },
-    {
-        text: 'Badge "Vérifié" sur le profil',
-        gratuit: false,
-        essential: false,
-        advanced: true,
-        premium: true,
-        elite: true,
-        tooltip: 'Un badge qui inspire confiance et augmente votre crédibilité.'
-    },
-    {
-        text: 'Générateur de Bio IA',
-        gratuit: false,
-        essential: true,
-        advanced: true,
-        premium: true,
-        elite: true,
-        tooltip: 'Outil IA pour créer une biographie de profil captivante.'
-    },
-    {
-        text: 'Générateur d\'Article IA',
-        gratuit: false,
-        essential: false,
-        advanced: true,
-        premium: true,
-        elite: true,
-        tooltip: 'Outil IA pour rédiger des articles de blog complets.'
-    },
-    {
-        text: 'Studio IA Créatif',
-        gratuit: false,
-        essential: false,
-        advanced: false,
-        premium: true,
-        elite: true,
-        tooltip: 'Générez des images, vidéos et voix uniques grâce à l\'IA.'
-    },
-    {
-        text: 'Statistiques avancées',
-        gratuit: false,
-        essential: false,
-        advanced: false,
-        premium: true,
-        elite: true,
-        tooltip: 'Analysez en détail vos revenus, visites de profil et engagement.'
-    },
-    {
-        text: 'Support Prioritaire',
-        gratuit: 'Standard',
-        essential: 'Standard',
-        advanced: 'Standard',
-        premium: 'Email',
-        elite: 'Dédié 24/7',
-        tooltip: 'Obtenez de l\'aide plus rapidement avec un support adapté à votre formule.'
-    },
-];
-
-
-const FeatureCheck = ({ value }: { value: boolean | string }) => {
-    if (typeof value === 'boolean') {
-        return value ? <Check className="h-5 w-5 text-green-500" /> : <X className="h-5 w-5 text-muted-foreground" />;
-    }
-    return <span className="text-sm font-semibold">{value}</span>;
-};
 
 export default function AbonnementPage() {
     const { user, loading: authLoading } = useAuth();
@@ -148,18 +77,22 @@ export default function AbonnementPage() {
     const loading = authLoading || settingsLoading;
 
     const plansData: PlatformPlan[] = useMemo(() => {
-        const basePlans: PlatformPlan[] = [
-            { id: 'gratuit', name: 'Gratuit', price: 0, description: 'Pour démarrer', features: [], isPopular: false },
-        ];
+        const sortedPlans: PlatformPlan[] = [];
         if (settings?.platformPlans) {
-            const dynamicPlans: PlatformPlan[] = Object.entries(settings.platformPlans).map(([id, plan]) => ({
-                id: id as PlatformSubscriptionType,
-                features: [], // Placeholder, features are hardcoded in the table for now
-                ...plan
-            }));
-            return [...basePlans, ...dynamicPlans];
+            const planOrder: PlatformSubscriptionType[] = ['essential', 'advanced', 'premium', 'elite'];
+            planOrder.forEach(id => {
+                if (settings.platformPlans?.[id]) {
+                    sortedPlans.push({
+                        id,
+                        ...settings.platformPlans[id]
+                    } as PlatformPlan);
+                }
+            });
         }
-        return basePlans;
+        return [
+            { id: 'gratuit', name: 'Gratuit', price: 0, description: 'Pour démarrer', features: ['Commission sur les ventes de 20%', 'Publications sur le fil d\'actualité'], isPopular: false },
+            ...sortedPlans
+        ];
     }, [settings]);
 
 
@@ -169,6 +102,7 @@ export default function AbonnementPage() {
             router.push('/connexion');
             return;
         }
+        if (plan.id === 'gratuit') return;
         setSubscriptionDialog({ open: true, plan });
     };
 
@@ -222,134 +156,69 @@ export default function AbonnementPage() {
         return (
             <div>
                 <PageHeader title="Abonnements GoMoodX Premium" description="Chargement..." />
-                <Skeleton className="h-[600px] w-full" />
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <Skeleton className="h-[450px] w-full" />
+                    <Skeleton className="h-[450px] w-full" />
+                    <Skeleton className="h-[450px] w-full" />
+                    <Skeleton className="h-[450px] w-full" />
+                </div>
             </div>
         )
     }
 
     return (
-        <TooltipProvider>
-            <div>
-                <PageHeader
-                    title="Abonnements GoMoodX Premium"
-                    description="Débloquez tout le potentiel de la plateforme et maximisez vos revenus."
-                />
-                <div className="border rounded-lg overflow-x-auto">
-                    <table className="min-w-full divide-y divide-border">
-                        <thead className="bg-muted/50">
-                            <tr>
-                                <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold sm:pl-6">Fonctionnalités</th>
-                                {plansData.map(plan => (
-                                    <th key={plan.id} scope="col" className="px-3 py-3.5 text-center text-sm font-semibold">
-                                        <div className="flex flex-col items-center gap-1">
-                                            <span className={cn(plan.isPopular && "text-primary")}>{plan.name}</span>
-                                            {plan.isPopular && <Badge variant="secondary" className="h-5">Populaire</Badge>}
-                                        </div>
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {features.map((feature, featureIdx) => (
-                                <tr key={feature.text} className={featureIdx % 2 === 0 ? undefined : 'bg-muted/30'}>
-                                    <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium sm:pl-6">
-                                        <Tooltip delayDuration={100}>
-                                            <TooltipTrigger className="cursor-help text-left">
-                                                {feature.text}
-                                            </TooltipTrigger>
-                                            {feature.tooltip && <TooltipContent><p className="max-w-xs">{feature.tooltip}</p></TooltipContent>}
-                                        </Tooltip>
-                                    </td>
-                                    <td className="whitespace-nowrap px-3 py-4 text-sm text-center"><FeatureCheck value={feature.gratuit} /></td>
-                                    <td className="whitespace-nowrap px-3 py-4 text-sm text-center"><FeatureCheck value={feature.essential} /></td>
-                                    <td className="whitespace-nowrap px-3 py-4 text-sm text-center"><FeatureCheck value={feature.advanced} /></td>
-                                    <td className="whitespace-nowrap px-3 py-4 text-sm text-center"><FeatureCheck value={feature.premium} /></td>
-                                    <td className="whitespace-nowrap px-3 py-4 text-sm text-center"><FeatureCheck value={feature.elite} /></td>
-                                </tr>
-                            ))}
-                        </tbody>
-                        <tfoot>
-                             <tr className="border-t">
-                                <th scope="row" className="sr-only">Prix</th>
-                                {plansData.map(plan => (
-                                    <td key={plan.id} className="px-3 pt-6 text-center">
-                                        {plan.price > 0 ? (
-                                            <p><span className="text-3xl font-bold">{plan.price.toFixed(2)}€</span><span className="text-muted-foreground">/mois</span></p>
-                                        ) : (
-                                             <p className="text-3xl font-bold">0 €</p>
-                                        )}
-                                    </td>
-                                ))}
-                            </tr>
-                            <tr className="">
-                                <th scope="row" className="sr-only">Actions</th>
-                                {plansData.map(plan => {
-                                    const isCurrent = user?.subscription?.type === plan.id || (!user?.subscription && plan.id === 'gratuit');
-                                    return (
-                                        <td key={plan.id} className="px-3 py-4 text-center">
-                                            {plan.id === 'gratuit' ? (
-                                                <Button className="w-full" variant="outline" disabled={isCurrent}>
-                                                     {isCurrent ? 'Plan Actuel' : ''}
-                                                </Button>
-                                            ) : (
-                                                <Button 
-                                                    className="w-full"
-                                                    variant={plan.isPopular ? 'default' : 'secondary'}
-                                                    onClick={() => handleOpenSubscriptionDialog(plan)}
-                                                    disabled={isCurrent}
-                                                >
-                                                    {isCurrent ? 'Plan Actuel' : 'Choisir ce Plan'}
-                                                </Button>
-                                            )}
-                                        </td>
-                                    )
-                                })}
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-
-                <AlertDialog open={subscriptionDialog.open} onOpenChange={(open) => setSubscriptionDialog({ ...subscriptionDialog, open })}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Souscrire à "{subscriptionDialog.plan?.name}"</AlertDialogTitle>
-                            <AlertDialogDescription>Choisissez votre durée d'engagement. Le montant sera débité de votre portefeuille.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <div className="space-y-4">
-                            <RadioGroup defaultValue="1" onValueChange={(value) => setSubscriptionDuration(Number(value))}>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {[
-                                        { duration: 1, label: "1 Mois" },
-                                        { duration: 3, label: "3 Mois (-10%)" },
-                                        { duration: 6, label: "6 Mois (-15%)" },
-                                        { duration: 12, label: "1 An (-20%)" }
-                                    ].map(d => (
-                                        <div key={d.duration}>
-                                            <RadioGroupItem value={d.duration.toString()} id={`d-${d.duration}`} className="peer sr-only" />
-                                            <Label
-                                                htmlFor={`d-${d.duration}`}
-                                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                                            >
-                                                <span className="font-bold">{d.label}</span>
-                                            </Label>
-                                        </div>
-                                    ))}
-                                </div>
-                            </RadioGroup>
-                            <div className="text-center font-bold text-2xl">
-                                Total : {calculateTotalPrice()}€
-                            </div>
-                        </div>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel disabled={isSubscribing}>Annuler</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleSubscription} disabled={isSubscribing}>
-                                {isSubscribing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Confirmer l'Abonnement
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+        <div>
+            <PageHeader
+                title="Abonnements GoMoodX Premium"
+                description="Débloquez tout le potentiel de la plateforme et maximisez vos revenus."
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-stretch">
+                {plansData.map(plan => {
+                    const isCurrent = user?.subscription?.type === plan.id || (!user?.subscription && plan.id === 'gratuit');
+                    return <PlanCard key={plan.id} plan={plan} onSubscribe={handleOpenSubscriptionDialog} isCurrentPlan={isCurrent} />;
+                })}
             </div>
-        </TooltipProvider>
+
+            <AlertDialog open={subscriptionDialog.open} onOpenChange={(open) => setSubscriptionDialog({ ...subscriptionDialog, open })}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Souscrire à "{subscriptionDialog.plan?.name}"</AlertDialogTitle>
+                        <AlertDialogDescription>Choisissez votre durée d'engagement. Le montant sera débité de votre portefeuille.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="space-y-4">
+                        <RadioGroup defaultValue="1" onValueChange={(value) => setSubscriptionDuration(Number(value))}>
+                            <div className="grid grid-cols-2 gap-2">
+                                {[
+                                    { duration: 1, label: "1 Mois" },
+                                    { duration: 3, label: "3 Mois (-10%)" },
+                                    { duration: 6, label: "6 Mois (-15%)" },
+                                    { duration: 12, label: "1 An (-20%)" }
+                                ].map(d => (
+                                    <div key={d.duration}>
+                                        <RadioGroupItem value={d.duration.toString()} id={`d-${d.duration}`} className="peer sr-only" />
+                                        <Label
+                                            htmlFor={`d-${d.duration}`}
+                                            className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                                        >
+                                            <span className="font-bold">{d.label}</span>
+                                        </Label>
+                                    </div>
+                                ))}
+                            </div>
+                        </RadioGroup>
+                        <div className="text-center font-bold text-2xl">
+                            Total : {calculateTotalPrice()}€
+                        </div>
+                    </div>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isSubscribing}>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleSubscription} disabled={isSubscribing}>
+                            {isSubscribing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Confirmer l'Abonnement
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
     );
 }

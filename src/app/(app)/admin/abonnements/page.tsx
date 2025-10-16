@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, Controller } from 'react-hook-form';
@@ -16,7 +17,7 @@ import PageHeader from '@/components/shared/page-header';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { doc } from 'firebase/firestore';
-import type { Settings } from '@/lib/types';
+import type { Settings, PlatformSubscriptionType } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 
@@ -24,6 +25,7 @@ const planSchema = z.object({
     name: z.string().min(1, "Le nom est requis."),
     price: z.coerce.number().min(0, "Le prix doit être positif."),
     description: z.string().min(1, "La description est requise."),
+    features: z.string().min(1, "Listez au moins une fonctionnalité."),
     isPopular: z.boolean().default(false),
 });
 
@@ -48,16 +50,16 @@ export default function AdminAbonnementsPage() {
     const settingsRef = firestore ? doc(firestore, 'settings', 'global') : null;
     const { data: settings, loading: settingsLoading } = useDoc<Settings>(settingsRef);
 
+    const defaultPlans = {
+        essential: { name: 'Essentiel', price: 9.99, description: 'Pour bien démarrer.', features: 'Commission de 18%\nActiver les abonnements Fan\nGénérateur de Bio IA', isPopular: false },
+        advanced: { name: 'Avancé', price: 24.99, description: 'Pour les créateurs ambitieux.', features: 'Commission de 15%\n2 Sponsorisations Offertes / mois\nBadge "Vérifié"\nGénérateur d\'Article IA', isPopular: true },
+        premium: { name: 'Premium', price: 49.99, description: 'Accès à tous les outils.', features: 'Commission de 10%\n5 Sponsorisations Offertes / mois\nStudio IA Créatif\nStatistiques avancées\nSupport prioritaire', isPopular: false },
+        elite: { name: 'Élite', price: 99.99, description: 'Pour les professionnels.', features: 'Commission de 5%\n10 Sponsorisations Offertes / mois\nTout du plan Premium\nSupport dédié 24/7', isPopular: false },
+    };
+
     const form = useForm<SettingsFormValues>({
         resolver: zodResolver(settingsSchema),
-        defaultValues: {
-            platformPlans: {
-                essential: { name: 'Essentiel', price: 9.99, description: 'Pour bien démarrer.', isPopular: false },
-                advanced: { name: 'Avancé', price: 24.99, description: 'Pour les créateurs ambitieux.', isPopular: true },
-                premium: { name: 'Premium', price: 49.99, description: 'Accès à tous les outils.', isPopular: false },
-                elite: { name: 'Élite', price: 99.99, description: 'Pour les professionnels.', isPopular: false },
-            }
-        },
+        defaultValues: { platformPlans: defaultPlans },
     });
 
     useEffect(() => {
@@ -71,7 +73,17 @@ export default function AdminAbonnementsPage() {
 
     useEffect(() => {
         if (settings?.platformPlans) {
-            form.reset({ platformPlans: settings.platformPlans as any });
+            const transformedPlans: any = {};
+            for (const key in settings.platformPlans) {
+                const planKey = key as PlatformSubscriptionType;
+                if(planKey !== 'gratuit') {
+                    transformedPlans[planKey] = {
+                        ...settings.platformPlans[planKey],
+                        features: settings.platformPlans[planKey]?.features?.join('\n') || ''
+                    };
+                }
+            }
+            form.reset({ platformPlans: { ...defaultPlans, ...transformedPlans } });
         }
     }, [settings, form]);
     
@@ -81,6 +93,16 @@ export default function AdminAbonnementsPage() {
             return;
         }
         setIsLoading(true);
+
+        const transformedData = { ...data };
+        for (const key in transformedData.platformPlans) {
+            const planKey = key as keyof typeof transformedData.platformPlans;
+            transformedData.platformPlans[planKey].features = (transformedData.platformPlans[planKey].features as unknown as string)
+                .split('\n')
+                .map(f => f.trim())
+                .filter(f => f);
+        }
+
         try {
             const idToken = await firebaseUser.getIdToken();
             const response = await fetch('/api/admin/update-subscription-settings', {
@@ -89,7 +111,7 @@ export default function AdminAbonnementsPage() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${idToken}`,
                 },
-                body: JSON.stringify(data),
+                body: JSON.stringify(transformedData),
             });
             const result = await response.json();
 
@@ -137,9 +159,14 @@ export default function AdminAbonnementsPage() {
                                     {form.formState.errors.platformPlans?.[planId]?.price && <p className="text-sm text-destructive">{form.formState.errors.platformPlans[planId]?.price?.message}</p>}
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Description</Label>
-                                    <Textarea {...form.register(`platformPlans.${planId}.description`)} rows={2} />
+                                    <Label>Description Courte</Label>
+                                    <Input {...form.register(`platformPlans.${planId}.description`)} />
                                      {form.formState.errors.platformPlans?.[planId]?.description && <p className="text-sm text-destructive">{form.formState.errors.platformPlans[planId]?.description?.message}</p>}
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label>Fonctionnalités (une par ligne)</Label>
+                                    <Textarea {...form.register(`platformPlans.${planId}.features`)} rows={4} />
+                                     {form.formState.errors.platformPlans?.[planId]?.features && <p className="text-sm text-destructive">{form.formState.errors.platformPlans[planId]?.features?.message}</p>}
                                 </div>
                                  <div className="flex items-center space-x-2">
                                     <Controller
