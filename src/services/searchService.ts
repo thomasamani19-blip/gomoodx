@@ -49,12 +49,12 @@ const db = getFirestore(adminApp);
  */
 export async function searchFirestore(searchInput: SearchInput): Promise<SearchResult[]> {
     const { keywords, location, type, role, category, types = ['profil', 'contenu'], priceMin, priceMax } = searchInput;
-    const results: SearchResult[] = [];
+    let results: SearchResult[] = [];
     const searchLimit = 20;
 
     try {
         // --- 1. Search Users (Profiles) ---
-        if (types.includes('profil') || type === 'profil') {
+        if (types.includes('profil')) {
             let usersQuery: Query = collection(db, 'users');
             const userConditions = [];
             
@@ -91,7 +91,7 @@ export async function searchFirestore(searchInput: SearchInput): Promise<SearchR
         }
 
         // --- 2. Search Content (Services and Products) ---
-        if (types.includes('contenu') || type === 'contenu') {
+        if (types.includes('contenu')) {
             const contentConditions: any[] = [];
             if(category) contentConditions.push(where('category', '==', category));
             if(location) contentConditions.push(where('location', '==', location));
@@ -99,61 +99,40 @@ export async function searchFirestore(searchInput: SearchInput): Promise<SearchR
             if(priceMax && priceMax < 5000) contentConditions.push(where('price', '<=', priceMax));
 
             // Search Services (Annonces)
-            if (contentConditions.length > 0) {
-                const servicesQuery = query(collection(db, 'services'), and(...contentConditions), limit(searchLimit));
-                const servicesSnapshot = await getDocs(servicesQuery);
-                servicesSnapshot.forEach(doc => {
-                    const annonce = doc.data() as Annonce;
-                    results.push({
-                        type: 'contenu',
-                        titre: annonce.title,
-                        description: annonce.description,
-                        url: `/annonces/${doc.id}`,
-                        imageUrl: annonce.imageUrl,
-                        price: annonce.price
-                    });
+            const servicesQuery = contentConditions.length > 0 
+                ? query(collection(db, 'services'), and(...contentConditions), limit(searchLimit))
+                : query(collection(db, 'services'), limit(searchLimit));
+                
+            const servicesSnapshot = await getDocs(servicesQuery);
+            servicesSnapshot.forEach(doc => {
+                const annonce = doc.data() as Annonce;
+                results.push({
+                    type: 'contenu',
+                    titre: annonce.title,
+                    description: annonce.description,
+                    url: `/annonces/${doc.id}`,
+                    imageUrl: annonce.imageUrl,
+                    price: annonce.price
                 });
+            });
 
-                // Search Products
-                const productsQuery = query(collection(db, 'products'), and(...contentConditions), limit(searchLimit));
-                const productsSnapshot = await getDocs(productsQuery);
-                productsSnapshot.forEach(doc => {
-                    const product = doc.data() as Product;
-                    results.push({
-                        type: 'contenu',
-                        titre: product.title,
-                        description: product.description,
-                        url: `/boutique/${doc.id}`,
-                        imageUrl: product.imageUrl,
-                        price: product.price
-                    });
+            // Search Products
+            const productsQuery = contentConditions.length > 0
+                ? query(collection(db, 'products'), and(...contentConditions), limit(searchLimit))
+                : query(collection(db, 'products'), limit(searchLimit));
+
+            const productsSnapshot = await getDocs(productsQuery);
+            productsSnapshot.forEach(doc => {
+                const product = doc.data() as Product;
+                results.push({
+                    type: 'contenu',
+                    titre: product.title,
+                    description: product.description,
+                    url: `/boutique/${doc.id}`,
+                    imageUrl: product.imageUrl,
+                    price: product.price
                 });
-            } else {
-                 const servicesSnapshot = await getDocs(query(collection(db, 'services'), limit(searchLimit)));
-                 servicesSnapshot.forEach(doc => {
-                    const annonce = doc.data() as Annonce;
-                    results.push({
-                        type: 'contenu',
-                        titre: annonce.title,
-                        description: annonce.description,
-                        url: `/annonces/${doc.id}`,
-                        imageUrl: annonce.imageUrl,
-                        price: annonce.price
-                    });
-                });
-                 const productsSnapshot = await getDocs(query(collection(db, 'products'), limit(searchLimit)));
-                 productsSnapshot.forEach(doc => {
-                    const product = doc.data() as Product;
-                    results.push({
-                        type: 'contenu',
-                        titre: product.title,
-                        description: product.description,
-                        url: `/boutique/${doc.id}`,
-                        imageUrl: product.imageUrl,
-                        price: product.price
-                    });
-                });
-            }
+            });
         }
         
     } catch (error) {
@@ -161,18 +140,25 @@ export async function searchFirestore(searchInput: SearchInput): Promise<SearchR
         return [];
     }
     
-    // --- 3. Filter by keywords post-query ---
-    let finalResults = results;
+    // --- 3. Filter and rank by keywords post-query ---
     if (keywords) {
-        const lowerCaseKeywords = keywords.toLowerCase();
-        finalResults = results.filter(item => 
-            item.titre.toLowerCase().includes(lowerCaseKeywords) || 
-            item.description.toLowerCase().includes(lowerCaseKeywords)
-        );
+        const lowerCaseKeywords = keywords.toLowerCase().split(' ').filter(k => k);
+        
+        results = results.map(item => {
+            const title = item.titre.toLowerCase();
+            const description = item.description.toLowerCase();
+            let score = 0;
+
+            for (const keyword of lowerCaseKeywords) {
+                if (title.includes(keyword)) score += 2; // Higher score for title match
+                if (description.includes(keyword)) score += 1;
+            }
+            return { ...item, score };
+        }).filter(item => item.score > 0)
+          .sort((a, b) => b.score - a.score);
     }
     
-    const uniqueResults = Array.from(new Map(finalResults.map(item => [item.url, item])).values());
+    const uniqueResults = Array.from(new Map(results.map(item => [item.url, item])).values());
     
-    // Return a randomized subset of the results to simulate relevance
-    return uniqueResults.sort(() => Math.random() - 0.5).slice(0, 30);
+    return uniqueResults.slice(0, 30);
 }

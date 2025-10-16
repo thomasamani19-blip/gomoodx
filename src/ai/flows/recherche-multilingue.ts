@@ -39,24 +39,24 @@ export const RechercheMultilingueOutputSchema = z.array(ResultatRechercheSchema)
 export type RechercheMultilingueOutput = z.infer<typeof RechercheMultilingueOutputSchema>;
 
 const SearchEntitiesSchema = z.object({
-    keywords: z.string().optional().describe("Le mot-clé principal ou le sujet de la recherche."),
+    keywords: z.string().optional().describe("Le mot-clé principal, le sujet, ou le nom recherché."),
     location: z.string().optional().describe("La ville, le pays ou le lieu mentionné dans la recherche."),
-    type: z.enum(['profil', 'contenu', '']).optional().describe("Le type de chose recherchée (profil de personne ou contenu comme un service/produit)."),
-    role: z.enum(['escorte', 'partenaire', '']).optional().describe("Si la recherche concerne un type de profil spécifique."),
-    category: z.string().optional().describe("Si la recherche concerne une catégorie spécifique de service ou de produit."),
+    type: z.enum(['profil', 'contenu', '']).optional().describe("Le type d'entité recherchée (profil ou contenu)."),
+    role: z.enum(['escorte', 'partenaire', '']).optional().describe("Le rôle spécifique de la personne recherchée."),
+    category: z.string().optional().describe("La catégorie spécifique de service ou produit (ex: 'massage', 'dîner', 'vidéo')."),
 });
 
 const rechercherProfilsEtContenuTool = ai.defineTool(
   {
     name: 'rechercherProfilsEtContenu',
-    description: "Recherche des profils d'escortes et de partenaires, ainsi que des annonces et des produits, en fonction de critères de recherche. Cet outil est la seule source de données.",
+    description: "Recherche des profils d'utilisateurs (escortes, partenaires) et des contenus (services, produits) dans la base de données. Cet outil est la seule source de données.",
     inputSchema: SearchEntitiesSchema,
     outputSchema: RechercheMultilingueOutputSchema,
   },
   async (input) => {
-    console.log(`Recherche Firestore pour:`, input);
-    // On passe l'input complet de la recherche (y compris les filtres de l'utilisateur)
-    // à la fonction searchFirestore, pas seulement les entités extraites par l'IA.
+    // Les filtres (types, priceMin, etc.) sont passés dans le contexte du flow,
+    // on peut les récupérer et les merger ici si besoin.
+    // Pour ce prototype, on passe l'input de l'IA directement au service de recherche.
     return await searchFirestore(input);
   }
 );
@@ -71,29 +71,21 @@ const rechercheMultilingueFlow = ai.defineFlow(
     async (input) => {
         const { query, types, priceMin, priceMax, location, langueCible, langueSource } = input;
         
-        // Si la langue source et cible sont les mêmes et qu'il n'y a pas de requête textuelle (uniquement des filtres), 
-        // on peut faire une recherche directe.
-        if (langueSource === langueCible && !query) {
-             return await searchFirestore({ types, priceMin, priceMax, location });
+        // Si la recherche est vide, on retourne un tableau vide pour éviter une exécution inutile.
+        if (!query && !location && !priceMin && !priceMax) {
+             return [];
         }
 
-        // Sinon, on utilise le flow avec l'IA pour interpréter la requête et traduire les résultats si besoin.
         const llmResponse = await ai.generate({
-            prompt: `Tu es un assistant de recherche multilingue expert.
-            1. Analyse la requête de l'utilisateur: "${query}". Extrais-en les entités clés (mots-clés, lieu, catégorie, type de profil recherché).
-            2. Utilise l'outil 'rechercherProfilsEtContenu' avec ces entités pour trouver les résultats pertinents. L'outil prendra en compte les filtres supplémentaires fournis par l'utilisateur.
-            3. Si la langue cible ('${langueCible}') est différente de la langue source ('${langueSource}'), traduis le titre et la description de chaque résultat dans la langue cible. Conserve l'URL, l'URL de l'image, le prix, et le type d'origine. Si les langues sont identiques, ne traduis rien.
+            prompt: `Tu es un assistant de recherche multilingue expert pour la plateforme GoMoodX.
+            1. Analyse la requête de l'utilisateur : "${query || ''}". Extrais-en les entités clés (mots-clés, lieu, catégorie de service, type de profil recherché comme 'escorte' ou 'partenaire').
+            2. Utilise TOUJOURS l'outil 'rechercherProfilsEtContenu' avec ces entités pour trouver les résultats pertinents dans la base de données. L'outil prendra en compte les filtres supplémentaires fournis par l'utilisateur (location, priceMin, priceMax, types).
+            3. Si la langue cible ('${langueCible}') est différente de la langue source ('${langueSource}'), traduis le titre et la description de chaque résultat dans la langue cible. Conserve l'URL, l'URL de l'image, le prix, et le type d'origine. Ne traduis pas si les langues sont identiques.
             
-            IMPORTANT: N'invente jamais de résultats. Utilise uniquement les données fournies par l'outil 'rechercherProfilsEtContenu'. Si l'outil ne renvoie aucun résultat, renvoie un tableau vide.`,
+            IMPORTANT: N'invente jamais de résultats. Utilise uniquement les données fournies par l'outil. Si l'outil ne renvoie aucun résultat, renvoie un tableau vide.`,
             model: 'googleai/gemini-1.5-flash',
             tools: [rechercherProfilsEtContenuTool],
-            toolConfig: {
-              // Force l'IA à toujours utiliser l'outil pour obtenir les données
-              mode: 'tool', 
-              tool: { name: 'rechercherProfilsEtContenu' }
-            },
-            context: {
-              // Fournir le contexte des filtres de l'utilisateur à l'outil
+            context: { // On passe les filtres de l'UI directement au contexte du flow.
               types,
               priceMin,
               priceMax,
@@ -101,22 +93,26 @@ const rechercheMultilingueFlow = ai.defineFlow(
             }
         });
         
-        const output = llmResponse.output;
-        if (output && Array.isArray(output)) {
-          return output;
+        const toolCalls = llmResponse.toolCalls();
+
+        if (toolCalls && toolCalls.length > 0 && toolCalls[0].tool.name === 'rechercherProfilsEtContenu') {
+          // L'IA a correctement décidé d'utiliser l'outil.
+          // Le résultat de l'outil est automatiquement géré par Genkit et sera dans la prochaine partie de la réponse.
+          // On attend la réponse textuelle finale qui devrait contenir les résultats traduits si besoin.
+          const finalOutput = await llmResponse.output();
+          
+          if(finalOutput && Array.isArray(finalOutput)) {
+              return finalOutput as RechercheMultilingueOutput;
+          }
+          // Si la sortie n'est pas un tableau (ex: l'IA a juste répondu en texte), 
+          // on utilise les résultats bruts de l'outil.
+          const toolResults = await toolCalls[0].result;
+          return toolResults as RechercheMultilingueOutput;
         }
 
-        // Fallback en cas d'échec de la traduction ou du formatage par l'IA.
-        console.warn("L'IA n'a pas pu formater la sortie. Tentative de récupération des données brutes de l'outil.");
-        
-        const toolRequests = llmResponse.toolRequests;
-        if (toolRequests && toolRequests.length > 0 && toolRequests[0].tool.name === 'rechercherProfilsEtContenu') {
-          const toolInput = toolRequests[0].input as Partial<RechercheMultilingueInput>;
-          const fallbackResults = await searchFirestore({ ...toolInput, ...input }); // Merge AI input with original user filters
-          return fallbackResults;
-        }
-        
-        return [];
+        // Fallback si l'IA n'a pas utilisé l'outil (par exemple, si la requête est vide)
+        // ou si un autre comportement inattendu se produit.
+        return await searchFirestore({ types, priceMin, priceMax, location, keywords: query });
     }
   );
 

@@ -36,22 +36,22 @@ const ResultCard = ({ item }: { item: RechercheMultilingueOutput[0] }) => (
     <Card className="hover:bg-accent/50 transition-colors">
         <CardContent className="p-4">
             <Link href={item.url} className="flex items-start gap-4">
-                <div className="relative h-16 w-16 rounded-md overflow-hidden flex-shrink-0 bg-muted">
+                <div className="relative h-20 w-20 rounded-md overflow-hidden flex-shrink-0 bg-muted">
                      {item.imageUrl ? (
                         <Image src={item.imageUrl} alt={item.titre} fill className="object-cover" />
                     ) : (
-                        <Avatar className="h-16 w-16 rounded-md">
+                        <Avatar className="h-20 w-20 rounded-md">
                             <AvatarFallback className="text-xl rounded-md">{item.titre.charAt(0)}</AvatarFallback>
                         </Avatar>
                     )}
                 </div>
                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                        <span className={`capitalize text-xs font-medium px-2 py-0.5 rounded-full ${item.type === 'profil' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>{item.type}</span>
+                        <span className={`capitalize text-xs font-medium px-2 py-0.5 rounded-full ${item.type === 'profil' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200' : 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200'}`}>{item.type}</span>
                         <h3 className="font-semibold line-clamp-1">{item.titre}</h3>
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
-                     {item.price && <p className="text-sm font-bold text-primary mt-1">{item.price.toFixed(2)} €</p>}
+                     {item.price != null && <p className="text-sm font-bold text-primary mt-1">{item.price.toFixed(2)} €</p>}
                 </div>
             </Link>
         </CardContent>
@@ -74,7 +74,10 @@ function RechercheComponent() {
   });
 
   const performSearch = async (searchQuery: string, currentFilters: Filters) => {
-    if (!searchQuery && !currentFilters.location) return;
+    if (!searchQuery && !currentFilters.location) {
+        setResult([]); // Clear results if query is empty
+        return;
+    }
     setIsLoading(true);
     setResult(null);
 
@@ -84,7 +87,7 @@ function RechercheComponent() {
       langueCible: 'fr' as 'fr',
       types: currentFilters.types,
       priceMin: currentFilters.priceRange[0],
-      priceMax: currentFilters.priceRange[1],
+      priceMax: currentFilters.priceRange[1] === 5000 ? undefined : currentFilters.priceRange[1], // Don't send max if it's the default highest
       location: currentFilters.location,
     };
 
@@ -102,31 +105,34 @@ function RechercheComponent() {
       setIsLoading(false);
     }
   };
-
+  
   useEffect(() => {
     if (initialQuery) {
         performSearch(initialQuery, filters);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
-  // Use a debounce for search on filter change
+  // Debounce for search on query change
   useEffect(() => {
     const handler = setTimeout(() => {
       performSearch(query, filters);
-    }, 500); // 500ms delay
+    }, 500); 
 
-    return () => {
-      clearTimeout(handler);
-    };
+    return () => clearTimeout(handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, query]);
+  }, [query]);
 
+  // Immediate search for filter changes
+   const handleFilterChange = (newFilters: Filters) => {
+      setFilters(newFilters);
+      performSearch(query, newFilters);
+   }
 
   const handleTypeChange = (type: 'profil' | 'contenu', checked: boolean | string) => {
-    setFilters(prev => {
-        const newTypes = checked ? [...prev.types, type] : prev.types.filter(t => t !== type);
-        return { ...prev, types: newTypes.length > 0 ? newTypes : ['profil', 'contenu'] }; // Prevent empty selection
+    handleFilterChange({
+        ...filters,
+        types: checked ? [...filters.types, type] : filters.types.filter(t => t !== type),
     });
   };
 
@@ -152,25 +158,25 @@ function RechercheComponent() {
                             </div>
                             <div className="flex items-center space-x-2">
                                 <Checkbox id="type-contenu" checked={filters.types.includes('contenu')} onCheckedChange={(c) => handleTypeChange('contenu', c)} />
-                                <Label htmlFor="type-contenu">Contenus</Label>
+                                <Label htmlFor="type-contenu">Contenus & Services</Label>
                             </div>
                         </div>
                         <div className="space-y-2">
                             <Label>Fourchette de prix</Label>
                              <Slider
                                 value={filters.priceRange}
-                                onValueChange={(value) => setFilters(prev => ({ ...prev, priceRange: value as [number, number]}))}
+                                onValueChange={(value) => handleFilterChange({...filters, priceRange: value as [number, number]})}
                                 max={5000}
                                 step={10}
                             />
                             <div className="flex justify-between text-xs text-muted-foreground">
                                 <span>{filters.priceRange[0]}€</span>
-                                <span>{filters.priceRange[1]}€</span>
+                                <span>{filters.priceRange[1] >= 5000 ? '5000€+' : `${filters.priceRange[1]}€`}</span>
                             </div>
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="location" className="flex items-center gap-2"><MapPin className="h-4 w-4"/> Localisation</Label>
-                            <Input id="location" placeholder="Ex: Paris" value={filters.location} onChange={(e) => setFilters(prev => ({...prev, location: e.target.value}))}/>
+                            <Input id="location" placeholder="Ex: Paris" value={filters.location} onChange={(e) => handleFilterChange({...filters, location: e.target.value})}/>
                         </div>
                     </CardContent>
                 </Card>
@@ -201,7 +207,7 @@ function RechercheComponent() {
                 {result && result.length > 0 && (
                     <div className="grid gap-4">
                         {result.map((item, index) => (
-                            <ResultCard key={index} item={item} />
+                            <ResultCard key={item.url + index} item={item} />
                         ))}
                     </div>
                 )}
@@ -209,7 +215,7 @@ function RechercheComponent() {
                 {!isLoading && result && result.length === 0 && (
                     <Card>
                         <CardContent className="pt-6 text-center text-muted-foreground">
-                            Aucun résultat trouvé pour votre recherche. Essayez d'ajuster vos filtres.
+                            Aucun résultat trouvé pour votre recherche. Essayez d'ajuster vos filtres ou votre recherche.
                         </CardContent>
                     </Card>
                 )}
