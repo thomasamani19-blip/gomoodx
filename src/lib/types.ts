@@ -479,6 +479,7 @@ export interface Product {
     imageHint?: string;
     createdBy: string; // creator or partner UID
     createdAt: Timestamp;
+    updatedAt?: Timestamp;
     productType: ProductType;
     accessLevel?: AccessLevel;
     quantity?: number;

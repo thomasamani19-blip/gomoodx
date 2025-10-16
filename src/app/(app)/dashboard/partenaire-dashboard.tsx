@@ -172,7 +172,7 @@ function EstablishmentDashboard({ user }: { user: User }) {
                         </Button>
                          <Button asChild size="lg" className="h-full col-span-2" variant="outline">
                             <Link href="/gestion/etablissement" className="flex-col gap-2">
-                                <Building className="h-6 w-6 mr-2"/>
+                                <Building className="h-6 w-6"/>
                                 <span>Modifier le Profil</span>
                             </Link>
                         </Button>
@@ -279,7 +279,7 @@ function ProducerDashboard({ user }: { user: User }) {
                 <CardContent className="grid md:grid-cols-2 gap-4">
                     <Button asChild size="lg">
                         <Link href="/gestion/produits">
-                            <Users className="mr-2 h-5 w-5" />
+                            <ShoppingBag className="mr-2 h-5 w-5" />
                             Gérer mes produits
                         </Link>
                     </Button>

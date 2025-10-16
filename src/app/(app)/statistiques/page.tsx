@@ -1,7 +1,7 @@
 
 'use client';
-import { AreaChart, BarChart, FileSearch, TrendingUp, Users } from 'lucide-react';
-import { Area, Bar, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { AreaChart, BarChart as BarChartIcon, FileSearch, TrendingUp, Users } from 'lucide-react';
+import { Area, Bar, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import PageHeader from '@/components/shared/page-header';
@@ -11,7 +11,6 @@ import { useDoc, useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { doc } from 'firebase/firestore';
 import { useMemo } from 'react';
-import { LineChart, Line } from 'recharts';
 
 const chartConfig = {
   revenue: {
@@ -108,7 +107,7 @@ const StatsPage = () => {
             title="Taux d'Engagement"
             value={stats?.engagementRate?.value ? `${stats.engagementRate.value.toFixed(1)}%` : '0%'}
             change={stats?.engagementRate?.change ? `${stats.engagementRate.change > 0 ? '+' : ''}${stats.engagementRate.change.toFixed(1)}%` : '-'}
-            icon={BarChart}
+            icon={BarChartIcon}
             loading={loading}
         />
       </div>
