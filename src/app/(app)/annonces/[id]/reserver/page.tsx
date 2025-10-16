@@ -58,7 +58,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
     useEffect(() => {
         if (pricing && durationHours > 0) {
             const roomPricePerHour = pricing.basePricePerHour || 0;
-            const roomSupplement = pricing.roomTypes[selectedRoomType]?.supplement || 0;
+            const roomSupplement = pricing.roomTypes[selectedRoomType]?.enabled ? (pricing.roomTypes[selectedRoomType]?.supplement || 0) : 0;
             
             const roomCost = durationHours * roomPricePerHour + roomSupplement;
             
@@ -141,7 +141,7 @@ export default function ReserverAnnoncePage({ params }: { params: { id: string }
     if (!annonce) return <PageHeader title="Annonce introuvable"/>
 
     const baseRoomPrice = pricing?.basePricePerHour || 0;
-    const roomSupplement = pricing?.roomTypes[selectedRoomType]?.supplement || 0;
+    const roomSupplement = pricing?.roomTypes[selectedRoomType]?.enabled ? (pricing?.roomTypes[selectedRoomType]?.supplement || 0) : 0;
     const roomCost = durationHours * baseRoomPrice + roomSupplement;
     const escortsCost = selectedEscorts.reduce((total, escort) => total + ((escort.rates?.escortPerHour || 0) * durationHours), 0);
 
