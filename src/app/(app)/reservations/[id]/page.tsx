@@ -221,10 +221,10 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     let currentUserHasConfirmed = false;
     
     if (isCurrentUserTheMember) {
-        currentUserConfirmationLabel = isPhysicalProductOrder ? "Confirmer la réception du colis" : "Confirmer ma présence";
+        currentUserConfirmationLabel = isPhysicalProductOrder ? "Confirmer la réception" : "Confirmer ma présence";
         currentUserHasConfirmed = !!memberHasConfirmed;
     } else if (isCurrentUserTheCreator) {
-        currentUserConfirmationLabel = isPhysicalProductOrder ? "Confirmer l'expédition du colis" : "Confirmer la présence du client";
+        currentUserConfirmationLabel = isPhysicalProductOrder ? "Confirmer l'expédition" : "Confirmer la présence du client";
         currentUserHasConfirmed = !!creatorHasConfirmed;
     } else if (isCurrentUserAnInvitedEscort) {
         currentUserConfirmationLabel = "Confirmer ma présence";
@@ -320,7 +320,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                 {renderConfirmationStatus('Confirmation du client', memberHasConfirmed)}
                                 {renderConfirmationStatus(isPhysicalProductOrder ? 'Confirmation du vendeur' : 'Confirmation de l\'établissement', creatorHasConfirmed)}
                                 {reservation.escorts?.filter(e => reservation.escortConfirmations[e.id]?.status === 'confirmed').map(escort => 
-                                     renderConfirmationStatus(`Présence de ${escort.name}`, reservation.escortConfirmations[escort.id]?.presenceConfirmed)
+                                     renderConfirmationStatus(`Confirmation de ${escort.name}`, reservation.escortConfirmations[escort.id]?.presenceConfirmed)
                                 )}
                             </CardContent>
                              <CardFooter className="flex-col items-start gap-4">
