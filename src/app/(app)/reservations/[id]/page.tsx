@@ -221,13 +221,13 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     let currentUserHasConfirmed = false;
     
     if (isCurrentUserTheMember) {
-        currentUserConfirmationLabel = isPhysicalProductOrder ? "Confirmer la réception" : "Confirmer ma présence";
+        currentUserConfirmationLabel = isPhysicalProductOrder ? "Je confirme la réception" : "Je confirme ma présence";
         currentUserHasConfirmed = !!memberHasConfirmed;
     } else if (isCurrentUserTheCreator) {
-        currentUserConfirmationLabel = isPhysicalProductOrder ? "Confirmer l'expédition" : "Confirmer la présence du client";
+        currentUserConfirmationLabel = isPhysicalProductOrder ? "Je confirme l'expédition" : "Je confirme la présence du client";
         currentUserHasConfirmed = !!creatorHasConfirmed;
     } else if (isCurrentUserAnInvitedEscort) {
-        currentUserConfirmationLabel = "Confirmer ma présence";
+        currentUserConfirmationLabel = "Je confirme ma présence";
         currentUserHasConfirmed = !!reservation.escortConfirmations[currentUser!.id]?.presenceConfirmed;
     }
 
@@ -314,22 +314,21 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                                     {isPhysicalProductOrder ? <Truck className="h-5 w-5" /> : <Check className="h-5 w-5" />}
                                     Confirmation Mutuelle
                                 </CardTitle>
-                                <CardDescription>Chaque partie doit confirmer l'échange pour finaliser la transaction.</CardDescription>
+                                <CardDescription>Chaque partie doit confirmer sa participation pour finaliser la transaction.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                {renderConfirmationStatus('Confirmation du client', memberHasConfirmed)}
-                                {renderConfirmationStatus(isPhysicalProductOrder ? 'Confirmation du vendeur' : 'Confirmation de l\'établissement', creatorHasConfirmed)}
+                                {renderConfirmationStatus(isPhysicalProductOrder ? 'Réception confirmée par le client' : 'Présence du client', memberHasConfirmed)}
+                                {renderConfirmationStatus(isPhysicalProductOrder ? 'Expédition confirmée par le vendeur' : 'Présence du client confirmée par l\'établissement', creatorHasConfirmed)}
                                 {reservation.escorts?.filter(e => reservation.escortConfirmations[e.id]?.status === 'confirmed').map(escort => 
-                                     renderConfirmationStatus(`Confirmation de ${escort.name}`, reservation.escortConfirmations[escort.id]?.presenceConfirmed)
+                                     renderConfirmationStatus(`Présence de ${escort.name}`, reservation.escortConfirmations[escort.id]?.presenceConfirmed)
                                 )}
                             </CardContent>
                              <CardFooter className="flex-col items-start gap-4">
                                 {!currentUserHasConfirmed ? (
                                     <>
-                                        <p className="font-medium">{currentUserConfirmationLabel}</p>
                                         <Button onClick={handlePresenceConfirm} disabled={isUpdatingStatus}>
                                             {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4" />}
-                                            Oui, je confirme
+                                            {currentUserConfirmationLabel}
                                         </Button>
                                     </>
                                 ) : (
