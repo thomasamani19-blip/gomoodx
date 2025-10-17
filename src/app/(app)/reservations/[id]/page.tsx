@@ -214,10 +214,9 @@ export default function ReservationDetailPage({ params }: { params: { id: string
     const memberHasConfirmed = reservation.memberPresenceConfirmed;
     const creatorHasConfirmed = reservation.establishmentPresenceConfirmed;
 
-    const confirmationQuestion = isPhysicalProductOrder 
-        ? (isCurrentUserTheMember ? "Avez-vous reçu le colis ?" : "Avez-vous expédié le colis ?")
-        : (isCurrentUserTheMember ? "Confirmez-vous votre présence ?" : "Confirmez-vous la présence du client ?");
-
+    const confirmationQuestionForMember = isPhysicalProductOrder ? "Avez-vous reçu le colis ?" : "Confirmez-vous votre présence ?";
+    const confirmationQuestionForCreator = isPhysicalProductOrder ? "Avez-vous expédié le colis ?" : "Confirmez-vous la présence du client ?";
+    
     const currentUserHasConfirmed = isCurrentUserTheMember ? memberHasConfirmed : isCurrentUserTheCreator ? creatorHasConfirmed : false;
 
     return (
@@ -307,11 +306,11 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div className={cn("flex items-center justify-between p-3 rounded-lg", memberHasConfirmed ? "bg-green-500/10 text-green-700" : "bg-muted")}>
-                                    <span className="font-semibold">{isCurrentUserTheMember ? 'Votre confirmation de réception' : 'Confirmation du client'}</span>
+                                    <span className="font-semibold">{isCurrentUserTheMember ? confirmationQuestionForMember : 'Confirmation du client'}</span>
                                     {memberHasConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
                                 </div>
                                 <div className={cn("flex items-center justify-between p-3 rounded-lg", creatorHasConfirmed ? "bg-green-500/10 text-green-700" : "bg-muted")}>
-                                     <span className="font-semibold">{isCurrentUserTheCreator ? (isPhysicalProductOrder ? 'Votre confirmation d\'expédition' : 'Votre confirmation de présence') : (isPhysicalProductOrder ? 'Confirmation du vendeur' : 'Confirmation du créateur')}</span>
+                                     <span className="font-semibold">{isCurrentUserTheCreator ? confirmationQuestionForCreator : 'Confirmation du créateur/vendeur'}</span>
                                     {creatorHasConfirmed ? <Check className="h-5 w-5"/> : <Clock className="h-5 w-5"/>}
                                 </div>
                                 {reservation.escorts?.filter(e => reservation.escortConfirmations[e.id]?.status === 'confirmed').map(escort => {
@@ -334,7 +333,7 @@ export default function ReservationDetailPage({ params }: { params: { id: string
                              <CardFooter className="flex-col items-start gap-4">
                                 {!currentUserHasConfirmed ? (
                                     <>
-                                        <p className="font-medium">{confirmationQuestion}</p>
+                                        <p className="font-medium">{isCurrentUserTheMember ? confirmationQuestionForMember : confirmationQuestionForCreator}</p>
                                         <Button onClick={() => handlePresenceConfirm()} disabled={isUpdatingStatus}>
                                             {isUpdatingStatus && !updatingEscortId ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4" />}
                                             Oui, je confirme
