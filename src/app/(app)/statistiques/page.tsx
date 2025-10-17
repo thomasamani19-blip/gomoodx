@@ -1,7 +1,7 @@
 
 'use client';
-import { TrendingUp, Users, BarChart as BarChartIcon, FileSearch, LineChart } from 'lucide-react';
-import { Area, Bar, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis, Line, ComposedChart } from 'recharts';
+import { TrendingUp, Users, BarChart as BarChartIcon, FileSearch, LineChart as LineChartIcon } from 'lucide-react';
+import { Area, Bar, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis, Line, ComposedChart, AreaChart, BarChart } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import PageHeader from '@/components/shared/page-header';
@@ -171,12 +171,13 @@ const StatsPage = () => {
              <ChartContainer config={{ views: { label: 'Vues', color: 'hsl(var(--primary))' } }}>
                  <ResponsiveContainer width="100%" height={300}>
                    {loading ? <Skeleton className="w-full h-full" /> : 
-                    <Area data={viewsHistory} type="monotone" dataKey="views" stroke="var(--color-views)" fill="var(--color-views)" fillOpacity={0.3}>
+                    <AreaChart data={viewsHistory}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" />
                         <YAxis />
                         <Tooltip content={<ChartTooltipContent indicator='line'/>} />
-                    </Area>}
+                        <Area type="monotone" dataKey="views" stroke="var(--color-views)" fill="var(--color-views)" fillOpacity={0.3} />
+                    </AreaChart>}
                 </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
@@ -190,13 +191,13 @@ const StatsPage = () => {
                 <ChartContainer config={chartConfig}>
                     <ResponsiveContainer width="100%" height={300}>
                     {loading ? <Skeleton className="w-full h-full" /> : 
-                    <RechartsBarChart data={salesHistory}>
+                    <BarChart data={salesHistory}>
                         <CartesianGrid vertical={false} />
                         <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
                         <YAxis tickLine={false} axisLine={false} />
                         <Tooltip content={<ChartTooltipContent indicator='line'/>} />
                         <Bar dataKey="sales" fill="var(--color-sales)" radius={4} />
-                    </RechartsBarChart>}
+                    </BarChart>}
                     </ResponsiveContainer>
                 </ChartContainer>
             </CardContent>

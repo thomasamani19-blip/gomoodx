@@ -11,7 +11,7 @@ import { useDoc, useFirestore, useCollection } from "@/firebase";
 import { useMemo } from "react";
 import { collection, doc, query, where, orderBy, limit } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton";
-import { AreaChart, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Area, ResponsiveContainer } from 'recharts';
+import { AreaChart as RechartsAreaChart, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Area, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart";
 import { format } from "date-fns";
 import { fr } from 'date-fns/locale';
