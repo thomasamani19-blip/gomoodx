@@ -1,4 +1,3 @@
-
 // /src/app/api/reservations/confirm-presence/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -15,7 +14,7 @@ const PLATFORM_WALLET_ID = 'platform_wallet';
 
 export async function POST(request: Request) {
     try {
-        const { reservationId, userId, escortIdToConfirm } = await request.json();
+        const { reservationId, userId } = await request.json();
 
         if (!reservationId || !userId) {
             return NextResponse.json({ status: 'error', message: 'Informations manquantes.' }, { status: 400 });
@@ -48,15 +47,8 @@ export async function POST(request: Request) {
             }
 
             if (isCreator) {
-                // If an escortIdToConfirm is provided, this is the establishment confirming an escort's presence
-                if (escortIdToConfirm) {
-                    if (reservation.escortConfirmations[escortIdToConfirm]?.presenceConfirmed) throw new Error("La présence de cette escorte a déjà été confirmée.");
-                    const updatePath = `escortConfirmations.${escortIdToConfirm}.presenceConfirmed`;
-                    t.update(reservationRef, { [updatePath]: true });
-                } else { // This is the establishment confirming the MEMBER's presence
-                    if (reservation.establishmentPresenceConfirmed) throw new Error("Vous avez déjà confirmé la présence du client.");
-                    t.update(reservationRef, { establishmentPresenceConfirmed: true });
-                }
+                if (reservation.establishmentPresenceConfirmed) throw new Error("Vous avez déjà confirmé la présence du client.");
+                t.update(reservationRef, { establishmentPresenceConfirmed: true });
             }
             
             if (isInvitedEscort) {
@@ -70,7 +62,7 @@ export async function POST(request: Request) {
             const updatedReservation = updatedReservationDoc.data() as Reservation;
 
             const confirmedAndParticipatingEscorts = updatedReservation.escorts?.filter(e => updatedReservation.escortConfirmations[e.id]?.status === 'confirmed') || [];
-            const allPresentEscortsConfirmed = confirmedAndParticipatingEscorts.every(e => updatedReservation.escortConfirmations[e.id]?.presenceConfirmed) ?? true;
+            const allInvitedEscortsConfirmedPresence = confirmedAndParticipatingEscorts.every(e => updatedReservation.escortConfirmations[e.id]?.presenceConfirmed) ?? true;
             
             const creatorConfirmed = updatedReservation.establishmentPresenceConfirmed;
             const memberConfirmed = updatedReservation.memberPresenceConfirmed;
@@ -128,7 +120,7 @@ export async function POST(request: Request) {
                 }
 
             } else { // Logic for service/establishment booking
-                if (memberConfirmed && creatorConfirmed && allPresentEscortsConfirmed) {
+                if (memberConfirmed && creatorConfirmed && allInvitedEscortsConfirmedPresence) {
                     t.update(reservationRef, { status: 'completed' });
                     
                     // Release funds from escrow
@@ -154,16 +146,18 @@ export async function POST(request: Request) {
                     // Pay invited escorts first
                     if (reservation.escorts) {
                         for(const escort of reservation.escorts) {
-                            const escortTotal = (escort.rate || 0) * (reservation.durationHours || 1);
-                            establishmentShare -= escortTotal;
-                            
-                            const commissionOnEscort = escortTotal * commissionRate;
-                            const escortAmount = escortTotal - commissionOnEscort;
+                             if(updatedReservation.escortConfirmations[escort.id]?.status === 'confirmed' && updatedReservation.escortConfirmations[escort.id]?.presenceConfirmed){
+                                const escortTotal = (escort.rate || 0) * (reservation.durationHours || 1);
+                                establishmentShare -= escortTotal;
+                                
+                                const commissionOnEscort = escortTotal * commissionRate;
+                                const escortAmount = escortTotal - commissionOnEscort;
 
-                            t.update(platformWalletRef, { balance: FieldValue.increment(commissionOnEscort), totalEarned: FieldValue.increment(commissionOnEscort) });
-                            
-                            const escortWalletRef = db.collection('wallets').doc(escort.id);
-                            t.update(escortWalletRef, { balance: FieldValue.increment(escortAmount), totalEarned: FieldValue.increment(escortAmount) });
+                                t.update(platformWalletRef, { balance: FieldValue.increment(commissionOnEscort), totalEarned: FieldValue.increment(commissionOnEscort) });
+                                
+                                const escortWalletRef = db.collection('wallets').doc(escort.id);
+                                t.update(escortWalletRef, { balance: FieldValue.increment(escortAmount), totalEarned: FieldValue.increment(escortAmount) });
+                             }
                         }
                     }
 
@@ -175,7 +169,7 @@ export async function POST(request: Request) {
                     const creatorWalletRef = db.collection('wallets').doc(reservation.creatorId);
                     t.update(creatorWalletRef, { balance: FieldValue.increment(creatorAmount), totalEarned: FieldValue.increment(creatorAmount) });
 
-                    return { message: "Présence confirmée. La réservation est terminée et les fonds ont été transférés." };
+                    return { message: "Présence confirmée par toutes les parties. La réservation est terminée et les fonds ont été transférés." };
                 }
             }
             
