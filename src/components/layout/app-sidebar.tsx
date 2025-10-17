@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -156,7 +157,18 @@ export function AppSidebar() {
 
     switch (user.role) {
       case 'client':
-        return renderNavItems(clientNav);
+        return (
+            <>
+                {renderNavItems(clientNav)}
+                <SidebarMenuItem>
+                    <Link href="/parrainage" passHref legacyBehavior>
+                    <SidebarMenuButton tooltip="Parrainage" isActive={pathname.startsWith('/parrainage')} asChild>
+                        <a><Gift /><span>Parrainage</span></a>
+                    </SidebarMenuButton>
+                    </Link>
+                </SidebarMenuItem>
+            </>
+        )
       case 'escorte':
         return (
             <>

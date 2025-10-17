@@ -93,7 +93,7 @@ export function Header() {
               <Input name="query" type="search" placeholder="Rechercher..." className="pl-9" />
            </form>
            <ThemeSwitcher />
-           <CartIcon />
+           {user && <CartIcon />}
 
           {/* Auth buttons for desktop */}
           <div className="hidden md:flex items-center gap-2">

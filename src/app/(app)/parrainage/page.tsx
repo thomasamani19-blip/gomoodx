@@ -22,7 +22,7 @@ import {
   EmailIcon,
   FacebookIcon,
   TelegramIcon,
-  TwitterIcon,
+  XIcon,
   WhatsappIcon,
 } from 'react-share';
 
@@ -87,7 +87,7 @@ export default function ParrainagePage() {
                              <div className="flex gap-2">
                                 <WhatsappShareButton url={shareUrl} title={shareMessage}><WhatsappIcon size={32} round /></WhatsappShareButton>
                                 <TelegramShareButton url={shareUrl} title={shareMessage}><TelegramIcon size={32} round /></TelegramShareButton>
-                                <TwitterShareButton url={shareUrl} title={shareMessage}><TwitterIcon size={32} round /></TwitterShareButton>
+                                <TwitterShareButton url={shareUrl} title={shareMessage}><XIcon size={32} round /></TwitterShareButton>
                                 <FacebookShareButton url={shareUrl} quote={shareMessage}><FacebookIcon size={32} round /></FacebookShareButton>
                                 <EmailShareButton url={shareUrl} subject={shareTitle} body={shareMessage}><EmailIcon size={32} round /></EmailShareButton>
                                 <Button variant="outline" size="icon" onClick={() => navigator.share({ title: shareTitle, text: shareMessage, url: shareUrl })}><Share2 className="h-5 w-5" /></Button>
