@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
@@ -18,7 +19,7 @@ import { uploadFile } from '@/lib/storage';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import type { BankDetails } from '@/lib/types';
+import type { BankDetails, Settings } from '@/lib/types';
 import { doc, getDoc, writeBatch, FieldValue } from 'firebase/firestore';
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -29,8 +30,6 @@ function fileToDataUrl(file: File): Promise<string> {
         reader.readAsDataURL(file);
     });
 }
-
-const PROFILE_COMPLETION_BONUS = 500;
 
 export default function ProfilPage() {
   const { user, loading: authLoading } = useAuth();
@@ -160,7 +159,7 @@ export default function ProfilPage() {
       );
       
       const finalGalleryUrls = galleryPreviews.filter(url => !url.startsWith('data:'));
-
+      const allGalleryImages = [...finalGalleryUrls, ...newGalleryUrls];
       
       const updatedData: any = {
         displayName,
@@ -168,7 +167,7 @@ export default function ProfilPage() {
         bio,
         profileImage: avatarUrl,
         bannerImage: bannerUrl,
-        galleryImages: [...finalGalleryUrls, ...newGalleryUrls],
+        galleryImages: allGalleryImages,
       };
 
       if (isCreatorOrPartner) {
@@ -176,12 +175,40 @@ export default function ProfilPage() {
       }
       
       const userRef = doc(firestore, 'users', user.id);
+      const batch = writeBatch(firestore);
+      let bonusAwarded = false;
+
+      // Bonus logic for completing profile
+      if (isCreatorOrPartner && !user.hasCompletedProfile && user.verificationStatus === 'verified') {
+        const settingsDoc = await getDoc(doc(firestore, 'settings', 'global'));
+        const PROFILE_COMPLETION_BONUS = (settingsDoc.data() as Settings)?.rewards?.profileCompletionBonus || 0;
+        
+        const profileIsNowComplete = avatarUrl && !avatarUrl.includes('picsum.photos') && bannerUrl && !bannerUrl.includes('picsum.photos') && bio && allGalleryImages.length >= 3;
+
+        if (profileIsNowComplete && PROFILE_COMPLETION_BONUS > 0) {
+            updatedData.hasCompletedProfile = true;
+            updatedData.rewardPoints = increment(PROFILE_COMPLETION_BONUS);
+            
+            const walletRef = doc(firestore, 'wallets', user.id);
+            const rewardTxRef = doc(collection(walletRef, 'transactions'));
+            
+            batch.set(rewardTxRef, {
+                amount: PROFILE_COMPLETION_BONUS,
+                type: 'reward',
+                description: 'Bonus pour profil complet et vérifié !',
+                status: 'success',
+                createdAt: new Date(),
+            });
+            bonusAwarded = true;
+        }
+      }
       
-      await updateUserProfile(firestore, user.id, updatedData);
+      batch.update(userRef, updatedData);
+      await batch.commit();
 
       toast({
         title: 'Profil mis à jour',
-        description: `Vos informations ont été enregistrées.`,
+        description: `Vos informations ont été enregistrées. ${bonusAwarded ? 'Félicitations, vous avez reçu un bonus pour avoir complété votre profil !' : ''}`,
       });
       setGalleryFiles([]); // Clear file queue after upload
     } catch (error) {
