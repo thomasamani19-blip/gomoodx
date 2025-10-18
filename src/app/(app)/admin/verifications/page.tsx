@@ -1,4 +1,3 @@
-
 'use client';
 
 import PageHeader from '@/components/shared/page-header';
@@ -84,7 +83,7 @@ export default function AdminVerificationsPage() {
 
             batch.update(userRef, { 
                 verificationStatus: status,
-                status: status === 'verified' ? 'active' : 'suspended',
+                status: status === 'verified' ? 'active' : userData.status, // Keep status if rejected
                 isVerified: status === 'verified',
             });
 
