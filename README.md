@@ -4,16 +4,36 @@ Ceci est le projet GoMoodX, une plateforme exclusive pour créateurs de contenu 
 
 ## 🚀 Mise en Route
 
-Suivez ces étapes pour lancer le projet en local.
+Ce projet est conçu pour être développé facilement en utilisant des environnements de développement dans le cloud comme **GitHub Codespaces** (recommandé) ou en local sur votre machine.
 
-### 1. Prérequis
+### (Recommandé) Utilisation de GitHub Codespaces
+
+GitHub Codespaces lance un environnement de développement complet directement dans votre navigateur, avec tout déjà pré-installé.
+
+1.  **Lancez votre Codespace** : Sur la page de votre dépôt GitHub, cliquez sur le bouton "Code", allez dans l'onglet "Codespaces" et cliquez sur "Create codespace on main".
+2.  **Configurez les variables d'environnement** :
+    *   Dans le terminal du Codespace, copiez le fichier d'exemple : `cp .env.example .env.local`
+    *   Ouvrez le fichier `.env.local` et remplissez-le avec vos clés API.
+3.  **Lancez les services** : Le Codespace est configuré pour lancer automatiquement tous les services nécessaires. Les serveurs Next.js et Genkit démarreront pour vous. Vous verrez les notifications lorsque les ports seront disponibles.
+4.  **Peuplez la base de données** : Pour ajouter les données de test, ouvrez un nouveau terminal dans le Codespace et exécutez :
+    ```bash
+    npm run seed
+    ```
+
+C'est tout ! Votre environnement est prêt.
+
+### Utilisation en Local
+
+Suivez ces étapes pour lancer le projet sur votre ordinateur.
+
+#### 1. Prérequis
 
 - Node.js (v18 ou supérieur)
 - npm ou yarn
 - Un compte Firebase
 - Firebase CLI (`npm install -g firebase-tools`)
 
-### 2. Configuration de l'Environnement
+#### 2. Configuration de l'Environnement
 
 1.  **Cloner le projet** (si ce n'est pas déjà fait via Studio).
 2.  **Installer les dépendances** :
@@ -53,25 +73,21 @@ Suivez ces étapes pour lancer le projet en local.
     # NEXT_PUBLIC_EMULATOR_HOST=localhost
     ```
 
-### 3. Lancer les Services
+#### 3. Lancer les Services
 
-1.  **Lancer l'application Next.js** :
+1.  **Lancer l'application Next.js** (dans un terminal) :
     ```bash
     npm run dev
-    # ou
-    yarn dev
     ```
     Votre site sera accessible sur `http://localhost:3000`.
 
 2.  **Lancer Genkit pour l'IA** (dans un autre terminal) :
     ```bash
     npm run genkit:watch
-    # ou
-    yarn genkit:watch
     ```
 
 3.  **(Optionnel) Lancer les Émulateurs Firebase** :
-    Si vous souhaitez utiliser les émulateurs Firebase pour l'authentification et Firestore, exécutez :
+    Si vous souhaitez utiliser les émulateurs Firebase pour l'authentification et Firestore, exécutez dans un troisième terminal :
     ```bash
     firebase emulators:start
     ```
@@ -79,7 +95,7 @@ Suivez ces étapes pour lancer le projet en local.
 
 ### 4. Déploiement
 
-Pour déployer votre application sur Firebase Hosting (pour le frontend) et Cloud Functions (pour le backend), vous devez d'abord "builder" votre application. Cette étape compile et optimise le code pour la production.
+Pour déployer votre application sur Firebase Hosting (pour le frontend) et Cloud Functions (pour le backend), vous devez d'abord "builder" votre application.
 
 1.  **Build de l'application Next.js** :
     ```bash
@@ -98,7 +114,7 @@ Le projet inclut des données de démarrage dans `src/lib/seed.ts`. Pour peupler
 1.  Assurez-vous que vos variables d'environnement sont configurées.
 2.  Exécutez le script de seeding :
     ```bash
-    npx tsx src/lib/seed.ts
+    npm run seed
     ```
     
 3. **Déployer les règles de sécurité (Important pour le développement)**
