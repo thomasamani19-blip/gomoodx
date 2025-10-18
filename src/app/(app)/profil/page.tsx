@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
@@ -19,7 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { BankDetails, Settings } from '@/lib/types';
-import { doc, getDoc, writeBatch, FieldValue, increment, collection } from 'firebase/firestore';
+import { doc, getDoc, writeBatch, FieldValue, increment } from 'firebase/firestore';
 
 function fileToDataUrl(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -176,13 +177,11 @@ export default function ProfilPage() {
       const userRef = doc(firestore, 'users', user.id);
       const batch = writeBatch(firestore);
       let bonusAwarded = false;
-      let bonusAmount = 0;
 
       // Bonus logic for completing profile
       if (isCreatorOrPartner && !user.hasCompletedProfile && user.verificationStatus === 'verified') {
         const settingsDoc = await getDoc(doc(firestore, 'settings', 'global'));
         const PROFILE_COMPLETION_BONUS = (settingsDoc.data() as Settings)?.rewards?.profileCompletionBonus || 0;
-        bonusAmount = PROFILE_COMPLETION_BONUS;
         
         const profileIsNowComplete = avatarUrl && !avatarUrl.includes('picsum.photos') && bannerUrl && !bannerUrl.includes('picsum.photos') && bio && allGalleryImages.length >= 3;
 
@@ -209,7 +208,7 @@ export default function ProfilPage() {
 
       toast({
         title: 'Profil mis à jour',
-        description: `Vos informations ont été enregistrées. ${bonusAwarded ? `Félicitations, vous avez reçu ${bonusAmount} points bonus !` : ''}`,
+        description: `Vos informations ont été enregistrées. ${bonusAwarded ? 'Félicitations, vous avez reçu un bonus pour avoir complété votre profil !' : ''}`,
       });
       setGalleryFiles([]); // Clear file queue after upload
     } catch (error) {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from '@/components/shared/page-header';
@@ -83,7 +84,7 @@ export default function AdminVerificationsPage() {
 
             batch.update(userRef, { 
                 verificationStatus: status,
-                status: status === 'verified' ? 'active' : userData.status, // Keep status if rejected
+                status: status === 'verified' ? 'active' : 'suspended',
                 isVerified: status === 'verified',
             });
 
@@ -93,6 +94,7 @@ export default function AdminVerificationsPage() {
 
             if (status === 'verified' && !userData.hasCompletedProfile && PROFILE_COMPLETION_BONUS > 0) {
                 const profileIsComplete = userData.profileImage && !userData.profileImage.includes('picsum.photos') && userData.bannerImage && !userData.bannerImage.includes('picsum.photos') && userData.bio && userData.galleryImages && userData.galleryImages.length >= 3;
+                
                 if (profileIsComplete) {
                     const walletRef = doc(firestore, 'wallets', userId);
                     const rewardTxRef = doc(collection(walletRef, 'transactions'));
