@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault, cert } from 'firebase-admin/app';
 import { getFirestore, serverTimestamp, doc, writeBatch, FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
-import type { Post, User } from '@/lib/types';
+import type { Post, User, Settings } from '@/lib/types';
 import { getAuth } from 'firebase-admin/auth';
 import { firebaseConfig } from '@/firebase/config';
 import { modererContenu } from '@/ai/flows/moderer-contenu';
@@ -20,7 +20,6 @@ if (!getApps().length) {
 const db = getFirestore();
 const storage = getStorage();
 const auth = getAuth();
-const FIRST_CONTENT_BONUS = 250; // Points
 
 export async function POST(request: Request) {
     try {
@@ -86,22 +85,29 @@ export async function POST(request: Request) {
 
         // First content bonus logic
         if (!authorData.hasPostedFirstContent) {
-            const walletRef = db.collection('wallets').doc(authorId);
-            const rewardTxRef = walletRef.collection('transactions').doc();
+            const settingsDoc = await db.collection('settings').doc('global').get();
+            const firstContentBonus = (settingsDoc.data() as Settings)?.rewards?.firstContentBonus || 0;
             
-            batch.update(authorRef, { 
-                hasPostedFirstContent: true,
-                rewardPoints: FieldValue.increment(FIRST_CONTENT_BONUS)
-            });
-            
-            batch.set(rewardTxRef, {
-                amount: FIRST_CONTENT_BONUS,
-                type: 'reward',
-                description: 'Bonus pour votre premier contenu !',
-                status: 'success',
-                createdAt: serverTimestamp(),
-                reference: postRef.id,
-            });
+            if (firstContentBonus > 0) {
+                const walletRef = db.collection('wallets').doc(authorId);
+                const rewardTxRef = walletRef.collection('transactions').doc();
+                
+                batch.update(authorRef, { 
+                    hasPostedFirstContent: true,
+                    rewardPoints: FieldValue.increment(firstContentBonus)
+                });
+                
+                batch.set(rewardTxRef, {
+                    amount: firstContentBonus,
+                    type: 'reward',
+                    description: 'Bonus pour votre premier contenu !',
+                    status: 'success',
+                    createdAt: serverTimestamp(),
+                    reference: postRef.id,
+                });
+            } else {
+                 batch.update(authorRef, { hasPostedFirstContent: true });
+            }
         }
         
         await batch.commit();

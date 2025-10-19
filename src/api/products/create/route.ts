@@ -1,3 +1,4 @@
+
 // /src/app/api/products/create/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
@@ -24,7 +25,9 @@ export async function POST(request: Request) {
         const title = formData.get('title') as string;
         const description = formData.get('description') as string;
         const price = parseFloat(formData.get('price') as string);
+        const originalPrice = formData.get('originalPrice') ? parseFloat(formData.get('originalPrice') as string) : undefined;
         const productType = formData.get('productType') as ProductType;
+        const quantity = formData.get('quantity') ? parseInt(formData.get('quantity') as string, 10) : undefined;
         const imageFile = formData.get('image') as File | null;
         const isCollaborative = formData.get('isCollaborative') === 'true';
         const revenueSharesStr = formData.get('revenueShares') as string | null;
@@ -33,7 +36,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ status: 'error', message: 'Données du formulaire invalides ou manquantes.' }, { status: 400 });
         }
         
-        const authorRef = db.collection('users').doc(authorId);
+        const authorRef = doc(db, 'users', authorId);
         const authorDoc = await authorRef.get();
         if (!authorDoc.exists) {
             return NextResponse.json({ status: 'error', message: 'Auteur inconnu.' }, { status: 404 });
@@ -66,10 +69,11 @@ export async function POST(request: Request) {
             }
         }
 
-        const newProduct: Omit<Product, 'id'> = {
+        const newProductData: Omit<Product, 'id'> = {
             title,
             description,
-            price: productType === 'physique' ? 0 : price,
+            price,
+            originalPrice,
             productType,
             imageUrl,
             createdBy: authorId,
@@ -79,10 +83,15 @@ export async function POST(request: Request) {
             moderationStatus: moderationResult.status,
             moderationReason: moderationResult.raison,
         };
+
+        if (productType === 'physique' && quantity !== undefined && quantity > 0) {
+            newProductData.quantity = quantity;
+            newProductData.initialQuantity = quantity;
+        }
         
         const batch = db.batch();
         const productRef = db.collection('products').doc();
-        batch.set(productRef, newProduct);
+        batch.set(productRef, newProductData);
 
         // First content bonus logic
         if (!authorData.hasPostedFirstContent) {
