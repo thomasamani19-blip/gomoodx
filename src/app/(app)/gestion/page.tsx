@@ -4,7 +4,7 @@
 import PageHeader from "@/components/shared/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Newspaper, ShoppingBag, Star, Video, DollarSign } from "lucide-react";
+import { Newspaper, ShoppingBag, Star, Video, DollarSign, GanttChart } from "lucide-react";
 import Link from 'next/link';
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
