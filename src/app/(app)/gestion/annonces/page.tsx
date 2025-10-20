@@ -29,7 +29,7 @@ import { format, formatDistanceToNowStrict } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const SPONSOR_COST = 10;
 const AVAILABLE_NOW_COST = 5;

@@ -4,7 +4,7 @@
 import PageHeader from "@/components/shared/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Newspaper, ShoppingBag, Star, Video, DollarSign, GanttChart } from "lucide-react";
+import { Newspaper, ShoppingBag, Star, Video, DollarSign, GanttChart, Building } from "lucide-react";
 import Link from 'next/link';
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
@@ -18,6 +18,7 @@ const managementTools = [
     { title: "Gérer les abonnements Fan", description: "Définissez vos niveaux d'abonnement pour les fans.", href: "/gestion/abonnement", icon: Star, roles: ['escorte'] },
     { title: "Gérer les lives", description: "Planifiez et gérez vos sessions de live streaming.", href: "/gestion/lives", icon: Video, roles: ['escorte', 'partenaire'] },
     { title: "Gérer mes tarifs", description: "Définissez vos prix pour les rencontres et appels.", href: "/gestion/tarifs", icon: DollarSign, roles: ['escorte', 'partenaire'] },
+    { title: "Gérer mon profil partenaire", description: "Modifiez les informations de votre établissement.", href: "/gestion/etablissement", icon: Building, roles: ['partenaire'] },
 ];
 
 export default function GestionPage() {

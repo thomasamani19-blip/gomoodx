@@ -81,9 +81,7 @@ const escorteNav = [
 
 const partenaireNav = [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'Profil Partenaire', href: '/profil', icon: Building },
-    { title: 'Gérer les Tarifs', href: '/gestion/tarifs', icon: DollarSign },
-    { title: 'Gérer les Lives', href: '/gestion/lives', icon: Video },
+    { title: 'Gestion', href: '/gestion', icon: GanttChart },
     { title: 'Mes Réservations', href: '/reservations', icon: CalendarCheck },
     { title: 'Messagerie', href: '/messagerie', icon: MessageSquare },
     { title: 'Portefeuille', href: '/portefeuille', icon: Wallet },
@@ -253,5 +251,3 @@ export function AppSidebar() {
       </Sidebar>
   );
 }
-
-    
