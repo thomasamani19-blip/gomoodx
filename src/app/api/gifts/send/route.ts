@@ -1,3 +1,4 @@
+
 // /src/app/api/gifts/send/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
