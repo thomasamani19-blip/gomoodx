@@ -81,7 +81,6 @@ const escorteNav = [
 
 const partenaireNav = [
     { title: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    { title: "Fil d'actualité", href: '/feed', icon: Newspaper },
     { title: 'Profil Partenaire', href: '/profil', icon: Building },
     { title: 'Gérer les Tarifs', href: '/gestion/tarifs', icon: DollarSign },
     { title: 'Gérer les Lives', href: '/gestion/lives', icon: Video },
@@ -187,9 +186,14 @@ export function AppSidebar() {
             </>
         )
       case 'partenaire':
+        const partnerNavItems = [...partenaireNav];
+        const profileLink = partnerNavItems.find(item => item.href === '/profil');
+        if (profileLink && user.partnerType === 'establishment') {
+          profileLink.href = `/partenaire/${user.id}`;
+        }
         return (
              <>
-                {renderNavItems(partenaireNav)}
+                {renderNavItems(partnerNavItems)}
                  <SidebarMenuItem>
                     <Link href="/parrainage" passHref legacyBehavior>
                     <SidebarMenuButton tooltip="Parrainage" isActive={pathname.startsWith('/parrainage')} asChild>
@@ -249,3 +253,5 @@ export function AppSidebar() {
       </Sidebar>
   );
 }
+
+    
