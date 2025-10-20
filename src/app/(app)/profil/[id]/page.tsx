@@ -375,7 +375,7 @@ const CreatorProfile = ({ user, isOwnProfile }: { user: User, isOwnProfile: bool
                 }),
             });
             const result = await response.json();
-            if (result.status === 'success') {
+            if (response.ok) {
                 toast({ title: 'Abonnement réussi !', description: `Vous êtes maintenant abonné(e) à ${user.displayName}.` });
                 setSubscriptionDialog({ open: false, tier: null });
             } else {
