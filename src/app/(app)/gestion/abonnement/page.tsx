@@ -77,7 +77,7 @@ export default function GestionAbonnementPage() {
     }, [user, form]);
     
     if (authLoading) {
-        return <Skeleton className="h-96 w-full" />
+        return <Skeleton className="h-96 w-full" />;
     }
     
     if (!user || user.role !== 'escorte') {
