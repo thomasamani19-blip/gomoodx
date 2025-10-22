@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -38,7 +37,13 @@ export default function PanierPage() {
     }, [cartItems]);
 
     const handleUpdateQuantity = async (productId: string, newQuantity: number) => {
-        if (!user || newQuantity < 1) return;
+        if (!user || newQuantity < 0) return;
+        
+        if (newQuantity === 0) {
+            handleRemoveItem(productId);
+            return;
+        }
+
         setUpdatingItems(prev => [...prev, productId]);
         try {
             const response = await fetch('/api/cart/update', {
@@ -191,4 +196,3 @@ export default function PanierPage() {
         </div>
     );
 }
-

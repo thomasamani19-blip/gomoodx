@@ -1,4 +1,3 @@
-
 // /src/app/api/cart/checkout/route.ts
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
