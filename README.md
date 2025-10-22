@@ -21,9 +21,9 @@ GitHub Codespaces lance un environnement de développement complet directement d
 
 GitHub va maintenant préparer votre environnement. Cela peut prendre une ou deux minutes. Une fois terminé, vous verrez un éditeur de code (similaire à VS Code) directement dans votre navigateur.
 
-#### Étape 2 : Configurer les Clés API
+#### Étape 2 : Configurer les Clés API (Si nécessaire)
 
-L'environnement a besoin de clés API pour se connecter à Firebase et aux autres services.
+L'environnement a besoin de clés API pour se connecter à Firebase et aux autres services. Si vous avez déjà configuré les secrets de votre Codespace, vous pouvez sauter cette étape.
 
 1.  Dans le terminal de votre Codespace (en bas de l'éditeur), copiez le fichier d'exemple pour créer votre fichier de configuration local :
     ```bash
@@ -41,7 +41,7 @@ L'environnement a besoin de clés API pour se connecter à Firebase et aux autre
     GEMINI_API_KEY="votre_cle_api_gemini"
     ```
 
-#### Étape 3 : Lancer l'Application
+#### Étape 3 : Lancer l'Application (Automatique)
 
 Le Codespace est configuré pour lancer automatiquement tous les services pour vous.
 
@@ -50,17 +50,17 @@ Le Codespace est configuré pour lancer automatiquement tous les services pour v
 
 Vous verrez des notifications en bas à droite de l'écran lorsque les ports seront prêts. Vous pourrez cliquer sur "Ouvrir dans le navigateur" pour voir votre application en direct.
 
-#### Étape 4 : Remplir la Base de Données (Seeding)
+#### Étape 4 : Remplir la Base de Données (Action Manuelle Requise)
 
-Pour ajouter des utilisateurs et des contenus de test, vous devez lancer le script de "seeding".
+Pour ajouter des utilisateurs et des contenus de test, vous devez lancer le script de "seeding". **C'est la seule étape manuelle nécessaire dans le terminal.**
 
-1.  Ouvrez un **nouveau terminal** en cliquant sur le `+` dans la barre du terminal.
+1.  Ouvrez un **nouveau terminal** en cliquant sur le `+` dans la barre du terminal (à côté de "bash", "genkit", etc.).
 2.  Dans ce nouveau terminal, exécutez la commande suivante :
     ```bash
     npm run seed
     ```
 
-C'est tout ! Votre application est maintenant entièrement fonctionnelle et prête pour le développement.
+C'est tout ! Votre application est maintenant entièrement fonctionnelle et prête pour le développement. Vous pouvez vous connecter avec les comptes de test comme `client@test.com` (mot de passe : `password123`).
 
 ---
 
