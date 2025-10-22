@@ -63,7 +63,7 @@ export function AuraCanvas() {
         context.beginPath();
         context.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         // Using HSL from CSS variables for color consistency
-        context.fillStyle = `hsla(40, 90%, 38%, ${this.alpha})`;
+        context.fillStyle = `hsla(40, 90%, 50%, ${this.alpha})`;
         context.fill();
       }
     }
