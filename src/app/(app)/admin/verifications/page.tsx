@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useCollection, useFirestore } from '@/firebase';
 import type { User, VerificationStatus, Settings } from '@/lib/types';
-import { collection, query, where, doc, updateDoc, writeBatch, getDoc, FieldValue } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc, writeBatch, getDoc, FieldValue, increment } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -101,7 +101,7 @@ export default function AdminVerificationsPage() {
                     
                     batch.update(userRef, {
                         hasCompletedProfile: true,
-                        rewardPoints: FieldValue.increment(PROFILE_COMPLETION_BONUS),
+                        rewardPoints: increment(PROFILE_COMPLETION_BONUS),
                     });
 
                     batch.set(rewardTxRef, {
