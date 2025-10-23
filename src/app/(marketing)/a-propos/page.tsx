@@ -7,7 +7,7 @@ import { Gift, Heart, Search, ShieldCheck, Sparkles, Users } from "lucide-react"
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
     <div className="flex flex-col items-center text-center gap-4">
-        <div className="bg-primary/10 p-4 rounded-full border-2 border-primary/30">
+        <div className="bg-primary/10 p-4 rounded-full border border-primary/20">
             <Icon className="h-8 w-8 text-primary" />
         </div>
         <h3 className="font-headline text-xl font-semibold">{title}</h3>
@@ -40,7 +40,7 @@ export default function AboutPage() {
                 <h2 className="font-headline text-3xl md:text-4xl font-bold mb-8">Pourquoi nous choisir ?</h2>
                 <p className="text-muted-foreground max-w-2xl mx-auto">Nous offrons une plateforme sûre, innovante et gratifiante pour les créateurs et les membres.</p>
             </div>
-            <Card className="bg-gradient-to-br from-card to-background border-primary/30">
+            <Card>
                 <CardContent className="grid md:grid-cols-3 gap-6 text-center p-8 md:p-12">
                     <div className="flex flex-col items-center gap-2">
                         <Users className="h-10 w-10 text-primary" />

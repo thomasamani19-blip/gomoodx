@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -23,7 +24,7 @@ export default function Home() {
       <AgeGate />
       <div className="min-h-screen flex flex-col items-center justify-center bg-background dark:bg-background-dark transition-colors duration-700 p-4">
 
-        <div className="halo mb-6">
+        <div className="mb-6">
           <h1 className="text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-gold drop-shadow-[0_0_15px_rgba(255,215,0,0.7)]">
             GoMoodX
           </h1>
@@ -45,35 +46,6 @@ export default function Home() {
             <ThemeSwitcher />
         </div>
       </div>
-
-       <style jsx global>{`
-        .halo {
-          position: relative;
-          display: inline-block;
-        }
-
-        .halo::before {
-          content: "";
-          position: absolute;
-          inset: -40px;
-          background: radial-gradient(circle, hsl(var(--primary) / 0.4), transparent);
-          filter: blur(50px);
-          opacity: 0.7;
-          border-radius: 50%;
-          animation: haloPulse 4s ease-in-out infinite;
-        }
-
-        @keyframes haloPulse {
-          0%, 100% {
-            transform: scale(1);
-            opacity: 0.6;
-          }
-          50% {
-            transform: scale(1.2);
-            opacity: 1;
-          }
-        }
-      `}</style>
     </>
   );
 }
