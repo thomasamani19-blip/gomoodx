@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from 'next/image';
@@ -24,6 +23,7 @@ import AgeGate from '@/components/features/auth/age-gate';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import Autoplay from "embla-carousel-autoplay";
 import { useEffect, useState } from 'react';
+import { ThemeSwitcher } from '@/components/theme-switcher';
 
 const TestimonialCard = ({ quote, author, role }: { quote: string, author: string, role: string }) => (
     <Card className="bg-card/50 border-primary/20 flex flex-col justify-between">
@@ -84,24 +84,11 @@ function LatestBlogPosts() {
 
 export default function Home() {
   const [isMounted, setIsMounted] = useState(false);
-  const heroImages = PlaceHolderImages.filter(img => img.id.startsWith('hero-'));
   const router = useRouter();
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const queryValue = formData.get('query');
-    const searchParams = new URLSearchParams();
-
-    if (queryValue) {
-      searchParams.set('q', queryValue.toString());
-    }
-    router.push(`/recherche?${searchParams.toString()}`);
-  };
 
   if (!isMounted) {
     return null;
@@ -109,143 +96,62 @@ export default function Home() {
 
   return (
     <>
-    <AgeGate />
-    <div className="flex min-h-screen flex-col">
-      <main className="flex-1">
-        <section className="relative h-[90vh] w-full flex items-center justify-center overflow-hidden">
-           <Carousel
-              className="absolute inset-0 w-full h-full"
-              plugins={[Autoplay({ delay: 5000, stopOnInteraction: false })]}
-              opts={{ loop: true }}
-            >
-              <CarouselContent className="h-full">
-                {heroImages.map((image, index) => (
-                  <CarouselItem key={index} className="h-full">
-                    <Image
-                      src={image.imageUrl}
-                      alt={image.description}
-                      fill
-                      className="object-cover object-center"
-                      data-ai-hint={image.imageHint}
-                      priority={index === 0}
-                    />
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
-          <div className="absolute inset-0 bg-black/60" />
-          <div className="relative z-10 flex flex-col items-center justify-center text-center text-white p-4">
-            <h1 className="font-headline text-6xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary-foreground via-white to-primary-foreground/70 drop-shadow-[0_3px_3px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-top-4 duration-1000">
-              GoMoodX
-            </h1>
-            <p className="mt-4 max-w-2xl text-lg md:text-xl text-primary-foreground/90 drop-shadow-md animate-in fade-in slide-in-from-top-6 duration-1000 delay-200">
-              La destination privilégiée pour des rencontres et des contenus uniques.
-            </p>
-            
-            <form onSubmit={handleSearch} className="mt-8 w-full max-w-xl animate-in fade-in slide-in-from-top-8 duration-1000 delay-300">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input name="query" type="text" placeholder="Rechercher un créateur, un service, un lieu..." className="h-14 pl-12 pr-16 text-lg rounded-full shadow-2xl bg-background/80 text-foreground backdrop-blur-sm border-border/50 focus:ring-primary" />
-                <Button type="submit" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full h-11 w-11">
-                  <Search className="h-5 w-5" />
-                   <span className="sr-only">Rechercher</span>
-                </Button>
-              </div>
-            </form>
-            <div className="mt-6 flex flex-wrap justify-center gap-2 md:gap-4 text-sm animate-in fade-in slide-in-from-top-10 duration-1000 delay-500">
-                <Link href="/recherche?q=escorte" className="px-4 py-2 bg-background/20 backdrop-blur-sm rounded-full border border-white/20 hover:bg-background/30 transition-colors">Escortes</Link>
-                <Link href="/recherche?q=massage" className="px-4 py-2 bg-background/20 backdrop-blur-sm rounded-full border border-white/20 hover:bg-background/30 transition-colors">Massages</Link>
-                <Link href="/recherche?q=paris" className="px-4 py-2 bg-background/20 backdrop-blur-sm rounded-full border border-white/20 hover:bg-background/30 transition-colors">Paris</Link>
-                <Link href="/recherche?q=photographe" className="px-4 py-2 bg-background/20 backdrop-blur-sm rounded-full border border-white/20 hover:bg-background/30 transition-colors">Photographes</Link>
-            </div>
-          </div>
-        </section>
+      <AgeGate />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background dark:bg-background-dark transition-colors duration-700 p-4">
 
-        <div className="space-y-24 md:space-y-32 py-16 md:py-24 bg-background">
-        
-          <section className="container mx-auto px-4">
-            <div className="text-center mb-12">
-                <h2 className="font-headline text-3xl md:text-4xl font-bold">Créateurs à la Une</h2>
-            </div>
-            <CreatorCarousel />
-          </section>
-
-          <section className="container mx-auto px-4">
-             <div className="text-center mb-12">
-                <h2 className="font-headline text-3xl md:text-4xl font-bold">Annonces Populaires</h2>
-            </div>
-             <AnnonceCarousel />
-          </section>
-
-           <section className="container mx-auto px-4">
-             <div className="text-center mb-12">
-                <h2 className="font-headline text-3xl md:text-4xl font-bold">Boutique Exclusive</h2>
-            </div>
-             <ProductCarousel />
-          </section>
-
-           <section className="container mx-auto px-4">
-             <div className="text-center mb-12">
-                <h2 className="font-headline text-3xl md:text-4xl font-bold">Établissements Partenaires</h2>
-            </div>
-             <EstablishmentCarousel />
-          </section>
-
-           <section className="container mx-auto px-4">
-             <div className="text-center mb-12">
-                <h2 className="font-headline text-3xl md:text-4xl font-bold">Producteurs Partenaires</h2>
-            </div>
-             <ProducerCarousel />
-          </section>
-
-          <section className="container mx-auto px-4">
-            <div className="text-center mb-12">
-                <h2 className="font-headline text-3xl md:text-4xl font-bold">Derniers Articles du Blog</h2>
-                <p className="text-muted-foreground max-w-2xl mx-auto mt-4">Plongez dans l'univers de nos créateurs à travers leurs écrits.</p>
-            </div>
-            <LatestBlogPosts />
-          </section>
-
-          <section className="container mx-auto px-4">
-            <div className="text-center mb-12">
-                <h2 className="font-headline text-3xl md:text-4xl font-bold">Ce qu'ils en disent</h2>
-            </div>
-            <div className="grid md:grid-cols-2 gap-8">
-                <TestimonialCard 
-                    quote="GoMoodX a transformé ma façon de créer du contenu. La plateforme est intuitive et les outils IA sont incroyables."
-                    author="Eva"
-                    role="Créatrice"
-                />
-                 <TestimonialCard 
-                    quote="Enfin une plateforme élégante et sécurisée pour interagir avec des créateurs de qualité. L'expérience est premium."
-                    author="Alexandre"
-                    role="Membre"
-                />
-            </div>
-          </section>
-
-          <section className="container mx-auto px-4">
-              <Card className="bg-gradient-to-r from-primary/90 to-accent/90 text-primary-foreground p-8 md:p-12">
-                  <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                      <div className="text-center md:text-left">
-                          <h2 className="font-headline text-3xl font-bold">Prêt à rejoindre l'expérience ?</h2>
-                          <p className="mt-2 text-lg opacity-90">Inscrivez-vous dès maintenant et découvrez un monde de contenus exclusifs.</p>
-                      </div>
-                       <div className="flex-shrink-0 flex flex-col sm:flex-row gap-4">
-                          <Button asChild size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
-                              <Link href="/inscription/escorte">Devenir Créateur</Link>
-                          </Button>
-                          <Button asChild size="lg" className="bg-background text-foreground hover:bg-background/90">
-                              <Link href="/inscription/client">Devenir Membre</Link>
-                          </Button>
-                      </div>
-                  </div>
-              </Card>
-          </section>
-
+        {/* Logo avec halo lumineux */}
+        <div className="halo mb-6">
+          <h1 className="text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-gold drop-shadow-[0_0_15px_rgba(255,215,0,0.7)]">
+            GoMoodX
+          </h1>
         </div>
-      </main>
-    </div>
+
+        {/* Carte principale */}
+        <div className="p-8 rounded-3xl bg-gradient-gold text-black dark:text-white shadow-glow max-w-md text-center backdrop-blur-md">
+          <p className="opacity-90 mb-5 text-lg">
+            Découvrez votre humeur à travers la lumière et la vibration dorée ✨
+          </p>
+
+          <Button asChild className="bg-gradient-neon text-white px-6 py-3 rounded-2xl font-semibold shadow-neon hover:scale-105 transition-all duration-300 h-auto text-base">
+            <Link href="/inscription">
+                Commencer l’expérience 🌟
+            </Link>
+          </Button>
+        </div>
+
+        <div className='absolute top-4 right-4'>
+            <ThemeSwitcher />
+        </div>
+      </div>
+
+       <style jsx global>{`
+        .halo {
+          position: relative;
+          display: inline-block;
+        }
+
+        .halo::before {
+          content: "";
+          position: absolute;
+          inset: -40px;
+          background: radial-gradient(circle, hsl(var(--primary) / 0.4), transparent);
+          filter: blur(50px);
+          opacity: 0.7;
+          border-radius: 50%;
+          animation: haloPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes haloPulse {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 0.6;
+          }
+          50% {
+            transform: scale(1.2);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </>
   );
 }

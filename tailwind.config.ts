@@ -55,22 +55,17 @@ export default {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
-        chart: {
-          '1': 'hsl(var(--chart-1))',
-          '2': 'hsl(var(--chart-2))',
-          '3': 'hsl(var(--chart-3))',
-          '4': 'hsl(var(--chart-4))',
-          '5': 'hsl(var(--chart-5))',
+        gold: {
+          light: "#FFD700",
+          DEFAULT: "#E6BE8A",
+          dark: "#B8860B",
         },
-        sidebar: {
-          DEFAULT: 'hsl(var(--sidebar-background))',
-          foreground: 'hsl(var(--sidebar-foreground))',
-          primary: 'hsl(var(--sidebar-primary))',
-          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-          accent: 'hsl(var(--sidebar-accent))',
-          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-          border: 'hsl(var(--sidebar-border))',
-          ring: 'hsl(var(--sidebar-ring))',
+        mood: {
+          joy: "#FF80AB",
+          calm: "#64B5F6",
+          energy: "#FFCA28",
+          focus: "#9575CD",
+          relax: "#4DB6AC",
         },
       },
       borderRadius: {
@@ -83,7 +78,7 @@ export default {
         'gradient-neon': 'linear-gradient(135deg, #FF6FD8 0%, #3813C2 100%)',
       },
       boxShadow: {
-        glow: "0 0 25px hsl(var(--accent) / 0.6)",
+        glow: "0 0 25px hsl(var(--primary) / 0.6)",
         neon: "0 0 25px rgba(255, 0, 150, 0.8)",
       },
       keyframes: {
