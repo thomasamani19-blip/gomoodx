@@ -4,7 +4,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useFirestore, useStorage } from '@/firebase';
-import { updateUserProfile } from '@/lib/user';
+import { doc, getDoc, writeBatch, increment } from 'firebase/firestore';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { BankDetails, Settings } from '@/lib/types';
-import { doc, getDoc, writeBatch, FieldValue, increment } from 'firebase/firestore';
+import { collection, serverTimestamp } from 'firebase/firestore';
 
 function fileToDataUrl(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -168,6 +168,7 @@ export default function ProfilPage() {
         profileImage: avatarUrl,
         bannerImage: bannerUrl,
         galleryImages: allGalleryImages,
+        updatedAt: serverTimestamp(),
       };
 
       if (isCreatorOrPartner) {
@@ -197,7 +198,7 @@ export default function ProfilPage() {
                 type: 'reward',
                 description: 'Bonus pour profil complet et vérifié !',
                 status: 'success',
-                createdAt: new Date(),
+                createdAt: serverTimestamp(),
             });
             bonusAwarded = true;
         }

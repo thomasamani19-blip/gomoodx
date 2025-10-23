@@ -128,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: role as UserRole,
       status: role === 'escorte' ? 'pending' : 'active',
       verificationStatus: role === 'escorte' ? 'pending' : undefined,
+      verificationType: role === 'escorte' ? 'selfie' : undefined, // Default verification type
       createdAt: serverTimestamp() as any,
       updatedAt: serverTimestamp() as any,
       isVerified: false,
