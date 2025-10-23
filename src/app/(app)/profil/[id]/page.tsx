@@ -61,7 +61,7 @@ const StarRating = ({ rating, ratingCount, className }: { rating: number, rating
 
 const TierCard = ({ tier, isPopular = false, onSubscribe }: { tier: SubscriptionTier, isPopular?: boolean, onSubscribe: (tier: SubscriptionTier) => void }) => (
     <Card className={cn("flex flex-col", isPopular && "border-primary relative ring-2 ring-primary")}>
-        {isPopular && <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">Populaire</Badge>}
+        {isPopular && <Badge className="absolute -top-2 left-1/2 -translate-x-1/2">Populaire</Badge>}
         <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold text-primary">{tier.name}</CardTitle>
         </CardHeader>
