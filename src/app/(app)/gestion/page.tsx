@@ -1,4 +1,3 @@
-
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
@@ -15,7 +14,7 @@ const managementTools = [
     { title: "Gérer mes annonces", description: "Modifiez vos services, prix et disponibilités.", href: "/gestion/annonces", icon: Newspaper, roles: ['escorte'] },
     { title: "Gérer mes produits", description: "Ajoutez ou mettez à jour les articles de votre boutique.", href: "/gestion/produits", icon: ShoppingBag, roles: ['escorte', 'partenaire'] },
     { title: "Gérer mes articles", description: "Rédigez et publiez de nouveaux articles de blog.", href: "/gestion/articles", icon: Newspaper, roles: ['escorte', 'partenaire'] },
-    { title: "Gérer les abonnements Fan", description: "Définissez vos niveaux d'abonnement pour les fans.", href: "/gestion/abonnement", icon: Star, roles: ['escorte'] },
+    { title: "Gérer les abonnements Fan", description: "Définissez vos formules d'abonnement pour les fans.", href: "/gestion/abonnement", icon: Star, roles: ['escorte'] },
     { title: "Gérer les lives", description: "Planifiez et gérez vos sessions de live streaming.", href: "/gestion/lives", icon: Video, roles: ['escorte', 'partenaire'] },
     { title: "Gérer mes tarifs", description: "Définissez vos prix pour les rencontres et appels.", href: "/gestion/tarifs", icon: DollarSign, roles: ['escorte', 'partenaire'] },
     { title: "Gérer mon profil partenaire", description: "Modifiez les informations de votre établissement.", href: "/gestion/etablissement", icon: Building, roles: ['partenaire'] },
