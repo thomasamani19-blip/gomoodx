@@ -5,154 +5,118 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Helper functions
-    function isSignedIn() {
+    function isAuthenticated() {
       return request.auth != null;
     }
-
+    
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
-
+    
     function isAdmin() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['administrateur', 'founder'];
     }
 
-    function isModerator() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['administrateur', 'founder', 'moderator'];
-    }
-    
-    function isCreatorOrPartner() {
-       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['escorte', 'partenaire'];
-    }
-
-
-    // Collection: users
+    // --- User Profiles ---
     match /users/{userId} {
-      allow read: if true;
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin();
-    }
-    
-    // Collection: partnerRequests
-    match /partnerRequests/{requestId} {
-        allow read: if isAdmin();
-        allow create: if true; // Anyone can submit a request
-        allow update, delete: if isAdmin();
+      // Anyone can read a user's public profile
+      allow read;
+      // Only the user themselves can update their profile
+      allow write: if isOwner(userId);
+
+       // Users can access their own cart
+      match /cart/{cartId} {
+        allow read, write, delete: if isOwner(userId);
+      }
     }
 
-    // Collection: posts
+    // --- Notifications ---
+    match /notifications/{notificationId} {
+      // User can read, update (mark as read), and delete their own notifications.
+      allow read, write, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Admins can create notifications (not implemented yet, but good to have)
+      allow create: if isAdmin();
+    }
+
+    // --- Public Content (Posts, Annonces, Products, etc.) ---
     match /posts/{postId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && isCreatorOrPartner() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isSignedIn() && isOwner(request.resource.data.authorId);
-      allow delete: if isSignedIn() && (isOwner(request.resource.data.authorId) || isAdmin());
-
-      // Subcollection: comments
-      match /comments/{commentId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn();
-        allow update, delete: if isSignedIn() && (isOwner(request.resource.data.authorId) || isAdmin());
-      }
-    }
-    
-     // Collection: services (Annonces)
-    match /services/{serviceId} {
-      allow read: if true; // Publicly visible
-      allow create: if isSignedIn() && isCreatorOrPartner() && request.resource.data.createdBy == request.auth.uid;
-      allow update: if isSignedIn() && isOwner(resource.data.createdBy);
-      allow delete: if isSignedIn() && (isOwner(resource.data.createdBy) || isAdmin());
+      allow read;
+      allow create, update, delete: if isAuthenticated() && (request.resource.data.authorId == request.auth.uid || isAdmin());
       
-      // Subcollection: reviews
-      match /reviews/{reviewId} {
-        allow read: if true;
-        allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-        allow update, delete: if false; // Reviews are immutable
+      match /comments/{commentId} {
+        allow read;
+        allow create: if isAuthenticated();
       }
     }
-    
-    // Collection: products
+
+    match /services/{serviceId} {
+      allow read;
+      allow create, update, delete: if isAuthenticated() && (request.resource.data.createdBy == request.auth.uid || isAdmin());
+      
+      match /reviews/{reviewId} {
+          allow read;
+          allow create: if isAuthenticated();
+      }
+    }
+
     match /products/{productId} {
-      allow read: if true;
-      allow create: if isSignedIn() && isCreatorOrPartner() && request.resource.data.createdBy == request.auth.uid;
-      allow update: if isSignedIn() && isOwner(resource.data.createdBy);
-      allow delete: if isSignedIn() && (isOwner(resource.data.createdBy) || isAdmin());
+      allow read;
+      allow create, update, delete: if isAuthenticated() && (request.resource.data.createdBy == request.auth.uid || isAdmin());
     }
 
-    // Collection: blog
-    match /blog/{articleId} {
-        allow read: if true;
-        allow create: if isSignedIn() && isCreatorOrPartner() && request.resource.data.authorId == request.auth.uid;
-        allow update: if isSignedIn() && isOwner(resource.data.authorId);
-        allow delete: if isSignedIn() && (isOwner(resource.data.authorId) || isAdmin());
+     match /blog/{articleId} {
+      allow read;
+      allow create, update, delete: if isAuthenticated() && (request.resource.data.authorId == request.auth.uid || isAdmin());
     }
 
-    // Collection: wallets and transactions
+    // --- Live Sessions ---
+    match /lives/{liveId} {
+        allow read, write; // Open for now for signaling and status updates
+    }
+
+
+    // --- Private/Scoped data ---
     match /wallets/{userId} {
-        allow read, create, update: if isOwner(userId) || isAdmin();
+        allow read, write: if isOwner(userId) || isAdmin();
         
         match /transactions/{transactionId} {
-            allow list, get: if isOwner(userId) || isAdmin();
-            allow create, update, delete: if isOwner(userId) || isAdmin(); // Server-side logic handles this
+            allow read, write: if isOwner(userId) || isAdmin();
         }
     }
     
-     // Collection: reservations
-    match /reservations/{reservationId} {
-        function isParticipant() {
-            let reservation = get(/databases/$(database)/documents/reservations/$(reservationId));
-            return isOwner(reservation.data.memberId) || isOwner(reservation.data.creatorId);
-        }
-        allow read, update: if isSignedIn() && isParticipant();
-        allow create: if isSignedIn();
-    }
-    
-    // Collection: purchases
-    match /purchases/{purchaseId} {
-        allow read: if isSignedIn() && (isOwner(resource.data.memberId) || isOwner(resource.data.sellerId));
-        allow create: if isSignedIn(); // Handled by server-side logic
-    }
-    
-    // Collection: lives
-    match /lives/{liveId} {
-      allow read: if true;
-      allow create: if isSignedIn() && isCreatorOrPartner() && request.resource.data.hostId == request.auth.uid;
-      allow update: if isSignedIn() && isOwner(resource.data.hostId);
-      allow delete: if isSignedIn() && (isOwner(resource.data.hostId) || isAdmin());
-    }
-
-    // Collection: messages
     match /messages/{messageId} {
-        function isRecipientOrSender() {
-            return isOwner(resource.data.receiverId) || isOwner(resource.data.senderId);
-        }
-        allow read: if isSignedIn() && isRecipientOrSender();
-        allow create: if isSignedIn();
+        allow read, write: if isAuthenticated() && (request.resource.data.senderId == request.auth.uid || request.resource.data.receiverId == request.auth.uid);
+        allow create: if isAuthenticated();
     }
 
-    // Collection: calls
-    match /calls/{callId} {
-        function isCallerOrReceiver() {
-            return isOwner(resource.data.callerId) || isOwner(resource.data.receiverId);
-        }
-        allow read, create, update: if isSignedIn() && isCallerOrReceiver();
+     match /reservations/{reservationId} {
+        allow read, write: if isAuthenticated() && (request.resource.data.memberId == request.auth.uid || request.resource.data.creatorId == request.auth.uid);
     }
     
-    // Collection: notifications
-    match /notifications/{notificationId} {
-      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
-      allow create: if isSignedIn(); // Server-side logic handles this
+    match /purchases/{purchaseId} {
+        allow read: if isAuthenticated() && request.resource.data.memberId == request.auth.uid;
     }
 
-    // Collection: settings
+
+    // --- Admin & System collections ---
+    match /partnerRequests/{requestId} {
+        allow read: if isAdmin();
+        allow create; // Anyone can create a request
+        allow update: if isAdmin();
+    }
+    
+    match /supportTickets/{ticketId} {
+        allow create: if isAuthenticated();
+        allow read, write: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+
     match /settings/global {
-        allow read: if true;
+        allow read;
         allow write: if isAdmin();
     }
 
-    // --- Deny all other operations by default ---
-    match /{path=**} {
-      allow read, write: if false;
+     match /calls/{callId} {
+        allow read, write: if isAuthenticated();
     }
   }
 }
