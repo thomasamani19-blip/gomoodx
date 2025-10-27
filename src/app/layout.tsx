@@ -8,6 +8,7 @@ import { AuthProvider } from '@/hooks/use-auth';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import CallListener from '@/components/layout/call-listener';
 import { AuraCanvas } from '@/components/layout/aura-canvas';
+import AgeGate from '@/components/features/auth/age-gate';
 
 
 const ptSans = PT_Sans({ 
@@ -43,6 +44,7 @@ export default function RootLayout({
           <FirebaseClientProvider>
             <AuthProvider>
                 <AuraCanvas />
+                <AgeGate />
                 <div className="relative z-10">
                   {children}
                 </div>
