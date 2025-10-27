@@ -1,200 +1,189 @@
 rules_version = '2';
 
+// Helper functions
+function isAuthenticated() {
+  return request.auth != null;
+}
+
+function isOwner(userId) {
+  return isAuthenticated() && request.auth.uid == userId;
+}
+
+function isAdmin() {
+  return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['administrateur', 'founder'];
+}
+
+function isModerator() {
+  return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['administrateur', 'founder', 'moderator'];
+}
+
+function isCreatorOrPartner() {
+    return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['escorte', 'partenaire'];
+}
+
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Helper function to check if a user is authenticated
-    function isAuthenticated() {
-      return request.auth != null;
-    }
     
-    // Helper function to check if the user is the owner of the document
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-    
-    // Helper function to check if the user is an admin or founder
-    function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['administrateur', 'founder'];
-    }
-
-    // Helper function to check if the user is a creator (escorte or partner)
-    function isCreator() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['escorte', 'partenaire'];
-    }
-    
-    // Helper function for public read access
-    function publicRead() {
-      allow read: if true;
-    }
-
-    // =================================
-    //            USERS
-    // =================================
+    // Users:
+    // read: Anyone can read public profiles.
+    // update: Only the owner can update their own profile. Admin can also update.
+    // create, delete: Not allowed directly. Handled by backend/auth functions.
     match /users/{userId} {
-      // Anyone can read a user's public profile
       allow read: if true;
-      // Only the user themselves or an admin can update their profile
-      allow write: if isOwner(userId) || isAdmin();
-
-      // Cart is private to the user
+      allow update: if isOwner(userId) || isAdmin();
+      allow create, delete: if false; // Deletions and creations are handled by backend functions
+      
+      // Cart: Only the owner can access their own cart.
       match /cart/{productId} {
         allow read, write: if isOwner(userId);
       }
     }
+    
+    // Wallets:
+    // read: Only the owner or an admin can read wallet details.
+    // write: Only backend services can modify wallets.
+    match /wallets/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if false; // All wallet operations must be done server-side
 
-    // =================================
-    //      CONTENT (Posts, Products, Services)
-    // =================================
+      // Transactions:
+      // read: Owner or admin.
+      // create: Backend only.
+      // update, delete: Not allowed.
+      match /transactions/{transactionId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if false; // Server-side only
+        allow update, delete: if false;
+      }
+    }
+    
+    // Global Settings:
+    // read: Any authenticated user can read settings.
+    // write: Only founder/admin can write.
+    match /settings/global {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Posts:
+    // list: Anyone can list approved posts.
+    // read: Anyone can read approved posts.
+    // create: Authenticated users can create posts.
+    // update: Only the author can update their post.
+    // delete: Only the author or an admin can delete a post.
     match /posts/{postId} {
-      // Anyone can read posts
-      publicRead();
-      // Only the owner or an admin can update/delete
-      allow update, delete: if isOwner(resource.data.authorId) || isAdmin();
-      // Any authenticated user can create a post
-      allow create: if isAuthenticated() && isOwner(request.resource.data.authorId);
-
-      // Comments subcollection
+      allow list: if query.limit <= 30; // Public listing
+      allow read: if resource.data.moderationStatus == 'approved';
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
+      allow delete: if (isAuthenticated() && resource.data.authorId == request.auth.uid) || isAdmin();
+      
+      // Comments:
+      // read: Anyone can read comments on a public post.
+      // create: Any authenticated user can comment.
+      // delete: Only the comment author or post author or admin can delete.
       match /comments/{commentId} {
-        // Anyone can read comments
-        publicRead();
-        // Any authenticated user can create a comment
-        allow create: if isAuthenticated() && isOwner(request.resource.data.authorId);
-        // Only the comment owner, post owner, or admin can delete
-        allow delete: if isOwner(resource.data.authorId) || isOwner(get(/databases/$(database)/documents/posts/$(postId)).data.authorId) || isAdmin();
+        allow read: if true;
+        allow create: if isAuthenticated();
+        allow delete: if (isAuthenticated() && resource.data.authorId == request.auth.uid) || isAdmin() || get(parent).data.authorId == request.auth.uid;
+      }
+    }
+
+    // Products & Services:
+    // read: Anyone can read approved content.
+    // create: Only creators/partners can create.
+    // update: Only owner or admin can update.
+    // delete: Only owner or admin can delete.
+    function contentRules() {
+      return {
+        'allow read': if resource == null || resource.data.moderationStatus == 'approved',
+        'allow list': if query.limit <= 30,
+        'allow create': if isCreatorOrPartner(),
+        'allow update': if (isOwner(request.resource.data.createdBy) && request.resource.data.isSponsored == false) || isAdmin(),
+        'allow delete': if isOwner(resource.data.createdBy) || isAdmin()
       }
     }
     
     match /products/{productId} {
-      // Anyone can read product listings
-      publicRead();
-      // Only the owner or an admin can update/delete
-      allow update, delete: if isOwner(resource.data.createdBy) || isAdmin();
-      // Only creators can create products
-      allow create: if isCreator() && isOwner(request.resource.data.createdBy);
+        apply contentRules();
     }
-    
+
     match /services/{serviceId} {
-      // Anyone can read service listings (annonces)
-      publicRead();
-      // Only the owner or an admin can update/delete
-      allow update, delete: if isOwner(resource.data.createdBy) || isAdmin();
-      // Only creators can create services
-      allow create: if isCreator() && isOwner(request.resource.data.createdBy);
-      
-      // Reviews subcollection
-      match /reviews/{reviewId} {
-         // Anyone can read reviews
-        publicRead();
-         // Any authenticated user can create a review
-        allow create: if isAuthenticated() && isOwner(request.resource.data.authorId);
-      }
+        apply contentRules();
+        
+        // Reviews on services
+        match /reviews/{reviewId} {
+            allow read: if true;
+            allow create: if isAuthenticated(); // Further checks (e.g., must have purchased) are done in backend
+        }
     }
     
-    // =================================
-    //         BLOG ARTICLES
-    // =================================
+    // Blog articles
     match /blog/{articleId} {
-        // Public articles are readable by anyone.
-        // For premium/subscriber-only, access is checked server-side, but rules allow reading if authenticated.
-        allow read: if true;
-        allow write: if isCreator() || isAdmin();
-    }
-
-    // =================================
-    //      TRANSACTIONS & PAYMENTS
-    // =================================
-    match /wallets/{userId} {
-      // Only the user or an admin can read the wallet
-      allow get: if isOwner(userId) || isAdmin();
-      // Creation is handled server-side at signup
-      allow create, update: if false; // All updates are transactional via server
-      
-      match /transactions/{transactionId} {
-        // Only owner or admin can read their transactions
-        allow read: if isOwner(userId) || isAdmin();
-        allow write: if false; // All transactions are created server-side
-      }
+        allow read, list: if true;
+        allow create, update, delete: if isCreatorOrPartner() || isAdmin();
     }
     
-     match /purchases/{purchaseId} {
-      // A user can read their own purchases.
-      // A seller can read purchases of their content.
-      allow read: if isAuthenticated() && (isOwner(resource.data.memberId) || isOwner(resource.data.sellerId));
-      allow write: if false; // Created server-side
-    }
-
-    // =================================
-    //      COMMUNICATION
-    // =================================
+    // Messages:
+    // Only sender or receiver can read/write.
     match /messages/{messageId} {
-      // Only sender or receiver can read a message
-      allow read, create: if isAuthenticated() && (isOwner(request.resource.data.senderId) || isOwner(resource.data.receiverId) || isOwner(resource.data.senderId) || isOwner(resource.data.receiverId));
+      allow read, create: if isAuthenticated() && (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
+      allow update, delete: if false; // No editing/deleting messages
     }
     
-    match /calls/{callId} {
-      // Only participants of the call can interact with it
-      allow read, write: if isAuthenticated() && (isOwner(resource.data.callerId) || isOwner(resource.data.receiverId));
-    }
-
-    // =================================
-    //      LIVE SESSIONS
-    // =================================
-    match /lives/{liveId} {
-      // Anyone can read live session info
-      publicRead();
-      // Only the host or admin can create/update/delete
-      allow write: if (isCreator() && isOwner(resource.data.hostId)) || isAdmin();
-    }
-
-    // =================================
-    //      RESERVATIONS
-    // =================================
-    match /reservations/{reservationId} {
-      // Only participants (member, creator, invited escorts) or admin can read
-      allow read: if isAuthenticated() && (
-        isOwner(resource.data.memberId) || 
-        isOwner(resource.data.creatorId) || 
-        (resource.data.escorts != null && request.auth.uid in resource.data.escorts) ||
-        isAdmin()
-      );
-      // Writes (updates) are handled server-side for security
-      allow write: if false;
-    }
-
-    // =================================
-    //      ADMIN & SYSTEM
-    // =================================
+    // Notifications:
+    // list: Can only list your own notifications.
+    // read, write: Only the owner can interact with a specific notification.
     match /notifications/{notificationId} {
-      // User can only read their own notifications
-      allow read, update, delete: if isAuthenticated() && isOwner(resource.data.userId);
-      // Notifications are created server-side
-      allow create: if false;
+      allow list: if isAuthenticated() && request.query.where.userId == request.auth.uid;
+      allow read, write: if isOwner(resource.data.userId);
+    }
+    
+    // Calls:
+    // create: Any authenticated user can initiate a call.
+    // read, update: Only participants can access call data.
+    match /calls/{callId} {
+        allow create: if isAuthenticated();
+        allow read, update: if isAuthenticated() && (request.auth.uid == resource.data.callerId || request.auth.uid == resource.data.receiverId);
+    }
+    
+    // Reservations
+    // create: Authenticated users can create.
+    // read, update: Only participants (member, creator, invited escorts) or admin can access.
+    match /reservations/{reservationId} {
+        allow create: if isAuthenticated();
+        allow read, update: if (isAuthenticated() && (
+                                request.auth.uid == resource.data.memberId ||
+                                request.auth.uid == resource.data.creatorId ||
+                                (resource.data.escorts != null && request.auth.uid in resource.data.escorts.map(e => e.id))
+                               )) || isAdmin();
+    }
+    
+    // Purchases
+    // create: Backend only.
+    // read: Only the member or seller can read.
+    match /purchases/{purchaseId} {
+        allow create: if false;
+        allow read: if isAuthenticated() && (request.auth.uid == resource.data.memberId || request.auth.uid == resource.data.sellerId);
+    }
+    
+    // Partner Requests:
+    // create: Anyone can submit.
+    // read, update: Only admins.
+    match /partnerRequests/{requestId} {
+        allow create: if true;
+        allow read, update: if isAdmin();
     }
 
+    // Support Tickets
     match /supportTickets/{ticketId} {
-        // User can read their own ticket, admins can read all
-        allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
-        // Only authenticated users can create tickets for themselves
-        allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
-        // Only admins can update (e.g., to close)
-        allow update: if isAdmin();
+        allow create: if isAuthenticated();
+        allow read, update: if isOwner(resource.data.userId) || isModerator();
     }
     
-    match /partnerRequests/{requestId} {
-      // Only admins can read requests
-      allow read: if isAdmin();
-      // Anyone can submit a request (signup)
-      allow create: if true;
-      // Only admins can update (approve/reject)
-      allow update: if isAdmin();
-    }
-    
-    match /settings/global {
-      // Anyone can read global settings
-      publicRead();
-      // Only admins/founders can write
-      allow write: if isAdmin();
+    // Verification data (future use)
+    match /verifications/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
     }
   }
 }
