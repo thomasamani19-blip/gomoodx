@@ -24,6 +24,14 @@ function isCreatorOrPartner() {
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // --- Reusable Rules for Content ---
+    function contentReadRules() {
+      return resource.data.moderationStatus == 'approved' || isOwner(resource.data.createdBy) || isAdmin();
+    }
+    function contentWriteRules() {
+      return (isOwner(request.resource.data.createdBy) && request.resource.data.isSponsored == false) || isAdmin();
+    }
+    
     // Users:
     // read: Anyone can read public profiles.
     // update: Only the owner can update their own profile. Admin can also update.
@@ -88,14 +96,6 @@ service cloud.firestore {
         allow delete: if (isAuthenticated() && resource.data.authorId == request.auth.uid) || isAdmin() || get(parent).data.authorId == request.auth.uid;
       }
     }
-
-    // --- Reusable Rules for Content ---
-    function contentReadRules() {
-      return resource.data.moderationStatus == 'approved' || isOwner(resource.data.createdBy) || isAdmin();
-    }
-    function contentWriteRules() {
-      return (isOwner(request.resource.data.createdBy) && request.resource.data.isSponsored == false) || isAdmin();
-    }
     
     // Products & Services:
     // read: Anyone can read approved content.
@@ -118,7 +118,7 @@ service cloud.firestore {
         // Reviews on services
         match /reviews/{reviewId} {
             allow read: if true;
-            allow create: if isAuthenticated(); // Further checks (e.g., must have purchased) are done in backend
+            allow create: if isAuthenticated();
         }
     }
     
@@ -160,7 +160,7 @@ service cloud.firestore {
         allow read, update: if (isAuthenticated() && (
                                 request.auth.uid == resource.data.memberId ||
                                 request.auth.uid == resource.data.creatorId ||
-                                (resource.data.escorts != null && request.auth.uid in resource.data.escorts.map(e => e.id))
+                                (resource.data.escorts != null && resource.data.escorts.filter(e => e.id == request.auth.uid).size() > 0)
                                )) || isAdmin();
     }
     
