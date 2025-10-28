@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
@@ -122,8 +123,13 @@ function CreatePost() {
 
 function PostFeed() {
     const firestore = useFirestore();
-    const postsQuery = useMemo(() => firestore ? query(collection(firestore, 'posts'), where('moderationStatus', '==', 'approved'), orderBy('createdAt', 'desc')) : null, [firestore]);
-    const { data: posts, loading } = useCollection<Post>(postsQuery);
+    const postsQuery = useMemo(() => firestore ? query(collection(firestore, 'posts'), orderBy('createdAt', 'desc')) : null, [firestore]);
+    const { data: allPosts, loading } = useCollection<Post>(postsQuery);
+
+    const posts = useMemo(() => {
+        if (!allPosts) return [];
+        return allPosts.filter(post => post.moderationStatus === 'approved');
+    }, [allPosts]);
 
     if (loading) {
         return (
