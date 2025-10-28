@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useRef, useState, useMemo } from 'react';
@@ -36,6 +37,25 @@ export default function StudioPage({ params }: { params: { id: string } }) {
   const { data: session, loading: sessionLoading } = useDoc<LiveSession>(sessionRef);
   
   const loading = authLoading || sessionLoading;
+  
+  const handleLeave = async () => {
+    setIsProcessing(true);
+    localAudioTrack?.close();
+    localVideoTrack?.close();
+    await agoraClient.leave();
+
+    if (sessionRef) {
+        await updateDoc(sessionRef, { status: 'ended', endTime: serverTimestamp() });
+    }
+
+    setIsJoined(false);
+    setIsPublished(false);
+    setLocalAudioTrack(null);
+    setLocalVideoTrack(null);
+    setIsProcessing(false);
+    toast({ title: "Vous avez quitté le studio." });
+    router.push('/gestion/lives');
+  };
 
   useEffect(() => {
     // Cette fonction sera utilisée pour le nettoyage lors du démontage du composant.
@@ -115,25 +135,6 @@ export default function StudioPage({ params }: { params: { id: string } }) {
     }
   };
   
-  const handleLeave = async () => {
-    setIsProcessing(true);
-    localAudioTrack?.close();
-    localVideoTrack?.close();
-    await agoraClient.leave();
-
-    if (sessionRef) {
-        await updateDoc(sessionRef, { status: 'ended', endTime: serverTimestamp() });
-    }
-
-    setIsJoined(false);
-    setIsPublished(false);
-    setLocalAudioTrack(null);
-    setLocalVideoTrack(null);
-    setIsProcessing(false);
-    toast({ title: "Vous avez quitté le studio." });
-    router.push('/gestion/lives');
-  };
-
   const toggleAudio = async () => {
     if (localAudioTrack) {
       await localAudioTrack.setMuted(!isAudioMuted);

@@ -55,7 +55,6 @@ export default function InscriptionEscortePage() {
     }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4 py-8">
       <Card className="w-full max-w-lg">
         <form onSubmit={handleSignup}>
             <CardHeader className="text-center">
@@ -151,6 +150,5 @@ export default function InscriptionEscortePage() {
             </CardFooter>
         </form>
       </Card>
-    </div>
   )
 }

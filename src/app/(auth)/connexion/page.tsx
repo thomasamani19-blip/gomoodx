@@ -49,7 +49,6 @@ export default function ConnexionPage() {
   }
   
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <GoMoodXLogo className="justify-center mb-2"/>
@@ -91,6 +90,5 @@ export default function ConnexionPage() {
           </CardFooter>
         </form>
       </Card>
-    </div>
   )
 }

@@ -9,6 +9,11 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import CallListener from '@/components/layout/call-listener';
 import { AuraCanvas } from '@/components/layout/aura-canvas';
 import AgeGate from '@/components/features/auth/age-gate';
+import { AppSidebar } from '@/components/layout/app-sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { AppHeader } from '@/components/layout/app-header';
+import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer';
 
 
 const ptSans = PT_Sans({ 
@@ -28,9 +33,15 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-  children,
+  auth,
+  app,
+  marketing
 }: {
   children: React.ReactNode;
+  auth: React.ReactNode;
+  app: React.ReactNode;
+  marketing: React.ReactNode;
+
 }) {
   return (
     <html lang="fr" suppressHydrationWarning>
@@ -46,7 +57,9 @@ export default function RootLayout({
                 <AuraCanvas />
                 <AgeGate />
                 <div className="relative z-10">
-                  {children}
+                  {auth}
+                  {app}
+                  {marketing}
                 </div>
                 <Toaster />
                 <CallListener />

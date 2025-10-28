@@ -124,7 +124,7 @@ service cloud.firestore {
         allow read, update: if (isAuthenticated() && (
                                 request.auth.uid == resource.data.memberId ||
                                 request.auth.uid == resource.data.creatorId ||
-                                (resource.data.escorts != null && resource.data.escorts.filter(e => e.id == request.auth.uid).size() > 0)
+                                (resource.data.escorts != null && resource.data.escorts.hasAny(e => e.id == request.auth.uid))
                                )) || isAdmin();
     }
     

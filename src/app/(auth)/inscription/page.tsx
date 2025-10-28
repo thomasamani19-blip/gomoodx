@@ -17,7 +17,6 @@ import { ArrowRight, User, Star, Building } from "lucide-react";
 export default function InscriptionHubPage() {
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
         <GoMoodXLogo className="justify-center mb-2"/>
@@ -77,6 +76,5 @@ export default function InscriptionHubPage() {
             </p>
         </CardFooter>
       </Card>
-    </div>
   )
 }

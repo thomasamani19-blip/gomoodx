@@ -56,8 +56,7 @@ export default function InscriptionPartenairePage() {
 
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4 py-12">
-      <Card className="w-full max-w-2xl">
+      <Card className="w-full max-w-2xl my-8">
         <form onSubmit={handleSignup}>
             <CardHeader className="text-center">
             <GoMoodXLogo className="justify-center mb-2"/>
@@ -163,6 +162,5 @@ export default function InscriptionPartenairePage() {
             </CardFooter>
         </form>
       </Card>
-    </div>
   )
 }

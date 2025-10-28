@@ -56,7 +56,6 @@ export default function InscriptionClientPage() {
 
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4 py-8">
       <Card className="w-full max-w-md">
         <form onSubmit={handleSignup}>
             <CardHeader className="text-center">
@@ -139,6 +138,5 @@ export default function InscriptionClientPage() {
             </CardFooter>
         </form>
       </Card>
-    </div>
   )
 }
