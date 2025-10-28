@@ -10,7 +10,7 @@ import { ImageIcon, Loader2, Send } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, orderBy } from "firebase/firestore";
+import { collection, query, orderBy, where } from "firebase/firestore";
 import type { Post } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import PostCard from "@/components/features/feed/post-card";
@@ -122,7 +122,7 @@ function CreatePost() {
 
 function PostFeed() {
     const firestore = useFirestore();
-    const postsQuery = useMemo(() => firestore ? query(collection(firestore, 'posts'), orderBy('createdAt', 'desc')) : null, [firestore]);
+    const postsQuery = useMemo(() => firestore ? query(collection(firestore, 'posts'), where('moderationStatus', '==', 'approved'), orderBy('createdAt', 'desc')) : null, [firestore]);
     const { data: posts, loading } = useCollection<Post>(postsQuery);
 
     if (loading) {

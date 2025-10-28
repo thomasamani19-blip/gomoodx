@@ -8,7 +8,7 @@ import type { Annonce } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, where } from 'firebase/firestore';
 import { Star, Percent, Car } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -40,7 +40,7 @@ const StarRating = ({ rating, ratingCount, className }: { rating: number, rating
 
 export default function AnnoncesPage() {
   const firestore = useFirestore();
-  const annoncesQuery = useMemo(() => firestore ? query(collection(firestore, 'services'), orderBy('createdAt', 'desc')) : null, [firestore]);
+  const annoncesQuery = useMemo(() => firestore ? query(collection(firestore, 'services'), where('moderationStatus', '==', 'approved'), orderBy('createdAt', 'desc')) : null, [firestore]);
   const { data: annonces, loading } = useCollection<Annonce>(annoncesQuery);
 
   const sortedAnnonces = useMemo(() => {

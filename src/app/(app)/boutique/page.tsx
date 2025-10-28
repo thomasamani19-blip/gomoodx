@@ -8,7 +8,7 @@ import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, where } from 'firebase/firestore';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,7 @@ import { Percent } from 'lucide-react';
 
 export default function BoutiquePage() {
   const firestore = useFirestore();
-  const productsQuery = useMemo(() => firestore ? query(collection(firestore, 'products'), orderBy('createdAt', 'desc')) : null, [firestore]);
+  const productsQuery = useMemo(() => firestore ? query(collection(firestore, 'products'), where('moderationStatus', '==', 'approved'), orderBy('createdAt', 'desc')) : null, [firestore]);
   const { data: products, loading } = useCollection<Product>(productsQuery);
 
   const sortedProducts = useMemo(() => {
