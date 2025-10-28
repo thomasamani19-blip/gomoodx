@@ -1,4 +1,3 @@
-
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
@@ -31,7 +30,7 @@ export default function ContactPage() {
     }
 
     return (
-        <div>
+        <div className="space-y-16">
             <PageHeader
                 title="Nous Contacter"
                 description="Une question, une suggestion ? N'hésitez pas à nous écrire."

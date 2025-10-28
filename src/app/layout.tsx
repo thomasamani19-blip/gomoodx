@@ -1,6 +1,6 @@
-import type { Metadata } from 'next';
-import { PT_Sans } from 'next/font/google';
-import { Playfair_Display } from 'next/font/google';
+'use client';
+
+import { PT_Sans, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/toaster';
@@ -9,39 +9,39 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import CallListener from '@/components/layout/call-listener';
 import { AuraCanvas } from '@/components/layout/aura-canvas';
 import AgeGate from '@/components/features/auth/age-gate';
-import { AppSidebar } from '@/components/layout/app-sidebar';
+import { useAuth } from '@/hooks/use-auth';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { AppHeader } from '@/components/layout/app-header';
-import { Header } from '@/components/layout/header';
-import { Footer } from '@/components/layout/footer';
 
-
-const ptSans = PT_Sans({ 
-  subsets: ['latin'], 
+const ptSans = PT_Sans({
+  subsets: ['latin'],
   weight: ['400', '700'],
-  variable: '--font-pt-sans'
+  variable: '--font-pt-sans',
 });
 
-const playfair = Playfair_Display({ 
-  subsets: ['latin'], 
-  variable: '--font-playfair'
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-playfair',
 });
 
-export const metadata: Metadata = {
-  title: 'GoMoodX',
-  description: 'Votre destination pour des contenus et des expériences exclusives.',
-};
+function RootLayoutContent({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  return (
+    <>
+      <AuraCanvas />
+      <AgeGate />
+      <div className="relative z-10">
+        {children}
+      </div>
+      <Toaster />
+      {user && <CallListener />}
+    </>
+  );
+}
 
 export default function RootLayout({
-  auth,
-  app,
-  marketing
+  children,
 }: {
   children: React.ReactNode;
-  auth: React.ReactNode;
-  app: React.ReactNode;
-  marketing: React.ReactNode;
-
 }) {
   return (
     <html lang="fr" suppressHydrationWarning>
@@ -54,15 +54,11 @@ export default function RootLayout({
         >
           <FirebaseClientProvider>
             <AuthProvider>
-                <AuraCanvas />
-                <AgeGate />
-                <div className="relative z-10">
-                  {auth}
-                  {app}
-                  {marketing}
-                </div>
-                <Toaster />
-                <CallListener />
+                <SidebarProvider>
+                    <RootLayoutContent>
+                        {children}
+                    </RootLayoutContent>
+                </SidebarProvider>
             </AuthProvider>
           </FirebaseClientProvider>
         </ThemeProvider>

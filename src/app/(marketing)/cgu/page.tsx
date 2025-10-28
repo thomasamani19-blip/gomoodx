@@ -1,4 +1,3 @@
-
 import PageHeader from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -15,7 +14,7 @@ export default function CguPage() {
     ];
 
     return (
-        <div className="max-w-4xl mx-auto py-16">
+        <div className="container py-16">
             <PageHeader
                 title="Conditions Générales d'Utilisation"
                 description="Dernière mise à jour : 1er Juillet 2024"

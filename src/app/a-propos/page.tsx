@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from "@/components/shared/page-header";
@@ -16,7 +17,7 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementTy
 
 export default function AboutPage() {
   return (
-    <div className="space-y-16 container py-16">
+    <div className="space-y-16">
       <PageHeader
         title="À Propos de GoMoodX"
         description="Votre destination pour des contenus et des expériences exclusives."

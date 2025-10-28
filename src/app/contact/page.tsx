@@ -30,7 +30,7 @@ export default function ContactPage() {
     }
 
     return (
-        <div className="container py-16">
+        <div>
             <PageHeader
                 title="Nous Contacter"
                 description="Une question, une suggestion ? N'hésitez pas à nous écrire."

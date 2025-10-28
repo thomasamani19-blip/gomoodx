@@ -28,7 +28,8 @@ import {
     increment,
     getDoc
 } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase';
+import { initializeFirebase } from '@/firebase/init';
+import { useFirebase } from '@/firebase/provider';
 
 interface AuthContextType {
   user: User | null;
@@ -47,9 +48,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const { auth, firestore } = initializeFirebase();
+  // Use the existing Firebase context instead of re-initializing
+  const { auth, firestore } = useFirebase();
 
   useEffect(() => {
+    // If services aren't ready, don't do anything.
+    if (!auth || !firestore) {
+      setLoading(false);
+      return;
+    }
+
     const unsubscribeAuth = onAuthStateChanged(auth, (fbUser) => {
         setFirebaseUser(fbUser);
         if (fbUser) {

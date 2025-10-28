@@ -17,12 +17,12 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementTy
 
 export default function AboutPage() {
   return (
-    <div className="space-y-16 container py-16">
+    <div className="container py-16">
       <PageHeader
         title="À Propos de GoMoodX"
         description="Votre destination pour des contenus et des expériences exclusives."
       />
-      <div className="space-y-16">
+      <div className="mt-16 space-y-16">
         <section>
             <div className="text-center mb-12">
                 <h2 className="font-headline text-3xl md:text-4xl font-bold mb-4">Comment ça marche ?</h2>

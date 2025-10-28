@@ -1,4 +1,3 @@
-
 import PageHeader from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -14,7 +13,7 @@ export default function PrivacyPolicyPage() {
     ];
 
     return (
-        <div className="max-w-4xl mx-auto">
+        <div className="space-y-16">
             <PageHeader
                 title="Politique de Confidentialité"
                 description="Dernière mise à jour : 1er Juillet 2024"
