@@ -25,11 +25,11 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     // --- Reusable Rules for Content ---
-    function contentReadRules(doc) {
-      return doc.moderationStatus == 'approved' || isOwner(doc.createdBy) || isAdmin();
+    function contentReadRules() {
+      return resource.data.moderationStatus == 'approved' || isOwner(resource.data.createdBy) || isAdmin();
     }
-    function contentWriteRules(request, resource) {
-      return (isOwner(request.resource.data.createdBy) && resource.data.isSponsored == false) || isAdmin();
+    function contentWriteRules() {
+      return (isOwner(request.resource.data.createdBy) && request.resource.data.isSponsored == false) || isAdmin();
     }
     
     // Users:
@@ -75,13 +75,12 @@ service cloud.firestore {
     
     // Posts:
     // list: Anyone can list approved posts.
-    // read: Anyone can read an approved post.
+    // read: Anyone can read approved posts.
     // create: Authenticated users can create posts.
     // update: Only the author can update their post.
     // delete: Only the author or an admin can delete a post.
     match /posts/{postId} {
-      allow list: if query.limit <= 30 && request.query.where.moderationStatus == 'approved';
-      allow read: if contentReadRules(resource.data);
+      allow list, read: if resource.data.moderationStatus == 'approved';
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
       allow delete: if (isAuthenticated() && resource.data.authorId == request.auth.uid) || isAdmin();
@@ -98,23 +97,21 @@ service cloud.firestore {
     }
     
     // Products & Services:
-    // read: Anyone can read approved content, or their own.
+    // read: Anyone can read approved content.
     // create: Only creators/partners can create.
-    // update: Only owner or admin can update (if not sponsored).
+    // update: Only owner or admin can update.
     // delete: Only owner or admin can delete.
     match /products/{productId} {
-        allow list: if query.limit <= 30 && request.query.where.moderationStatus == 'approved';
-        allow read: if contentReadRules(resource.data);
+        allow list, read: if resource.data.moderationStatus == 'approved';
         allow create: if isCreatorOrPartner();
-        allow update: if contentWriteRules(request, resource.data);
+        allow update: if contentWriteRules();
         allow delete: if isOwner(resource.data.createdBy) || isAdmin();
     }
 
     match /services/{serviceId} {
-        allow list: if query.limit <= 30 && request.query.where.moderationStatus == 'approved';
-        allow read: if contentReadRules(resource.data);
+        allow list, read: if resource.data.moderationStatus == 'approved';
         allow create: if isCreatorOrPartner();
-        allow update: if contentWriteRules(request, resource.data);
+        allow update: if contentWriteRules();
         allow delete: if isOwner(resource.data.createdBy) || isAdmin();
         
         // Reviews on services
@@ -143,8 +140,7 @@ service cloud.firestore {
     // write: Can update their own notifications (e.g., mark as read).
     match /notifications/{notificationId} {
       allow list: if isAuthenticated() && request.query.where.userId == request.auth.uid;
-      allow get: if isOwner(resource.data.userId);
-      allow write: if isOwner(resource.data.userId) || isOwner(request.resource.data.userId);
+      allow get, write: if isOwner(resource.data.userId);
     }
     
     // Calls:
