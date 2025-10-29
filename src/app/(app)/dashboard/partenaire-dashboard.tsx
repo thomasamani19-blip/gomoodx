@@ -11,7 +11,7 @@ import { useDoc, useFirestore, useCollection } from "@/firebase";
 import { useMemo } from "react";
 import { collection, doc, query, where, orderBy, limit } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AreaChart, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Area, ResponsiveContainer } from 'recharts';
+import { AreaChart, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { format } from "date-fns";
 import { fr } from 'date-fns/locale';
@@ -157,23 +157,11 @@ function EstablishmentDashboard({ user }: { user: User }) {
                         <CardTitle>Actions Rapides</CardTitle>
                         <CardDescription>Accès rapide aux fonctionnalités clés.</CardDescription>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-2 gap-4">
-                         <Button asChild size="lg" className="h-full">
-                            <Link href="/gestion/annonces/creer" className="flex-col gap-2">
-                                <Newspaper className="h-6 w-6"/>
-                                <span>Créer une Annonce</span>
-                            </Link>
-                        </Button>
-                         <Button asChild size="lg" className="h-full" variant="secondary">
-                            <Link href="/gestion/tarifs" className="flex-col gap-2">
-                                <DollarSign className="h-6 w-6"/>
-                                <span>Gérer mes Tarifs</span>
-                            </Link>
-                        </Button>
-                         <Button asChild size="lg" className="h-full col-span-2" variant="outline">
-                            <Link href="/gestion/etablissement" className="flex-col gap-2">
-                                <Building className="h-6 w-6"/>
-                                <span>Modifier le Profil</span>
+                    <CardContent className="grid grid-cols-1 gap-4">
+                        <Button asChild size="lg" className="h-full">
+                            <Link href="/gestion" className="flex-col gap-2 h-24">
+                                <GanttChart className="h-6 w-6"/>
+                                <span>Espace de Gestion</span>
                             </Link>
                         </Button>
                     </CardContent>
@@ -239,13 +227,13 @@ function ProducerDashboard({ user }: { user: User }) {
                         <ChartContainer config={chartConfig}>
                         <ResponsiveContainer width="100%" height={250}>
                             {statsLoading ? <Skeleton className="w-full h-full" /> : 
-                            <AreaChart data={revenueHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                            <RechartsBarChart data={revenueHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                             <CartesianGrid vertical={false} />
                             <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
                             <YAxis tickLine={false} axisLine={false} />
                             <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                            <Area type="monotone" dataKey="revenue" stroke="var(--color-revenue)" fill="var(--color-revenue)" fillOpacity={0.3} />
-                            </AreaChart>}
+                            <Bar dataKey="revenue" fill="var(--color-revenue)" radius={8} />
+                            </RechartsBarChart>}
                         </ResponsiveContainer>
                         </ChartContainer>
                     </CardContent>
@@ -276,17 +264,11 @@ function ProducerDashboard({ user }: { user: User }) {
                     <CardTitle className="font-headline">Gestion de Contenu</CardTitle>
                     <CardDescription>Accès rapide à la gestion de vos produits et de votre profil.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid md:grid-cols-2 gap-4">
-                    <Button asChild size="lg">
-                        <Link href="/gestion/produits">
-                            <ShoppingBag className="mr-2 h-5 w-5" />
-                            Gérer mes produits
-                        </Link>
-                    </Button>
-                    <Button asChild size="lg" variant="secondary">
-                        <Link href="/profil">
-                            <PenSquare className="mr-2 h-5 w-5" />
-                            Modifier mon profil
+                <CardContent>
+                     <Button asChild size="lg" className="w-full">
+                        <Link href="/gestion">
+                            <GanttChart className="mr-2 h-5 w-5" />
+                            Accéder à l'espace de gestion
                         </Link>
                     </Button>
                 </CardContent>

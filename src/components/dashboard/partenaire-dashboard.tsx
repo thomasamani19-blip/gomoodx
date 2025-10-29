@@ -3,19 +3,19 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { User, CreatorStats, Reservation } from "@/lib/types";
-import PageHeader from "../shared/page-header";
+import PageHeader from "@/components/shared/page-header";
 import Link from 'next/link';
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import { Building, ShoppingBag, Newspaper, DollarSign, PenSquare, UserCircle, GanttChart, Sparkles, BookText, Film, Bot, TrendingUp, BarChart, Calendar, CalendarCheck, Users } from "lucide-react";
 import { useDoc, useFirestore, useCollection } from "@/firebase";
 import { useMemo } from "react";
 import { collection, doc, query, where, orderBy, limit } from "firebase/firestore";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AreaChart, BarChart as RechartsBarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, ResponsiveContainer } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { format } from "date-fns";
 import { fr } from 'date-fns/locale';
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 
 const chartConfig = {
@@ -158,13 +158,7 @@ function EstablishmentDashboard({ user }: { user: User }) {
                         <CardDescription>Accès rapide aux fonctionnalités clés.</CardDescription>
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 gap-4">
-                         <Button asChild size="lg" className="h-full">
-                            <Link href="/gestion/annonces/creer" className="flex-col gap-2 h-24">
-                                <Newspaper className="h-6 w-6"/>
-                                <span>Créer une Annonce</span>
-                            </Link>
-                        </Button>
-                        <Button asChild size="lg" className="h-full col-span-1" variant="secondary">
+                        <Button asChild size="lg" className="h-full">
                             <Link href="/gestion" className="flex-col gap-2 h-24">
                                 <GanttChart className="h-6 w-6"/>
                                 <span>Espace de Gestion</span>
@@ -233,13 +227,13 @@ function ProducerDashboard({ user }: { user: User }) {
                         <ChartContainer config={chartConfig}>
                         <ResponsiveContainer width="100%" height={250}>
                             {statsLoading ? <Skeleton className="w-full h-full" /> : 
-                            <RechartsAreaChart data={revenueHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                            <RechartsBarChart data={revenueHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                             <CartesianGrid vertical={false} />
                             <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
                             <YAxis tickLine={false} axisLine={false} />
                             <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                            <Area type="monotone" dataKey="revenue" stroke="var(--color-revenue)" fill="var(--color-revenue)" fillOpacity={0.3} />
-                            </RechartsAreaChart>}
+                            <Bar dataKey="revenue" fill="var(--color-revenue)" radius={8} />
+                            </RechartsBarChart>}
                         </ResponsiveContainer>
                         </ChartContainer>
                     </CardContent>

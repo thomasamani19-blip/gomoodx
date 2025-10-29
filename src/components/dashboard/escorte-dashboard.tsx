@@ -6,15 +6,15 @@ import { Button } from "@/components/ui/button";
 import { User as UserIcon, BookText, PenSquare, Sparkles, ShoppingBag, Newspaper, Bot, Film, GanttChart, Zap } from "lucide-react";
 import Link from 'next/link';
 import type { User, CreatorStats, Annonce, Product } from "@/lib/types";
-import PageHeader from "../shared/page-header";
+import PageHeader from "@/components/shared/page-header";
 import { useDoc, useFirestore, useCollection } from "@/firebase";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { collection, doc, query, where, orderBy, limit } from "firebase/firestore";
 import { BarChart as BarChartIcon, TrendingUp, Users, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AreaChart, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar, Area, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,

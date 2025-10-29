@@ -2,116 +2,53 @@
 
 Ceci est le projet GoMoodX, une plateforme exclusive pour créateurs de contenu et leurs membres, générée par Firebase Studio IA.
 
-## 🚀 Mise en Route (Guide Complet)
+## 🚀 Mise en Route sur GitHub Codespaces (Guide Complet)
 
-Ce projet est conçu pour être développé facilement en utilisant des environnements de développement dans le cloud comme **GitHub Codespaces** (recommandé) ou en local sur votre machine.
+Ce projet est optimisé pour être développé en 1 clic grâce à **GitHub Codespaces**. Tout est pré-configuré pour une expérience de développement fluide.
 
 ---
 
-### **(Recommandé) Utilisation de GitHub Codespaces**
+### Étape 1 : Lancer le Codespace
 
-GitHub Codespaces lance un environnement de développement complet directement dans votre navigateur, avec tout déjà pré-installé. C'est la méthode la plus simple et la plus rapide pour commencer.
+1.  Sur la page principale du dépôt, cliquez sur le bouton vert **`< > Code`**.
+2.  Allez dans l'onglet **`Codespaces`**.
+3.  Cliquez sur **`Create codespace on main`**.
 
-#### Étape 1 : Lancer votre Codespace
+Patientez une ou deux minutes pendant que GitHub prépare votre environnement de développement complet dans le navigateur.
 
-1.  Allez sur la page principale de votre dépôt GitHub.
-2.  Cliquez sur le bouton vert **`< > Code`**.
-3.  Allez dans l'onglet **`Codespaces`**.
-4.  Cliquez sur **`Create codespace on main`**.
+### Étape 2 : Lancer l'Application (Automatique)
 
-GitHub va maintenant préparer votre environnement. Cela peut prendre une ou deux minutes. Une fois terminé, vous verrez un éditeur de code (similaire à VS Code) directement dans votre navigateur.
+Votre environnement est configuré pour démarrer automatiquement tous les services nécessaires. Vous n'avez rien à faire ici.
 
-#### Étape 2 : Configurer les Clés API (Si nécessaire)
+-   Le serveur de développement **Next.js** (votre site web) démarrera sur le port **3000**.
+-   Le serveur **Genkit** (pour l'intelligence artificielle) démarrera sur le port **4000**.
 
-L'environnement a besoin de clés API pour se connecter à Firebase et aux autres services. Si vous avez déjà configuré les secrets de votre Codespace, vous pouvez sauter cette étape.
+Une notification apparaîtra en bas à droite pour chaque service démarré, vous proposant de l'ouvrir dans le navigateur.
 
-1.  Dans le terminal de votre Codespace (en bas de l'éditeur), copiez le fichier d'exemple pour créer votre fichier de configuration local :
-    ```bash
-    cp .env.example .env.local
-    ```
-2.  Dans l'explorateur de fichiers à gauche, ouvrez le nouveau fichier `.env.local`.
-3.  Remplissez les valeurs avec vos propres clés API. Par exemple :
-    ```env
-    # Obtenez ces clés depuis votre console Firebase
-    NEXT_PUBLIC_FIREBASE_API_KEY="AIza..."
-    NEXT_PUBLIC_FIREBASE_PROJECT_ID="votre-projet"
-    # ... autres clés ...
+### Étape 3 : Remplir la Base de Données (La seule action manuelle)
 
-    # Obtenez cette clé depuis Google AI Studio
-    GEMINI_API_KEY="votre_cle_api_gemini"
-    ```
+C'est la **seule et unique commande** que vous devez exécuter manuellement dans le terminal. Elle permet de remplir votre base de données avec des utilisateurs et des contenus de test.
 
-#### Étape 3 : Lancer l'Application (Automatique)
+1.  Dans votre Codespace, le terminal est déjà ouvert en bas de l'éditeur. Repérez les onglets `bash`, `next`, `genkit`.
+2.  Cliquez sur l'onglet **`bash`**.
+3.  Tapez ou collez la commande suivante et appuyez sur Entrée :
 
-Le Codespace est configuré pour lancer automatiquement tous les services pour vous.
-
--   Le serveur de développement **Next.js** (votre site web) démarrera sur le port 3000.
--   Le serveur **Genkit** (pour l'IA) démarrera sur le port 4000.
-
-Vous verrez des notifications en bas à droite de l'écran lorsque les ports seront prêts. Vous pourrez cliquer sur "Ouvrir dans le navigateur" pour voir votre application en direct.
-
-#### Étape 4 : Remplir la Base de Données (Action Manuelle Requise)
-
-Pour ajouter des utilisateurs et des contenus de test, vous devez lancer le script de "seeding". **C'est la seule étape manuelle nécessaire dans le terminal.**
-
-1.  Ouvrez un **nouveau terminal** en cliquant sur le `+` dans la barre du terminal (à côté de "bash", "genkit", etc.).
-2.  Dans ce nouveau terminal, exécutez la commande suivante :
     ```bash
     npm run seed
     ```
 
-C'est tout ! Votre application est maintenant entièrement fonctionnelle et prête pour le développement. Vous pouvez vous connecter avec les comptes de test comme `client@test.com` (mot de passe : `password123`).
+Le script va s'exécuter et ajouter les données de test.
 
 ---
 
-### Utilisation en Local (Alternative)
+### 🎉 C'est tout !
 
-Si vous préférez travailler sur votre propre machine, suivez ces étapes.
+Votre application est maintenant entièrement fonctionnelle et prête pour le développement.
 
-#### 1. Prérequis
+Vous pouvez vous connecter avec les comptes suivants :
+- **Client :** `member@test.com` (mot de passe : `password123`)
+- **Créateur :** `creator@test.com` (mot de passe : `password123`)
+- **Admin :** `admin@test.com` (mot de passe : `password123`)
 
-- Node.js (v18 ou supérieur)
-- npm ou yarn
-- Un compte Firebase
-- Firebase CLI (`npm install -g firebase-tools`)
-
-#### 2. Configuration
-
-1.  **Installer les dépendances** :
-    ```bash
-    npm install
-    ```
-2.  **Configurer les variables d'environnement** :
-    Créez un fichier `.env.local` et remplissez-le avec vos clés (voir l'Étape 2 de Codespaces).
-
-#### 3. Lancer les Services
-
-Vous devrez ouvrir plusieurs terminaux.
-
-1.  **Terminal 1 : Lancer Next.js**
-    ```bash
-    npm run dev
-    ```
-    Votre site sera sur `http://localhost:3000`.
-
-2.  **Terminal 2 : Lancer Genkit**
-    ```bash
-    npm run genkit:watch
-    ```
-
-3.  **(Optionnel) Terminal 3 : Lancer les Émulateurs Firebase**
-    Si vous utilisez les émulateurs locaux, décommentez `NEXT_PUBLIC_EMULATOR_HOST=localhost` dans `.env.local` et exécutez :
-    ```bash
-    firebase emulators:start
-    ```
-
-#### 4. Déploiement
-
-Pour déployer sur Firebase :
-```bash
-npm run build
-firebase deploy
-```
-
----
+N'hésitez pas à me demander la prochaine modification !
 Généré avec ❤️ par Firebase Studio IA.
