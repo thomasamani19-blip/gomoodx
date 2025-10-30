@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -23,64 +24,53 @@ service cloud.firestore {
 
     // --- USERS ---
     match /users/{userId} {
-      allow read: if isSignedIn();
+      allow get, list: if true; // Allow public read (get and list)
       allow create: if isOwner(userId);
       allow update: if isOwner(userId) || isAdmin();
-      allow delete: if false; // Do not allow user deletion from client
+      allow delete: if false;
     }
 
     // --- POSTS ---
     match /posts/{postId} {
-      allow read: if isSignedIn();
+      allow get, list: if true; // Allow public read
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
       allow update, delete: if resource.data.authorId == request.auth.uid || isAdmin();
 
       // Comments subcollection
       match /comments/{commentId} {
-        allow read: if isSignedIn();
+        allow get, list: if isSignedIn(); // Logged-in users can read comments
         allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
         allow update, delete: if resource.data.authorId == request.auth.uid || isAdmin();
       }
     }
 
-    // --- SERVICES (Annonces) ---
+    // --- SERVICES (Annonces) & PRODUCTS ---
     match /services/{contentId} {
-        allow read: if isSignedIn();
+        allow get, list: if true; // Allow public read
         allow create: if isCreatorOrPartner() && request.resource.data.createdBy == request.auth.uid;
         allow update, delete: if resource.data.createdBy == request.auth.uid || isAdmin();
-
-        // Reviews subcollection
+        
         match /reviews/{reviewId} {
-            allow read: if isSignedIn();
+            allow get, list: if isSignedIn();
             allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
             allow delete: if resource.data.authorId == request.auth.uid || isAdmin();
         }
     }
     
-    // --- PRODUCTS ---
     match /products/{contentId} {
-        allow read: if isSignedIn();
+        allow get, list: if true; // Allow public read
         allow create: if isCreatorOrPartner() && request.resource.data.createdBy == request.auth.uid;
         allow update, delete: if resource.data.createdBy == request.auth.uid || isAdmin();
-
-        // Reviews subcollection
-        match /reviews/{reviewId} {
-            allow read: if isSignedIn();
-            allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-            allow delete: if resource.data.authorId == request.auth.uid || isAdmin();
-        }
     }
     
-    // --- BLOG ---
+    // --- BLOG & LIVES ---
     match /blog/{articleId} {
-        allow read: if isSignedIn();
+        allow get, list: if true; // Allow public read
         allow create: if (isCreatorOrPartner() || isAdmin()) && request.resource.data.authorId == request.auth.uid;
         allow update, delete: if resource.data.authorId == request.auth.uid || isAdmin();
     }
-    
-    // --- LIVES ---
     match /lives/{liveId} {
-        allow read: if isSignedIn();
+        allow get, list: if true; // Allow public read
         allow create: if (isCreatorOrPartner() || isAdmin()) && request.resource.data.hostId == request.auth.uid;
         allow update, delete: if resource.data.hostId == request.auth.uid || isAdmin();
     }
@@ -90,7 +80,6 @@ service cloud.firestore {
       allow read, update: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId);
 
-      // Transactions are also private.
       match /transactions/{transactionId} {
         allow read, write: if isOwner(userId) || isAdmin();
       }
@@ -107,46 +96,44 @@ service cloud.firestore {
         allow create: if isSignedIn() && request.resource.data.memberId == request.auth.uid;
         allow delete: if isAdmin();
     }
+    
+    // --- USER-SPECIFIC SUBCOLLECTIONS (e.g., CART) ---
+    match /users/{userId}/cart/{itemId} {
+        allow read, write: if isOwner(userId);
+    }
 
     // --- MESSAGES & CALLS ---
     match /messages/{messageId} {
         allow read: if isSignedIn() && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
-        allow write: if isSignedIn() && (
-            (request.resource.data.senderId == request.auth.uid || request.resource.data.receiverId == request.auth.uid) || 
-            (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid)
-        );
+        allow write: if isSignedIn() && (request.resource.data.senderId == request.auth.uid || resource.data.senderId == request.auth.uid);
     }
     match /calls/{callId} {
-        allow read: if isSignedIn() && (resource.data.callerId == request.auth.uid || resource.data.receiverId == request.auth.uid);
-        allow write: if isSignedIn() && (
-            (request.resource.data.callerId == request.auth.uid || request.resource.data.receiverId == request.auth.uid) || 
-            (resource.data.callerId == request.auth.uid || resource.data.receiverId == request.auth.uid)
-        );
+        allow read, write: if isSignedIn() && (request.resource.data.callerId == request.auth.uid || resource.data.callerId == request.auth.uid || request.resource.data.receiverId == request.auth.uid || resource.data.receiverId == request.auth.uid);
         
         match /{candidateCollection}/{candidateId} {
             allow create: if isSignedIn();
         }
     }
     
-    // --- Notifications ---
+    // --- NOTIFICATIONS ---
     match /notifications/{notificationId} {
         allow read, write: if isSignedIn() && (resource.data.userId == request.auth.uid || request.resource.data.userId == request.auth.uid);
     }
 
-    // --- Admin-only collections ---
+    // --- ADMIN-ONLY COLLECTIONS ---
     match /partnerRequests/{requestId} {
         allow read, update: if isAdmin();
         allow create: if true; // Anyone can submit a request
     }
     match /supportTickets/{ticketId} {
-        allow read, write: if isOwner(resource.data.userId) || isAdmin();
+        allow read, write: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
     match /verifications/{userId} {
         allow read, write: if isOwner(userId) || isAdmin();
     }
     
-    // --- Global Settings ---
+    // --- GLOBAL SETTINGS ---
     match /settings/global {
         allow read: if true;
         allow write: if isAdmin();
