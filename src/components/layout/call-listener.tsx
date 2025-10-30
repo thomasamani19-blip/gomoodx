@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useCollection } from '@/firebase/provider';
 import { collection, query, where, updateDoc, doc } from 'firebase/firestore';
 import type { Call } from '@/lib/types';
 import { useEffect, useState, useMemo } from 'react';
