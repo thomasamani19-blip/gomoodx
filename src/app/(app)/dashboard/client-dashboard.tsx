@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowRight, Eye, EyeOff, Heart, MessageSquare, Wallet, UserPlus } from "lucide-react";
 import type { User, Transaction } from "@/lib/types";
 import Link from 'next/link';
-import { useCollection, useDoc, useFirestore } from "@/firebase";
+import { useCollection, useDoc } from '@/firebase/firestore/use-collection';
+import { useFirestore } from "@/firebase/provider";
 import { limit, where, query, collection, doc, orderBy } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo, useState } from "react";

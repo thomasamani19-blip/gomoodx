@@ -6,7 +6,8 @@ import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/hooks/use-auth';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useDoc } from '@/firebase/firestore/use-collection';
+import { useFirestore } from "@/firebase/provider";
 import type { Reservation, User } from '@/lib/types';
 import { collection, query, where, orderBy, or } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,7 +17,6 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Link from 'next/link';
 import { CalendarCheck, Eye } from 'lucide-react';
-import { useDoc } from '@/firebase/firestore/use-doc';
 
 const statusVariantMap = {
     pending: 'outline',

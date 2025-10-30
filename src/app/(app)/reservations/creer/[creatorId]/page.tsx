@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { useDoc, useFirestore } from '@/firebase';
+import { useDoc, useFirestore } from '@/firebase/firestore/use-collection';
 import type { User, CreatorRates, Settings, TravelArrangement } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';

@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Post, Comment } from '@/lib/types';
@@ -14,7 +15,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useFirestore } from "@/firebase/provider";
 import { collection, query, orderBy, serverTimestamp, addDoc, runTransaction, doc } from 'firebase/firestore';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';

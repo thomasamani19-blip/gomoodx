@@ -7,7 +7,8 @@ import { User as UserIcon, BookText, PenSquare, Sparkles, ShoppingBag, Newspaper
 import Link from 'next/link';
 import type { User, CreatorStats, Annonce, Product } from "@/lib/types";
 import PageHeader from "@/components/shared/page-header";
-import { useDoc, useFirestore, useCollection } from "@/firebase";
+import { useDoc, useCollection } from '@/firebase/firestore/use-collection';
+import { useFirestore } from "@/firebase/provider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { collection, doc, query, where, orderBy, limit } from "firebase/firestore";
 import { BarChart as BarChartIcon, TrendingUp, Users, Loader2 } from "lucide-react";

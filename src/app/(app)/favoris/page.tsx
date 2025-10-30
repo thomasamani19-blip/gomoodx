@@ -3,7 +3,8 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useFirestore } from "@/firebase/provider";
 import type { User } from '@/lib/types';
 import PageHeader from '@/components/shared/page-header';
 import { Card } from '@/components/ui/card';
