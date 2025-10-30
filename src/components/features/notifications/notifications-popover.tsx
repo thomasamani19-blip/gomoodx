@@ -2,7 +2,8 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useFirestore } from '@/firebase/provider';
 import type { Notification } from '@/lib/types';
 import { collection, query, where, orderBy, limit, writeBatch, getDocs, doc } from 'firebase/firestore';
 import { useMemo, useState } from 'react';
