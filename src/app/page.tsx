@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AnnonceCarousel } from '@/components/features/annonces/annonce-carousel';

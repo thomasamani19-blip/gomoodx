@@ -5,13 +5,17 @@ import { PT_Sans, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider } from '@/hooks/use-auth';
+import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import CallListener from '@/components/layout/call-listener';
 import { AuraCanvas } from '@/components/layout/aura-canvas';
 import AgeGate from '@/components/features/auth/age-gate';
-import { useAuth } from '@/hooks/use-auth';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { usePathname } from 'next/navigation';
+import AuthLayout from './(auth)/layout';
+import AppLayout from './(app)/layout';
+import MarketingLayout from './(marketing)/layout';
+import { useMemo } from 'react';
 
 const ptSans = PT_Sans({
   subsets: ['latin'],
@@ -25,13 +29,34 @@ const playfair = Playfair_Display({
 });
 
 function RootLayoutContent({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const pathname = usePathname();
+
+  const LayoutComponent = useMemo(() => {
+    if (loading) {
+      return ({ children }: { children: React.ReactNode }) => <div className="flex min-h-screen items-center justify-center">{children}</div>;
+    }
+
+    const authRoutes = ['/connexion', '/inscription'];
+    const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
+
+    if (isAuthRoute) {
+      return AuthLayout;
+    }
+
+    if (user) {
+      return AppLayout;
+    }
+
+    return MarketingLayout;
+  }, [user, loading, pathname]);
+
   return (
     <>
       <AuraCanvas />
       <AgeGate />
       <div className="relative z-10">
-        {children}
+        <LayoutComponent>{children}</LayoutComponent>
       </div>
       <Toaster />
       {user && <CallListener />}
@@ -55,11 +80,9 @@ export default function RootLayout({
         >
           <FirebaseClientProvider>
             <AuthProvider>
-                <SidebarProvider>
-                    <RootLayoutContent>
-                        {children}
-                    </RootLayoutContent>
-                </SidebarProvider>
+              <SidebarProvider>
+                <RootLayoutContent>{children}</RootLayoutContent>
+              </SidebarProvider>
             </AuthProvider>
           </FirebaseClientProvider>
         </ThemeProvider>

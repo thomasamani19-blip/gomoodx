@@ -9,7 +9,8 @@ import {
 } from '@/components/ui/carousel';
 import { Card, CardContent } from '@/components/ui/card';
 import Image from 'next/image';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useFirestore } from '@/firebase/provider';
 import type { Annonce } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { limit, query, collection } from 'firebase/firestore';
@@ -82,5 +83,3 @@ export function AnnonceCarousel() {
     </Carousel>
   );
 }
-
-    

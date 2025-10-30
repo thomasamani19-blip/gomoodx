@@ -9,7 +9,8 @@ import {
 } from '@/components/ui/carousel';
 import { Card, CardContent } from '@/components/ui/card';
 import Image from 'next/image';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useFirestore } from '@/firebase/provider';
 import type { User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { query, where, limit, collection } from 'firebase/firestore';
@@ -86,5 +87,3 @@ const CarouselSkeletonItem = () => (
         </Card>
     </div>
 )
-
-    

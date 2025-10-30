@@ -12,11 +12,15 @@ export default function AppLayout({
 }) {
   const { user } = useAuth();
   
+  if (!user) {
+    return null; // Or a loading spinner, or redirect logic
+  }
+  
   return (
       <div className="flex min-h-screen w-full">
-        {user && <AppSidebar />}
-        <div className="flex flex-col flex-1">
-          {user && <AppHeader />}
+        <AppSidebar />
+        <div className="flex flex-col flex-1 overflow-x-hidden">
+          <AppHeader />
           <main className="flex-1 p-4 md:p-6 lg:p-8">
             {children}
           </main>
