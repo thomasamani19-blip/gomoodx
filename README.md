@@ -1,3 +1,4 @@
+
 tur# Bienvenue sur GoMoodX
 
 Ceci est le projet GoMoodX, une plateforme exclusive pour créateurs de contenu et leurs membres, générée par Firebase Studio IA.
